@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
-import '../../../home/presentation/pages/home_page.dart';
+import '../../../auth/presentation/pages/auth_page.dart';
 import '../../data/onboarding_data.dart';
 import '../widgets/onboarding_page_item.dart';
 import '../widgets/page_indicator.dart';
@@ -58,12 +58,12 @@ class _OnboardingPageState extends State<OnboardingPage>
         curve: Curves.easeInOut,
       );
     } else {
-      _navigateToHome();
+      _navigateToAuth();
     }
   }
 
-  void _navigateToHome() {
-    NavigationHelper.pushReplacement(context, const HomePage());
+  void _navigateToAuth() {
+    NavigationHelper.pushReplacement(context, const AuthPage());
   }
 
   @override
@@ -133,7 +133,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               const SizedBox(width: 48),
             // Skip button
             TextButton(
-              onPressed: _navigateToHome,
+              onPressed: _navigateToAuth,
               child: const Text(
                 'Skip',
                 style: TextStyle(

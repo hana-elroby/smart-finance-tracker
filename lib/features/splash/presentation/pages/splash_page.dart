@@ -4,7 +4,6 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../onboarding/presentation/pages/onboarding_page.dart';
-import '../widgets/analytics_chart_icon.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -123,14 +122,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: AppColors.primary,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildAnimatedChart(),
-            const SizedBox(height: 50),
-            _buildAnimatedText(),
-          ],
-        ),
+        child: _buildAnimatedChart(),
       ),
     );
   }
@@ -155,10 +147,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                       builder: (context, child) {
                         return Transform.rotate(
                           angle: _rotateAnimation.value,
-                          child: const AnalyticsChartIcon(
-                            size: 140,
-                            color: AppColors.secondary,
-                          ),
+                          child: Image.asset(
+                            'assets/images/bluelogosavelet.png'),
                         );
                       },
                     ),
