@@ -71,6 +71,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     final pages = OnboardingData.getPages();
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: AppColors.background,
       body: Stack(
         children: [

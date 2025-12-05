@@ -59,44 +59,49 @@ class OnboardingPageItem extends StatelessWidget {
           flex: 3,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  model.title,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                    height: 1.3,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                if (model.subtitle != null) ...[
-                  const SizedBox(height: 8),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Text(
-                    model.subtitle!,
+                    model.title,
                     style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                       color: AppColors.primary,
-                      height: 1.2,
+                      height: 1.3,
                     ),
                     textAlign: TextAlign.center,
+                    overflow: TextOverflow.visible,
+                  ),
+                  if (model.subtitle != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      model.subtitle!,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                        height: 1.2,
+                      ),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Text(
+                    model.description,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF5A6C7D),
+                      height: 1.6,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.visible,
                   ),
                 ],
-                const SizedBox(height: 12),
-                Text(
-                  model.description,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF5A6C7D),
-                    height: 1.6,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
           ),
         ),

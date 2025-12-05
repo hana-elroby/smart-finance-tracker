@@ -31,6 +31,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFF1E3A5F),
       appBar: AppBar(
         backgroundColor: Colors.transparent,

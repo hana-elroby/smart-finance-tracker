@@ -44,6 +44,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFE8EAF6),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
