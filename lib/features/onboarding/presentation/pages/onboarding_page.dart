@@ -1,8 +1,9 @@
+// شاشات التعريف بالتطبيق (Onboarding)
+// 3 شاشات تعرف المستخدم بمميزات التطبيق قبل الدخول
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/navigation_helper.dart';
-import '../../../home/presentation/pages/home_page.dart';
-import '../../data/onboarding_data.dart';
+import '../../../../core/theme/app_colors.dart';            // الألوان
+import '../../../../core/utils/navigation_helper.dart';     // مساعد التنقل
+import '../../data/onboarding_data.dart';                   // بيانات شاشات التعريف
 import '../widgets/onboarding_page_item.dart';
 import '../widgets/page_indicator.dart';
 import '../widgets/onboarding_button.dart';
@@ -62,8 +63,10 @@ class _OnboardingPageState extends State<OnboardingPage>
     }
   }
 
+  // الانتقال للصفحة الرئيسية - هتضيفيها لاحقاً
   void _navigateToHome() {
-    NavigationHelper.pushReplacement(context, const HomePage());
+    // TODO: Add navigation to home page
+    // هنا هتضيفي الانتقال للصفحة الرئيسية لما تعمليها
   }
 
   @override

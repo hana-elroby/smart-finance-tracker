@@ -1,9 +1,11 @@
+// ألوان التطبيق - جميع الألوان المستخدمة في التطبيق
+// App Colors - All colors used in the application
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary colors
-  static const Color primary = Color(0xFF003566);
-  static const Color secondary = Color(0xFF00CCFF);
+  // الألوان الأساسية - Primary colors
+  static const Color primary = Color(0xFF003566);      // اللون الأساسي (أزرق غامق)
+  static const Color secondary = Color(0xFF00CCFF);    // اللون الثانوي (أزرق فاتح)
   static const Color background = Color(0xFFD5D7DA);
 
   // Text colors

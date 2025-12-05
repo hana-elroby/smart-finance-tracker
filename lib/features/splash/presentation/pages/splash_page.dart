@@ -1,10 +1,12 @@
+// شاشة البداية (Splash Screen)
+// تظهر عند فتح التطبيق لمدة 3 ثواني ثم تنتقل لشاشة التعريف
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/navigation_helper.dart';
-import '../../../onboarding/presentation/pages/onboarding_page.dart';
-import '../widgets/analytics_chart_icon.dart';
+import '../../../../core/constants/app_constants.dart';     // الثوابت
+import '../../../../core/theme/app_colors.dart';            // الألوان
+import '../../../../core/utils/navigation_helper.dart';     // مساعد التنقل
+import '../../../onboarding/presentation/pages/onboarding_page.dart'; // شاشة التعريف
+import '../widgets/analytics_chart_icon.dart';              // أيقونة الرسم البياني
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});

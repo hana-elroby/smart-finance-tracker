@@ -1,7 +1,9 @@
+// ثوابت التطبيق - معلومات ثابتة تستخدم في كل التطبيق
+// App Constants - Fixed values used throughout the app
 class AppConstants {
-  // App info
-  static const String appName = 'SaveIt';
-  static const String appVersion = '1.0.0';
+  // معلومات التطبيق - App info
+  static const String appName = 'SaveIt';        // اسم التطبيق
+  static const String appVersion = '1.0.0';      // رقم الإصدار
 
   // Animation durations
   static const Duration splashDuration = Duration(seconds: 3);
