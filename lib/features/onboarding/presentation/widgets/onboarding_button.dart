@@ -34,12 +34,12 @@ class OnboardingButton extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(30),
               border: Border.all(
-                color: Colors.white.withOpacity(0.4),
+                color: Colors.white.withValues(alpha: 0.4),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0D47A1).withOpacity(0.5),
+                  color: const Color(0xFF0D47A1).withValues(alpha: 0.5),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),

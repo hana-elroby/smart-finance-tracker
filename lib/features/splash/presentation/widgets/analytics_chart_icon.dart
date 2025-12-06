@@ -34,7 +34,7 @@ class ChartPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     final fillPaint = Paint()
-      ..color = color.withOpacity(0.2)
+      ..color = color.withValues(alpha: 0.2)
       ..style = PaintingStyle.fill;
 
     final bar1Height = size.height * 0.35;

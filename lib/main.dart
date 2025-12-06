@@ -1,9 +1,7 @@
-// الملف الرئيسي للتطبيق - نقطة البداية
-// Main app entry point
 import 'package:flutter/material.dart';
-import 'core/theme/app_theme.dart';           // ثيم التطبيق (الألوان والخطوط)
-import 'core/constants/app_constants.dart';   // الثوابت (اسم التطبيق، المدد الزمنية)
-import 'features/splash/presentation/pages/splash_page.dart'; // شاشة البداية
+import 'core/theme/app_theme.dart';
+import 'core/constants/app_constants.dart';
+import 'features/splash/presentation/pages/splash_page.dart';
 
 void main() {
   runApp(const MyApp());

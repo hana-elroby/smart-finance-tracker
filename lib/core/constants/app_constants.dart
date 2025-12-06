@@ -2,8 +2,8 @@
 // App Constants - Fixed values used throughout the app
 class AppConstants {
   // معلومات التطبيق - App info
-  static const String appName = 'SaveIt';        // اسم التطبيق
-  static const String appVersion = '1.0.0';      // رقم الإصدار
+  static const String appName = 'SaveIt'; // اسم التطبيق
+  static const String appVersion = '1.0.0'; // رقم الإصدار
 
   // Animation durations
   static const Duration splashDuration = Duration(seconds: 3);
