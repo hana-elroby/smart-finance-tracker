@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/navigation_helper.dart';
+import '../../../auth/presentation/pages/auth_page.dart';
 import '../../data/onboarding_data.dart';
 import '../widgets/onboarding_page_item.dart';
 import '../widgets/page_indicator.dart';
@@ -61,10 +63,7 @@ class _OnboardingPageState extends State<OnboardingPage>
   }
 
   void _navigateToAuth() {
-    // TODO: Navigate to auth when implemented
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Auth page not implemented yet')),
-    );
+    NavigationHelper.pushReplacement(context, const AuthPage());
   }
 
   @override
