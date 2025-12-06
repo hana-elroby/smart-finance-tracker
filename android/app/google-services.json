@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "16052237336",
+    "project_id": "fir-services-c1f90",
+    "storage_bucket": "fir-services-c1f90.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:16052237336:android:4f06c7386c02f92d84ff6d",
+        "android_client_info": {
+          "package_name": "com.example.graduation_project"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6BVAKSYBBI124wygENjfT2mWyNf0IsDA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

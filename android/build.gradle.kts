@@ -1,3 +1,16 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Use double quotes and parentheses
+        classpath("com.android.tools.build:gradle:8.2.2") // (Example Gradle plugin, if needed)
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22") // (Example Kotlin plugin, if needed)
+        classpath("com.google.gms:google-services:4.4.4") // <-- Your corrected line
+    }
+}
+
 allprojects {
     repositories {
         google()
