@@ -46,6 +46,10 @@ dependencies:
   cloud_firestore: ^6.1.0
   firebase_messaging: ^16.0.4
   google_sign_in: ^7.2.0
+  
+  # State Management - BLoC
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +81,12 @@ flutter:
     - assets/images/saveletlogo.png
     - assets/images/bluelogosavelet.png
     - assets/images/GoogleIcon.png
+    - assets/images/shoppingicon.png
+    - assets/images/billsicon.png
+    - assets/images/healthicon.png
+    - assets/images/activties.png
+    - assets/images/foodicon.png
+    - assets/images/educationicon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

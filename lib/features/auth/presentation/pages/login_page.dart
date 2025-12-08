@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/utils/navigation_helper.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../bloc/auth_bloc.dart';
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => AuthBloc(),
+      child: const LoginView(),
+    );
+  }
 }
 
-class _LoginPageState extends State<LoginPage> {
+class LoginView extends StatefulWidget {
+  const LoginView({super.key});
+
+  @override
+  State<LoginView> createState() => _LoginViewState();
+}
+
+class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -18,10 +33,13 @@ class _LoginPageState extends State<LoginPage> {
 
   void _handleLogin() {
     if (_formKey.currentState!.validate()) {
-      // TODO: Handle login logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful!')),
-      );
+      // بنبعت LoginRequested Event للـ BLoC
+      context.read<AuthBloc>().add(
+            LoginRequested(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            ),
+          );
     }
   }
 
@@ -45,7 +63,31 @@ class _LoginPageState extends State<LoginPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
+      body: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthSuccess) {
+            // لو Login نجح، نروح للـ Home
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('مرحباً ${state.userName}! 🎉'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
+          } else if (state is AuthFailure) {
+            // لو فشل، نعرض رسالة خطأ
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+
+          return SafeArea(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -226,7 +268,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: _handleLogin,
+                          onPressed: isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -234,15 +276,24 @@ class _LoginPageState extends State<LoginPage> {
                               borderRadius: BorderRadius.circular(28),
                             ),
                           ),
-                          child: const Text(
-                            'Log In',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Log In',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -282,7 +333,12 @@ class _LoginPageState extends State<LoginPage> {
                                   size: 32,
                                 ),
                                 onPressed: () {
-                                  // TODO: Handle Facebook login
+                                  // TODO: Facebook Sign In
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Facebook Sign In قريباً'),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -312,7 +368,12 @@ class _LoginPageState extends State<LoginPage> {
                                   height: 24,
                                 ),
                                 onPressed: () {
-                                  // TODO: Handle Google login
+                                  // TODO: Google Sign In
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Google Sign In قريباً'),
+                                    ),
+                                  );
                                 },
                               ),
                             ),
@@ -361,7 +422,9 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
           ),
-        ),
+          ),
+        );
+        },
       ),
     );
   }

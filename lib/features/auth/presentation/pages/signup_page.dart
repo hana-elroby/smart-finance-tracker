@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../bloc/auth_bloc.dart';
 import 'login_page.dart';
 
-class SignUpPage extends StatefulWidget {
+class SignUpPage extends StatelessWidget {
   const SignUpPage({super.key});
 
   @override
-  State<SignUpPage> createState() => _SignUpPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => AuthBloc(),
+      child: const SignUpView(),
+    );
+  }
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class SignUpView extends StatefulWidget {
+  const SignUpView({super.key});
+
+  @override
+  State<SignUpView> createState() => _SignUpViewState();
+}
+
+class _SignUpViewState extends State<SignUpView> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -23,10 +38,16 @@ class _SignUpPageState extends State<SignUpPage> {
 
   void _handleSignUp() {
     if (_formKey.currentState!.validate()) {
-      // TODO: Handle sign up logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign up successful!')),
-      );
+      // بنبعت SignUpRequested Event للـ BLoC
+      context.read<AuthBloc>().add(
+            SignUpRequested(
+              fullName: _fullNameController.text.trim(),
+              email: _emailController.text.trim(),
+              mobile: _mobileController.text.trim(),
+              dateOfBirth: _dateOfBirthController.text,
+              password: _passwordController.text,
+            ),
+          );
     }
   }
 
@@ -81,7 +102,31 @@ class _SignUpPageState extends State<SignUpPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
+      body: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthSuccess) {
+            // لو Sign Up نجح، نروح للـ Home
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('مرحباً ${state.userName}! تم إنشاء حسابك بنجاح 🎉'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            Navigator.pushReplacementNamed(context, AppRoutes.home);
+          } else if (state is AuthFailure) {
+            // لو فشل، نعرض رسالة خطأ
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final isLoading = state is AuthLoading;
+
+          return SafeArea(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -253,7 +298,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: _handleSignUp,
+                          onPressed: isLoading ? null : _handleSignUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
@@ -261,15 +306,24 @@ class _SignUpPageState extends State<SignUpPage> {
                               borderRadius: BorderRadius.circular(28),
                             ),
                           ),
-                          child: const Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -317,7 +371,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 ) ],
             ),
           ),
-        ),
+          ),
+        );
+        },
       ),
     );
   }
