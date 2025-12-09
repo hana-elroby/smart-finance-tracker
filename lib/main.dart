@@ -8,7 +8,6 @@ import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/auth_page.dart';
 import 'features/home/home_page.dart';
-import 'features/counter/presentation/counter_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +17,6 @@ void main() async {
 
   // Initialize Sync Service
   try {
-
     final syncService = SyncService();
     syncService.startListening();
   } catch (e) {
@@ -46,7 +44,6 @@ class MyApp extends StatelessWidget {
         AppRoutes.onboarding: (context) => const OnboardingPage(),
         AppRoutes.auth: (context) => const AuthPage(),
         AppRoutes.home: (context) => const HomePage(),
-        AppRoutes.counter: (context) => const CounterPage(), // مثال BLoC
       },
     );
   }

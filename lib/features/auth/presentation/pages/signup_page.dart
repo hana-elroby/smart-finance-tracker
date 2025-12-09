@@ -1,31 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
-import '../../bloc/auth_bloc.dart';
 import 'login_page.dart';
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AuthBloc(),
-      child: const SignUpView(),
-    );
-  }
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class SignUpView extends StatefulWidget {
-  const SignUpView({super.key});
-
-  @override
-  State<SignUpView> createState() => _SignUpViewState();
-}
-
-class _SignUpViewState extends State<SignUpView> {
+class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -35,19 +21,19 @@ class _SignUpViewState extends State<SignUpView> {
   final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
 
-  void _handleSignUp() {
+  void _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
-      // بنبعت SignUpRequested Event للـ BLoC
-      context.read<AuthBloc>().add(
-            SignUpRequested(
-              fullName: _fullNameController.text.trim(),
-              email: _emailController.text.trim(),
-              mobile: _mobileController.text.trim(),
-              dateOfBirth: _dateOfBirthController.text,
-              password: _passwordController.text,
-            ),
-          );
+      setState(() => _isLoading = true);
+
+      // TODO: Implement actual signup logic here
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
     }
   }
 
@@ -101,32 +87,23 @@ class _SignUpViewState extends State<SignUpView> {
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            },
+            child: const Text(
+              'Skip',
+              style: TextStyle(
+                color: Color(0xFF00BCD4),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
-      body: BlocConsumer<AuthBloc, AuthState>(
-        listener: (context, state) {
-          if (state is AuthSuccess) {
-            // لو Sign Up نجح، نروح للـ Home
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('مرحباً ${state.userName}! تم إنشاء حسابك بنجاح 🎉'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            Navigator.pushReplacementNamed(context, AppRoutes.home);
-          } else if (state is AuthFailure) {
-            // لو فشل، نعرض رسالة خطأ
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        },
-        builder: (context, state) {
-          final isLoading = state is AuthLoading;
-
-          return SafeArea(
+      body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -160,220 +137,224 @@ class _SignUpViewState extends State<SignUpView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      _buildTextField(
-                        label: 'Full Name',
-                        controller: _fullNameController,
-                        hint: 'John Doe',
-                        keyboardType: TextInputType.name,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        label: 'Email',
-                        controller: _emailController,
-                        hint: 'example@example.com',
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(
-                        label: 'Mobile Number',
-                        controller: _mobileController,
-                        hint: '+20 123 456 7890',
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(
-                        label: 'Date Of Birth',
-                        controller: _dateOfBirthController,
-                        hint: 'DD/MM/YYYY',
-                        keyboardType: TextInputType.datetime,
-                        readOnly: true,
-                        onTap: () => _selectDate(context),
-                      ),
-                      const SizedBox(height: 20),
-                      _buildPasswordField(
-                        label: 'Password',
-                        controller: _passwordController,
-                        isVisible: _isPasswordVisible,
-                        onToggle: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      _buildPasswordField(
-                        label: 'Confirm Password',
-                        controller: _confirmPasswordController,
-                        isVisible: _isConfirmPasswordVisible,
-                        onToggle: () {
-                          setState(() {
-                            _isConfirmPasswordVisible =
-                                !_isConfirmPasswordVisible;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      const Center(
-                        child: Text(
-                          'By continuing, you agree to',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF9E9E9E),
+                        _buildTextField(
+                          label: 'Full Name',
+                          controller: _fullNameController,
+                          hint: 'John Doe',
+                          keyboardType: TextInputType.name,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          label: 'Email',
+                          controller: _emailController,
+                          hint: 'example@example.com',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildTextField(
+                          label: 'Mobile Number',
+                          controller: _mobileController,
+                          hint: '+20 123 456 7890',
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 20),
+                        _buildTextField(
+                          label: 'Date Of Birth',
+                          controller: _dateOfBirthController,
+                          hint: 'DD/MM/YYYY',
+                          keyboardType: TextInputType.datetime,
+                          readOnly: true,
+                          onTap: () => _selectDate(context),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildPasswordField(
+                          label: 'Password',
+                          controller: _passwordController,
+                          isVisible: _isPasswordVisible,
+                          onToggle: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        _buildPasswordField(
+                          label: 'Confirm Password',
+                          controller: _confirmPasswordController,
+                          isVisible: _isConfirmPasswordVisible,
+                          onToggle: () {
+                            setState(() {
+                              _isConfirmPasswordVisible =
+                                  !_isConfirmPasswordVisible;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        const Center(
+                          child: Text(
+                            'By continuing, you agree to',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF9E9E9E),
+                            ),
                           ),
                         ),
-                      ),
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                // TODO: Show terms of use
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  // TODO: Show terms of use
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 0),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Terms of Use',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF9E9E9E),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                              child: const Text(
-                                'Terms of Use',
+                              const Text(
+                                ' and ',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF9E9E9E),
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ),
-                            const Text(
-                              ' and ',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF9E9E9E),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                // TODO: Show privacy policy
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Privacy Policy',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF9E9E9E),
-                                  fontWeight: FontWeight.bold,
+                              TextButton(
+                                onPressed: () {
+                                  // TODO: Show privacy policy
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 0),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Privacy Policy',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF9E9E9E),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
-                            colors: [
-                              Color(0xFF01579B),
-                              Color(0xFF0277BD),
-                              Color(0xFF0288D1),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0D47A1).withValues(alpha: 0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
                         ),
-                        child: ElevatedButton(
-                          onPressed: isLoading ? null : _handleSignUp,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                        const SizedBox(height: 24),
+                        Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Color(0xFF01579B),
+                                Color(0xFF0277BD),
+                                Color(0xFF0288D1),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFF0D47A1,
+                                ).withValues(alpha: 0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Sign Up',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              'Already have an account? ',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF5A6C7D),
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleSignUp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
                               ),
                             ),
-                            TextButton(
-                              onPressed: () {
-                                // Pop all and go to login
-                                Navigator.popUntil(
-                                    context, (route) => route.isFirst);
-                                NavigationHelper.push(
-                                    context, const LoginPage());
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 0),
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Log In',
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Already have an account? ',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Color(0xFF00BCD4),
-                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF5A6C7D),
                                 ),
                               ),
-                            ),
-                          ],
+                              TextButton(
+                                onPressed: () {
+                                  // Pop all and go to login
+                                  Navigator.popUntil(
+                                    context,
+                                    (route) => route.isFirst,
+                                  );
+                                  NavigationHelper.push(
+                                    context,
+                                    const LoginPage(),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(0, 0),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: const Text(
+                                  'Log In',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF00BCD4),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-
-                ) ],
+              ],
             ),
           ),
-          ),
-        );
-        },
+        ),
       ),
     );
   }
@@ -417,9 +398,7 @@ class _SignUpViewState extends State<SignUpView> {
           },
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.grey.withValues(alpha: 0.5),
-            ),
+            hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
             filled: true,
             fillColor: const Color(0xFFF0F2F5),
             border: OutlineInputBorder(
