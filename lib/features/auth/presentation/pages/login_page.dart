@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
+import '../../../../core/services/auth_services.dart';
+import '../../../../core/routes/app_routes.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,15 +17,26 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isPasswordVisible = false;
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Handle login logic
+  void _handleLogin() async {
+     if (_formKey.currentState!.validate()) {
+    try {
+    User  ? user = await _authService.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (user != null) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful!')),
+        SnackBar(content: Text(e.toString())),
       );
     }
+}
   }
 
   @override
@@ -226,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: _handleLogin,
+                          onPressed: _handleLogin , // <-- binding here 
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,

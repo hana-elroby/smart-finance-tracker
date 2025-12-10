@@ -15,6 +15,7 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Set auth persistence (web only)
   // Initialize Sync Service
   try {
     final syncService = SyncService();

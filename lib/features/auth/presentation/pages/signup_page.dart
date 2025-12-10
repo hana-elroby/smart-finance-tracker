@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import 'login_page.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/auth_services.dart';
+
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -11,24 +15,33 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
   final _dateOfBirthController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  void _handleSignUp() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: Handle sign up logic
+void _handleSignUp() async {
+  if (_formKey.currentState!.validate()) {
+    try {
+   User? user = await _authService.signupWithEmail(
+    _emailController.text.trim(),
+    _passwordController.text.trim(),
+   );
+      // Navigate to home page after successful registration
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign up successful!')),
+        SnackBar(content: Text(e.toString())),
       );
     }
   }
+}
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -253,7 +266,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           ],
                         ),
                         child: ElevatedButton(
-                          onPressed: _handleSignUp,
+                          onPressed:_handleSignUp, // <-- binding here 
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
