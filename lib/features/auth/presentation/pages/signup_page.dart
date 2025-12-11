@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
 import 'login_page.dart';
+import 'otp_verification_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -32,7 +33,17 @@ class _SignUpPageState extends State<SignUpPage> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        
+        // بعد Sign Up، نروح لصفحة OTP
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OTPVerificationPage(
+              email: _emailController.text.trim(),
+              fromPage: 'signup',
+            ),
+          ),
+        );
       }
     }
   }

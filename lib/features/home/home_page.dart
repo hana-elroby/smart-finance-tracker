@@ -73,20 +73,22 @@ class _HomePageContentState extends State<_HomePageContent> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              HomeHeader(userName: userName),
-              const SizedBox(height: 16),
-              const HomeProgressBar(),
-              const SizedBox(height: 24),
-              HomeCategories(onCategoryTap: _showCategoryDialog),
-              const SizedBox(height: 24),
-              const Expanded(child: HomeSpendingChart()),
-              const SizedBox(height: 8),
-            ],
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HomeHeader(userName: userName),
+                const SizedBox(height: 16),
+                const HomeProgressBar(),
+                const SizedBox(height: 24),
+                HomeCategories(onCategoryTap: _showCategoryDialog),
+                const SizedBox(height: 24),
+                const SizedBox(height: 400, child: HomeSpendingChart()),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),

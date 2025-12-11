@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import 'signup_page.dart';
 import 'new_password_page.dart';
+import 'otp_verification_page.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -22,8 +23,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   void _handleNextStep() {
     if (_formKey.currentState!.validate()) {
-      // Navigate to new password page
-      NavigationHelper.push(context, const NewPasswordPage());
+      // Navigate to OTP verification page
+      NavigationHelper.push(
+        context,
+        OTPVerificationPage(
+          email: _emailController.text.trim(),
+          fromPage: 'forgot_password',
+        ),
+      );
     }
   }
 
