@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
-class HomeBottomNav extends StatelessWidget {
+class SimpleBottomNav extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
 
-  const HomeBottomNav({
+  const SimpleBottomNav({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
@@ -26,13 +26,12 @@ class HomeBottomNav extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(Icons.home_rounded, 0, false),
-              _buildNavItem(Icons.notifications_outlined, 1, false),
-              const SizedBox(width: 70),
-              _buildNavItem(Icons.analytics_outlined, 2, false),
-              _buildNavItem(Icons.person_outline, 3, false),
+              _buildNavItem(Icons.home_rounded, 0,),
+              _buildNavItem(Icons.notifications_outlined, 1),
+              _buildNavItem(Icons.analytics_outlined, 2),
+              _buildNavItem(Icons.person_outline, 3),
             ],
           ),
         ),
@@ -40,22 +39,34 @@ class HomeBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, int index, bool isHome) {
+  Widget _buildNavItem(IconData icon, int index) {
     final isSelected = selectedIndex == index;
+    
+    // Debug: Force color for testing
+    Color iconColor = Colors.grey;
+    Color bgColor = Colors.transparent;
+    
+    if (isSelected) {
+      iconColor = Colors.white;
+      bgColor = AppColors.primary;
+    }
 
     return GestureDetector(
-      onTap: () => onItemSelected(index),
+      onTap: () {
+        print('Tapped index: $index, selectedIndex: $selectedIndex');
+        onItemSelected(index);
+      },
       child: Container(
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
+          color: bgColor,
           shape: BoxShape.circle,
         ),
         child: Center(
           child: Icon(
             icon, 
-            color: isSelected ? Colors.white : Colors.grey, 
+            color: iconColor, 
             size: 28,
           ),
         ),

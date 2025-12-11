@@ -1,97 +1,188 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../home/widgets/simple_bottom_nav.dart';
+import '../categories/categories_page.dart';
+import '../profile/profile_page.dart';
 
 /// Analysis Page - عرض تحليل المصروفات
 /// يعرض إجمالي المصروفات والتحليل الأسبوعي والتقسيم حسب الفئات
-class AnalysisPage extends StatelessWidget {
+class AnalysisPage extends StatefulWidget {
   const AnalysisPage({super.key});
+
+  @override
+  State<AnalysisPage> createState() => _AnalysisPageState();
+}
+
+class _AnalysisPageState extends State<AnalysisPage> {
+  DateTime? _fromDate;
+  DateTime? _toDate;
+  int _selectedIndex = 2; // Analysis page is index 2
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Spending Analysis',
+          'Analysis',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0814F9), Color(0xFFF509D6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              padding: const EdgeInsets.all(6),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.notifications,
+                  color: Color(0xFFFFC107),
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Total Summary Card
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: AppColors.notificationGradient,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Total Spending',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+            // Date Range Selector
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _selectFromDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: Color(0xFF00BCD4), size: 20),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'From',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                _fromDate != null 
+                                    ? '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'
+                                    : 'Select Date',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '2,667 EGP',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _selectToDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, color: Color(0xFF00BCD4), size: 20),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'To',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              Text(
+                                _toDate != null 
+                                    ? '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'
+                                    : 'Select Date',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      _buildSummaryItem('This Week', '690 EGP'),
-                      const SizedBox(width: 24),
-                      _buildSummaryItem('This Month', '2,667 EGP'),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+            
             const SizedBox(height: 24),
-            // Weekly Chart
-            const Text(
-              'Weekly Overview',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
+            
+            // Chart Container
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.cardBackground,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
@@ -104,119 +195,236 @@ class AnalysisPage extends StatelessWidget {
               child: Column(
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      _buildWeekBar('Mon', 120, 200),
-                      _buildWeekBar('Tue', 180, 200),
-                      _buildWeekBar('Wed', 150, 200),
-                      _buildWeekBar('Thu', 190, 200),
-                      _buildWeekBar('Fri', 160, 200),
-                      _buildWeekBar('Sat', 140, 200),
-                      _buildWeekBar('Sun', 110, 200),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00BCD4),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.refresh, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00BCD4),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.calendar_view_week, color: Colors.white, size: 20),
+                      ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 200,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildDualBar('Mon', 80, 120),
+                        _buildDualBar('Tue', 60, 100),
+                        _buildDualBar('Wed', 140, 90),
+                        _buildDualBar('Thu', 50, 110),
+                        _buildDualBar('Fri', 160, 130),
+                        _buildDualBar('Sat', 40, 30),
+                        _buildDualBar('Sun', 70, 120),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
-            // Category Breakdown
-            const Text(
-              'By Category',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildCategoryBreakdown(
-              'Shopping',
-              '670 EGP',
-              0.25,
-              AppColors.shoppingGradient.colors.first,
-            ),
-            _buildCategoryBreakdown(
-              'Bills',
-              '580 EGP',
-              0.22,
-              AppColors.billsGradient.colors.first,
-            ),
-            _buildCategoryBreakdown(
-              'Activities',
-              '450 EGP',
-              0.17,
-              AppColors.activitiesGradient.colors.first,
-            ),
-            _buildCategoryBreakdown(
-              'Food',
-              '397 EGP',
-              0.15,
-              AppColors.foodGradient.colors.first,
-            ),
-            _buildCategoryBreakdown(
-              'Health',
-              '220 EGP',
-              0.08,
-              AppColors.healthGradient.colors.first,
-            ),
-            _buildCategoryBreakdown(
-              'Education',
-              '200 EGP',
-              0.08,
-              AppColors.educationGradient.colors.first,
-            ),
-            _buildCategoryBreakdown(
-              'Entertainment',
-              '150 EGP',
-              0.05,
-              AppColors.entertainmentGradient.colors.first,
+            
+            // Summary Cards
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today's Spending",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'EGP 1,250',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Highest Category',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Shopping',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
+      bottomNavigationBar: SimpleBottomNav(
+        selectedIndex: _selectedIndex,
+        onItemSelected: _onNavItemTapped,
+      ),
     );
   }
 
-  Widget _buildSummaryItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+  void _onNavItemTapped(int index) {
+    switch (index) {
+      case 0:
+        // Go to Home
+        Navigator.pop(context);
+        break;
+      case 1:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notifications - Coming soon!'),
+            backgroundColor: AppColors.primary,
           ),
-        ),
-      ],
-    );
+        );
+        break;
+      case 2:
+        // Already on Analysis - do nothing
+        break;
+      case 3:
+        // Go to Profile
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+        break;
+    }
   }
 
-  Widget _buildWeekBar(String day, double height, double maxHeight) {
+
+
+
+
+  void _selectFromDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    
+    if (picked != null) {
+      setState(() {
+        _fromDate = picked;
+      });
+    }
+  }
+
+  void _selectToDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    
+    if (picked != null) {
+      setState(() {
+        _toDate = picked;
+      });
+    }
+  }
+
+  Widget _buildDualBar(String day, double greenHeight, double blueHeight) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 35,
-          height: height,
-          decoration: BoxDecoration(
-            color: height > 150 ? AppColors.chartBar2 : AppColors.chartBar1,
-            borderRadius: BorderRadius.circular(8),
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Green Bar
+            Container(
+              width: 12,
+              height: greenHeight,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4ADE80),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            const SizedBox(width: 4),
+            // Blue Bar
+            Container(
+              width: 12,
+              height: blueHeight,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B82F6),
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         Text(
           day,
           style: const TextStyle(
             fontSize: 10,
-            color: AppColors.textSecondary,
+            color: Colors.grey,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -224,62 +432,5 @@ class AnalysisPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryBreakdown(
-    String category,
-    String amount,
-    double percentage,
-    Color color,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                category,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Text(
-                amount,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: percentage,
-              minHeight: 8,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

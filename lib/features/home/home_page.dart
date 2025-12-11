@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../categories/categories_page.dart';
 import '../analysis/analysis_page.dart';
+import '../profile/profile_page.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_progress_bar.dart';
 import 'widgets/home_categories.dart';
@@ -38,13 +39,26 @@ class _HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<_HomePageContent> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // Home page is index 0
   String userName = "User"; // Default value, will be fetched from Firebase
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset to home selection when returning to this page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _selectedIndex = 0;
+        });
+      }
+    });
   }
 
   // TODO: Fetch user data from Firebase
@@ -103,27 +117,20 @@ class _HomePageContentState extends State<_HomePageContent> {
           Positioned(
             bottom: 40,
             left: MediaQuery.of(context).size.width / 2 - 45,
-            child: GestureDetector(
-              onTap: _showQRScannerOptions,
-              child: Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.qr_code_scanner,
-                  color: Colors.black,
-                  size: 45,
-                ),
+            child: ElevatedButton(
+              onPressed: _showQRScannerOptions,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(20),
+                elevation: 8,
+                shadowColor: Colors.black.withOpacity(0.3),
+              ),
+              child: const Icon(
+                Icons.qr_code_scanner,
+                color: Colors.black,
+                size: 45,
               ),
             ),
           ),
@@ -139,27 +146,40 @@ class _HomePageContentState extends State<_HomePageContent> {
 
     switch (index) {
       case 0:
-        // Already on Home
+        // Already on Home - just update the selection
+        setState(() {
+          _selectedIndex = 0;
+        });
         break;
       case 1:
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CategoriesPage()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notifications - Coming soon!'),
+            backgroundColor: AppColors.primary,
+          ),
         );
         break;
       case 2:
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const AnalysisPage()),
-        );
+        ).then((_) {
+          // Reset to home selection when returning
+          setState(() {
+            _selectedIndex = 0;
+          });
+        });
         break;
       case 3:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile page - Coming soon!'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        ).then((_) {
+          // Reset to home selection when returning
+          setState(() {
+            _selectedIndex = 0;
+          });
+        });
         break;
     }
   }
@@ -232,6 +252,8 @@ class _HomePageContentState extends State<_HomePageContent> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
       builder: (context) => const QRScannerBottomSheet(),
     );
   }
