@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/models/expense.dart';
+import '../bloc/expense_bloc.dart';
+import '../bloc/expense_event.dart';
 import 'success_dialog.dart';
 
 class VoiceRecordingDialog extends StatefulWidget {
@@ -103,6 +107,19 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                 onTap: !hasRecorded
                     ? null
                     : () {
+                        // TODO: In real implementation, parse voice input for amount
+                        // For now, using dummy amount of 100 EGP
+                        final expense = Expense(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          amount: 100.0, // TODO: Get from voice recognition
+                          category: widget.category,
+                          title: 'Voice Entry',
+                          date: DateTime.now(),
+                          notes: 'Added via voice recording',
+                        );
+
+                        context.read<ExpenseBloc>().add(AddExpense(expense));
+
                         Navigator.pop(context);
                         Future.delayed(const Duration(milliseconds: 200), () {
                           showDialog(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../categories/categories_page.dart';
 import '../analysis/analysis_page.dart';
@@ -13,17 +14,30 @@ import 'dialogs/voice_recording_dialog.dart';
 import 'dialogs/success_dialog.dart';
 import 'dialogs/qr_scanner_bottom_sheet.dart';
 import 'dialogs/category_analysis_dialog.dart';
+import 'bloc/expense_bloc.dart';
 
 /// Home Page - الصفحة الرئيسية
 /// تحتوي على: Header, Progress Bar, Categories, Spending Chart
-class HomePage extends StatefulWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ExpenseBloc(),
+      child: const _HomePageContent(),
+    );
+  }
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageContent extends StatefulWidget {
+  const _HomePageContent();
+
+  @override
+  State<_HomePageContent> createState() => _HomePageContentState();
+}
+
+class _HomePageContentState extends State<_HomePageContent> {
   int _selectedIndex = 0;
   String userName = "User"; // Default value, will be fetched from Firebase
 
@@ -171,13 +185,17 @@ class _HomePageState extends State<HomePage> {
     IconData icon,
     LinearGradient gradient,
   ) {
+    final expenseBloc = context.read<ExpenseBloc>();
     showDialog(
       context: context,
-      builder: (context) => ManualEntryDialog(
-        category: category,
-        icon: icon,
-        gradient: gradient,
-        onSuccess: _showSuccessMessage,
+      builder: (dialogContext) => BlocProvider.value(
+        value: expenseBloc,
+        child: ManualEntryDialog(
+          category: category,
+          icon: icon,
+          gradient: gradient,
+          onSuccess: _showSuccessMessage,
+        ),
       ),
     );
   }
@@ -187,14 +205,18 @@ class _HomePageState extends State<HomePage> {
     IconData icon,
     LinearGradient gradient,
   ) {
+    final expenseBloc = context.read<ExpenseBloc>();
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => VoiceRecordingDialog(
-        category: category,
-        icon: icon,
-        gradient: gradient,
-        onSuccess: _showSuccessMessage,
+      builder: (dialogContext) => BlocProvider.value(
+        value: expenseBloc,
+        child: VoiceRecordingDialog(
+          category: category,
+          icon: icon,
+          gradient: gradient,
+          onSuccess: _showSuccessMessage,
+        ),
       ),
     );
   }

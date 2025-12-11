@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../categories/categories_page.dart';
+import '../bloc/expense_bloc.dart';
+import '../bloc/expense_state.dart';
 
 class HomeCategories extends StatelessWidget {
   final Function(String category, IconData icon, LinearGradient gradient)
@@ -52,35 +55,54 @@ class HomeCategories extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         // 3 Category Cards in a Row
-        Row(
-          children: [
-            Expanded(
-              child: _buildCategoryCard(
-                'Shopping',
-                Icons.shopping_bag,
-                '670 EGP',
-                AppColors.shoppingGradient,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildCategoryCard(
-                'Bills',
-                Icons.receipt_long,
-                '580 EGP',
-                AppColors.billsGradient,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildCategoryCard(
-                'Health',
-                Icons.favorite,
-                '220 EGP',
-                AppColors.healthGradient,
-              ),
-            ),
-          ],
+        BlocBuilder<ExpenseBloc, ExpenseState>(
+          builder: (context, state) {
+            // Default amounts
+            double shoppingTotal = 0;
+            double billsTotal = 0;
+            double healthTotal = 0;
+
+            // Get totals from state if available
+            if (state is ExpenseLoaded) {
+              shoppingTotal = state.getCategoryTotal('Shopping');
+              billsTotal = state.getCategoryTotal('Bills');
+              healthTotal = state.getCategoryTotal('Health');
+              print(
+                '📊 Totals - Shopping: $shoppingTotal, Bills: $billsTotal, Health: $healthTotal',
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildCategoryCard(
+                    'Shopping',
+                    Icons.shopping_bag,
+                    '${shoppingTotal.toStringAsFixed(0)} EGP',
+                    AppColors.shoppingGradient,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCategoryCard(
+                    'Bills',
+                    Icons.receipt_long,
+                    '${billsTotal.toStringAsFixed(0)} EGP',
+                    AppColors.billsGradient,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildCategoryCard(
+                    'Health',
+                    Icons.favorite,
+                    '${healthTotal.toStringAsFixed(0)} EGP',
+                    AppColors.healthGradient,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ],
     );

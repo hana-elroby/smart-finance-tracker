@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/models/expense.dart';
+import '../bloc/expense_bloc.dart';
+import '../bloc/expense_event.dart';
 
 class ManualEntryDialog extends StatefulWidget {
   final String category;
@@ -22,7 +26,7 @@ class ManualEntryDialog extends StatefulWidget {
 class _ManualEntryDialogState extends State<ManualEntryDialog> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
-  String selectedDate = DateTime.now().toString().split(' ')[0];
+  DateTime selectedDate = DateTime.now();
 
   @override
   void dispose() {
@@ -85,7 +89,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                   onTap: () async {
                     final DateTime? picked = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now(),
+                      initialDate: selectedDate,
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2030),
                       builder: (context, child) {
@@ -94,8 +98,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                     );
                     if (picked != null) {
                       setState(() {
-                        selectedDate =
-                            '${picked.day}/${picked.month}/${picked.year}';
+                        selectedDate = picked;
                       });
                     }
                   },
@@ -109,7 +112,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      selectedDate,
+                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
                       style: const TextStyle(
                         fontSize: 16,
                         color: AppColors.textSecondary,
@@ -240,6 +243,45 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                 Center(
                   child: ElevatedButton(
                     onPressed: () {
+                      print('🔘 Save button pressed!');
+                      print('💵 Amount text: "${amountController.text}"');
+
+                      // Validate inputs
+                      final amount = double.tryParse(amountController.text);
+                      print('💰 Parsed amount: $amount');
+
+                      if (amount == null || amount <= 0) {
+                        print('❌ Validation failed!');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a valid amount'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                        return;
+                      }
+
+                      print('✅ Validation passed!');
+
+                      final title = titleController.text.isEmpty
+                          ? 'General Expense'
+                          : titleController.text;
+
+                      // Create expense and add to BLoC
+                      final expense = Expense(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        amount: amount,
+                        category: widget.category,
+                        title: title,
+                        date: selectedDate,
+                      );
+
+                      print(
+                        '💰 Adding expense: ${expense.category} - ${expense.amount} EGP',
+                      );
+                      context.read<ExpenseBloc>().add(AddExpense(expense));
+                      print('✅ Expense added to BLoC');
+
                       Navigator.pop(context);
                       widget.onSuccess();
                     },

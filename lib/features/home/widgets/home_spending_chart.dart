@@ -32,7 +32,7 @@ class HomeSpendingChart extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // Bar Chart - Vertical bars with labels - centered
+          // Bar Chart - Vertical bars with labels - centered (Design only)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -48,7 +48,7 @@ class HomeSpendingChart extends StatelessWidget {
                       children: [
                         _buildLabel('Shopping'),
                         const SizedBox(height: 24),
-                        _buildLabel('Activites'),
+                        _buildLabel('Activities'),
                         const SizedBox(height: 24),
                         _buildLabel('Food'),
                         const SizedBox(height: 24),
@@ -57,7 +57,7 @@ class HomeSpendingChart extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 30),
-                  // Vertical Bars on the right - centered
+                  // Vertical Bars on the right - centered (Fixed heights for design)
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
