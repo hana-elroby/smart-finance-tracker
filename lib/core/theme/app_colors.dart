@@ -15,7 +15,7 @@ class AppColors {
   static const Color textLight = Color(0xFFFFFFFF);
 
   // Success & Error
-  static const Color success = Color(0xFF45F36B);
+  static const Color success = Color(0xFF2E7D32);
   static const Color error = Color(0xFFF25858);
 
   // Other colors
