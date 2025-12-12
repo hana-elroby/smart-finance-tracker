@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,6 +11,23 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+    @override
+  void initState() {
+    super.initState();
+    _getIdToken();    // CALL THE FUNCTION HERE
+  }
+
+  Future<void> _getIdToken() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      final idToken = await user.getIdToken();
+      print("Firebase ID Token: $idToken");
+
+      // TODO: send token to backend here
+      // ApiService.verifyUser(idToken);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

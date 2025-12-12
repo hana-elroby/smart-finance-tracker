@@ -5,6 +5,7 @@ import 'signup_page.dart';
 import 'forgot_password_page.dart';
 import '../../../../core/services/auth_services.dart';
 import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,10 +19,12 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  final apiService = ApiService(baseUrl: "https://your-backend.com");
   bool _isPasswordVisible = false;
+  
 
   void _handleLogin() async {
-     if (_formKey.currentState!.validate()) {
+       if (_formKey.currentState!.validate()) {
     try {
     User  ? user = await _authService.signInWithEmail(
         _emailController.text.trim(),
@@ -38,6 +41,8 @@ class _LoginPageState extends State<LoginPage> {
     }
 }
   }
+
+
 
   @override
   void dispose() {
@@ -295,9 +300,9 @@ class _LoginPageState extends State<LoginPage> {
                                   color: Colors.white,
                                   size: 32,
                                 ),
-                                onPressed: () {
-                                  // TODO: Handle Facebook login
-                                },
+                                onPressed: ()async {
+                            
+                              },
                               ),
                             ),
                             const SizedBox(width: 20),
@@ -325,8 +330,11 @@ class _LoginPageState extends State<LoginPage> {
                                   width: 24,
                                   height: 24,
                                 ),
-                                onPressed: () {
-                                  // TODO: Handle Google login
+                                onPressed: ()async {
+                                    final userCredential = await AuthService().signInWithGoogle();
+                                   if (userCredential != null) {
+                                   print('Signed in as: ${userCredential.displayName}');
+                                  }
                                 },
                               ),
                             ),

@@ -8,12 +8,14 @@ import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/auth_page.dart';
 import 'features/home/home_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Set auth persistence (web only)
   // Initialize Sync Service
