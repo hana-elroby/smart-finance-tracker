@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/widgets/simple_bottom_nav.dart';
-import '../categories/categories_page.dart';
 import '../profile/profile_page.dart';
+import '../home/bloc/expense_bloc.dart';
+import '../home/bloc/expense_state.dart';
 
 /// Analysis Page - عرض تحليل المصروفات
 /// يعرض إجمالي المصروفات والتحليل الأسبوعي والتقسيم حسب الفئات
@@ -21,7 +23,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFECEDF1),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -94,7 +96,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Color(0xFF00BCD4), size: 20),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Color(0xFF00BCD4),
+                            size: 20,
+                          ),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +114,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                                 ),
                               ),
                               Text(
-                                _fromDate != null 
+                                _fromDate != null
                                     ? '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'
                                     : 'Select Date',
                                 style: const TextStyle(
@@ -143,7 +149,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, color: Color(0xFF00BCD4), size: 20),
+                          const Icon(
+                            Icons.calendar_today,
+                            color: Color(0xFF00BCD4),
+                            size: 20,
+                          ),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,7 +167,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                                 ),
                               ),
                               Text(
-                                _toDate != null 
+                                _toDate != null
                                     ? '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'
                                     : 'Select Date',
                                 style: const TextStyle(
@@ -175,9 +185,9 @@ class _AnalysisPageState extends State<AnalysisPage> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Chart Container
             Container(
               padding: const EdgeInsets.all(20),
@@ -195,49 +205,200 @@ class _AnalysisPageState extends State<AnalysisPage> {
               child: Column(
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00BCD4),
-                          borderRadius: BorderRadius.circular(8),
+                      const Text(
+                        'Your Spending This Week',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
                         ),
-                        child: const Icon(Icons.refresh, color: Colors.white, size: 20),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00BCD4),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(Icons.calendar_view_week, color: Colors.white, size: 20),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00BCD4),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.refresh,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00BCD4),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_view_week,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 200,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDualBar('Mon', 80, 120),
-                        _buildDualBar('Tue', 60, 100),
-                        _buildDualBar('Wed', 140, 90),
-                        _buildDualBar('Thu', 50, 110),
-                        _buildDualBar('Fri', 160, 130),
-                        _buildDualBar('Sat', 40, 30),
-                        _buildDualBar('Sun', 70, 120),
-                      ],
-                    ),
+                  const SizedBox(height: 16),
+                  BlocBuilder<ExpenseBloc, ExpenseState>(
+                    builder: (context, state) {
+                      // Calculate dynamic weekly data from expenses
+                      Map<String, double> weeklyData = {
+                        'Mon': 0,
+                        'Tue': 0,
+                        'Wed': 0,
+                        'Thu': 0,
+                        'Fri': 0,
+                        'Sat': 0,
+                        'Sun': 0,
+                      };
+
+                      if (state is ExpenseLoaded) {
+                        final now = DateTime.now();
+                        final weekStart = now.subtract(
+                          Duration(days: now.weekday - 1),
+                        );
+
+                        for (var expense in state.expenses) {
+                          final daysDiff = expense.date
+                              .difference(weekStart)
+                              .inDays;
+                          if (daysDiff >= 0 && daysDiff < 7) {
+                            final dayNames = [
+                              'Mon',
+                              'Tue',
+                              'Wed',
+                              'Thu',
+                              'Fri',
+                              'Sat',
+                              'Sun',
+                            ];
+                            if (daysDiff < dayNames.length) {
+                              weeklyData[dayNames[daysDiff]] =
+                                  (weeklyData[dayNames[daysDiff]] ?? 0) +
+                                  expense.amount;
+                            }
+                          }
+                        }
+                      }
+
+                      // Add demo data if no real data exists
+                      if (weeklyData.values.every((v) => v == 0)) {
+                        weeklyData = {
+                          'Mon': 1200,
+                          'Tue': 800,
+                          'Wed': 2500,
+                          'Thu': 600,
+                          'Fri': 3200,
+                          'Sat': 400,
+                          'Sun': 1800,
+                        };
+                      }
+
+                      // Find max value for scaling
+                      final maxValue = weeklyData.values.fold<double>(
+                        0,
+                        (max, value) => value > max ? value : max,
+                      );
+                      final chartMax = maxValue > 0
+                          ? (maxValue * 1.2).ceilToDouble()
+                          : 1000;
+
+                      // Calculate grid intervals
+                      final interval = (chartMax / 4).ceilToDouble();
+                      final gridValues = List.generate(
+                        5,
+                        (i) => interval * (4 - i),
+                      );
+
+                      return SizedBox(
+                        height: 280,
+                        child: Stack(
+                          children: [
+                            // Grid lines and labels
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 0,
+                              bottom: 30,
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: gridValues.map((value) {
+                                  final isLast = value == gridValues.last;
+                                  return _buildGridLine(
+                                    value >= 1000
+                                        ? '${(value / 1000).toStringAsFixed(0)}k'
+                                        : value.toInt().toString(),
+                                    isLast,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            // Bars
+                            Positioned(
+                              left: 40,
+                              right: 0,
+                              top: 0,
+                              bottom: 30,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: weeklyData.entries.map((entry) {
+                                  final greenHeight = chartMax > 0
+                                      ? (entry.value / chartMax * 220)
+                                            .toDouble()
+                                      : 5.0;
+                                  final blueHeight = chartMax > 0
+                                      ? (entry.value * 0.7 / chartMax * 220)
+                                            .toDouble()
+                                      : 3.0;
+                                  return _buildDualBarOnly(
+                                    greenHeight,
+                                    blueHeight,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            // Day labels on X-axis
+                            Positioned(
+                              left: 40,
+                              right: 0,
+                              bottom: 0,
+                              height: 25,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: weeklyData.keys.map((day) {
+                                  return Text(
+                                    day,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            
+            const SizedBox(height: 40),
+
             // Summary Cards
             Row(
               children: [
@@ -255,27 +416,46 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         ),
                       ],
                     ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Today's Spending",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'EGP 1,250',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    child: BlocBuilder<ExpenseBloc, ExpenseState>(
+                      builder: (context, state) {
+                        double todayTotal = 0;
+                        if (state is ExpenseLoaded) {
+                          // Calculate today's total
+                          final today = DateTime.now();
+                          todayTotal = state.expenses
+                              .where((expense) {
+                                return expense.date.year == today.year &&
+                                    expense.date.month == today.month &&
+                                    expense.date.day == today.day;
+                              })
+                              .fold(
+                                0.0,
+                                (sum, expense) => sum + expense.amount,
+                              );
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Today's Spending",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'EGP ${todayTotal.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -294,27 +474,49 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         ),
                       ],
                     ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Highest Category',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Shopping',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    child: BlocBuilder<ExpenseBloc, ExpenseState>(
+                      builder: (context, state) {
+                        String highestCategory = 'N/A';
+                        if (state is ExpenseLoaded) {
+                          // Calculate totals for each category
+                          final categories = [
+                            'Shopping',
+                            'Bills',
+                            'Health',
+                            'Food & Drink',
+                          ];
+                          double maxTotal = 0;
+                          for (final category in categories) {
+                            final total = state.getCategoryTotal(category);
+                            if (total > maxTotal) {
+                              maxTotal = total;
+                              highestCategory = category;
+                            }
+                          }
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Highest Category',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              highestCategory,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -339,7 +541,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       case 1:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Notifications - Coming soon!'),
+            content: Text('Offers - Coming soon!'),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -349,17 +551,19 @@ class _AnalysisPageState extends State<AnalysisPage> {
         break;
       case 3:
         // Go to Profile
+        final expenseBloc = context.read<ExpenseBloc>();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
+          MaterialPageRoute(
+            builder: (context) => BlocProvider.value(
+              value: expenseBloc,
+              child: const ProfilePage(),
+            ),
+          ),
         );
         break;
     }
   }
-
-
-
-
 
   void _selectFromDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -368,7 +572,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    
+
     if (picked != null) {
       setState(() {
         _fromDate = picked;
@@ -383,7 +587,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
     );
-    
+
     if (picked != null) {
       setState(() {
         _toDate = picked;
@@ -391,46 +595,122 @@ class _AnalysisPageState extends State<AnalysisPage> {
     }
   }
 
-  Widget _buildDualBar(String day, double greenHeight, double blueHeight) {
-    return Column(
+  Widget _buildDualBarOnly(double greenHeight, double blueHeight) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // Green Bar
-            Container(
-              width: 12,
-              height: greenHeight,
-              decoration: BoxDecoration(
-                color: const Color(0xFF4ADE80),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            const SizedBox(width: 4),
-            // Blue Bar
-            Container(
-              width: 12,
-              height: blueHeight,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ],
+        // Green Bar
+        Container(
+          width: 14,
+          height: greenHeight,
+          decoration: BoxDecoration(
+            color: const Color(0xFF4ADE80),
+            borderRadius: BorderRadius.circular(7),
+          ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          day,
-          style: const TextStyle(
-            fontSize: 10,
-            color: Colors.grey,
-            fontWeight: FontWeight.w500,
+        const SizedBox(width: 4),
+        // Blue Bar
+        Container(
+          width: 14,
+          height: blueHeight,
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6),
+            borderRadius: BorderRadius.circular(7),
           ),
         ),
       ],
     );
   }
 
+  Widget _buildBarOnly(double barHeight) {
+    return Container(
+      width: 20,
+      height: barHeight > 0 ? barHeight : 5,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4ADE80), Color(0xFF3B82F6)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
 
+  Widget _buildBar(String day, double barHeight) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 20,
+          height: barHeight > 0 ? barHeight : 5,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4ADE80), Color(0xFF3B82F6)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          day,
+          style: const TextStyle(
+            fontSize: 11,
+            color: Colors.grey,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGridLine(String label, bool isDarkLine) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 35,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[400],
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+        Expanded(
+          child: isDarkLine
+              ? Container(height: 2, color: Colors.grey[800])
+              : CustomPaint(
+                  painter: DashedLinePainter(),
+                  child: Container(height: 1),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class DashedLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey[300]!
+      ..strokeWidth = 1;
+
+    const dashWidth = 5.0;
+    const dashSpace = 3.0;
+    double startX = 0;
+
+    while (startX < size.width) {
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

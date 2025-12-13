@@ -6,7 +6,7 @@ class AppColors {
   // الألوان الأساسية - Primary colors
   static const Color primary = Color(0xFF003566);
   static const Color secondary = Color(0xFF00CCFF);
-  static const Color background = Color(0xFFFAFAFA);
+  static const Color background = Color(0xFFF5F7FA);
   static const Color cardBackground = Color(0xFFFFFFFF);
 
   // Text colors

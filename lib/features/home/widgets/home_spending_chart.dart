@@ -10,7 +10,7 @@ class HomeSpendingChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFECEBEB),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -130,7 +130,7 @@ class HomeSpendingChart extends StatelessWidget {
   Widget _buildVerticalBar(double heightFactor, Color color) {
     return Container(
       width: 28,
-      height: 150 * heightFactor,
+      height: 200 * heightFactor,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(8),

@@ -14,7 +14,6 @@ class SimpleBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
       decoration: BoxDecoration(
         color: const Color(0xFFE8E9F3),
         borderRadius: const BorderRadius.only(
@@ -23,15 +22,16 @@ class SimpleBottomNav extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+        child: Container(
+          height: 70,
+          padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(Icons.home_rounded, 0,),
-              _buildNavItem(Icons.notifications_outlined, 1),
-              _buildNavItem(Icons.analytics_outlined, 2),
-              _buildNavItem(Icons.person_outline, 3),
+              _buildNavItem(Icons.home_rounded, 'Home', 0),
+              _buildNavItem(Icons.local_offer_outlined, 'Offers', 1),
+              _buildNavItem(Icons.analytics_outlined, 'Analysis', 2),
+              _buildNavItem(Icons.person_outline, 'Account', 3),
             ],
           ),
         ),
@@ -39,36 +39,43 @@ class SimpleBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, int index) {
+  Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = selectedIndex == index;
-    
-    // Debug: Force color for testing
-    Color iconColor = Colors.grey;
-    Color bgColor = Colors.transparent;
-    
-    if (isSelected) {
-      iconColor = Colors.white;
-      bgColor = AppColors.primary;
-    }
 
     return GestureDetector(
-      onTap: () {
-        print('Tapped index: $index, selectedIndex: $selectedIndex');
-        onItemSelected(index);
-      },
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: bgColor,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Icon(
-            icon, 
-            color: iconColor, 
-            size: 28,
-          ),
+      onTap: () => onItemSelected(index),
+      child: SizedBox(
+        width: 65,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.grey,
+                  size: 26,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : Colors.grey,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
       ),
     );

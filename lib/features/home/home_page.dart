@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
-import '../categories/categories_page.dart';
 import '../analysis/analysis_page.dart';
 import '../profile/profile_page.dart';
 import 'widgets/home_header.dart';
@@ -41,10 +40,12 @@ class _HomePageContent extends StatefulWidget {
 class _HomePageContentState extends State<_HomePageContent> {
   int _selectedIndex = 0; // Home page is index 0
   String userName = "User"; // Default value, will be fetched from Firebase
+  late ExpenseBloc _expenseBloc;
 
   @override
   void initState() {
     super.initState();
+    _expenseBloc = context.read<ExpenseBloc>();
     _loadUserData();
   }
 
@@ -97,7 +98,10 @@ class _HomePageContentState extends State<_HomePageContent> {
                 const SizedBox(height: 16),
                 const HomeProgressBar(),
                 const SizedBox(height: 24),
-                HomeCategories(onCategoryTap: _showCategoryDialog),
+                HomeCategories(
+                  onCategoryTap: _showCategoryDialog,
+                  expenseBloc: _expenseBloc,
+                ),
                 const SizedBox(height: 24),
                 const SizedBox(height: 400, child: HomeSpendingChart()),
                 const SizedBox(height: 100),
@@ -154,7 +158,7 @@ class _HomePageContentState extends State<_HomePageContent> {
       case 1:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Notifications - Coming soon!'),
+            content: Text('Offers - Coming soon!'),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -162,7 +166,12 @@ class _HomePageContentState extends State<_HomePageContent> {
       case 2:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const AnalysisPage()),
+          MaterialPageRoute(
+            builder: (context) => BlocProvider.value(
+              value: _expenseBloc,
+              child: const AnalysisPage(),
+            ),
+          ),
         ).then((_) {
           // Reset to home selection when returning
           setState(() {
@@ -173,7 +182,12 @@ class _HomePageContentState extends State<_HomePageContent> {
       case 3:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
+          MaterialPageRoute(
+            builder: (context) => BlocProvider.value(
+              value: _expenseBloc,
+              child: const ProfilePage(),
+            ),
+          ),
         ).then((_) {
           // Reset to home selection when returning
           setState(() {
@@ -263,12 +277,16 @@ class _HomePageContentState extends State<_HomePageContent> {
     IconData icon,
     LinearGradient gradient,
   ) {
+    final expenseBloc = context.read<ExpenseBloc>();
     showDialog(
       context: context,
-      builder: (context) => CategoryAnalysisDialog(
-        category: category,
-        icon: icon,
-        gradient: gradient,
+      builder: (dialogContext) => BlocProvider.value(
+        value: expenseBloc,
+        child: CategoryAnalysisDialog(
+          category: category,
+          icon: icon,
+          gradient: gradient,
+        ),
       ),
     );
   }

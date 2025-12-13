@@ -9,6 +9,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     on<DeleteExpense>(_onDeleteExpense);
     on<UpdateExpense>(_onUpdateExpense);
     on<LoadExpenses>(_onLoadExpenses);
+    on<ClearAllExpenses>(_onClearAllExpenses);
   }
 
   void _onAddExpense(AddExpense event, Emitter<ExpenseState> emit) {
@@ -61,5 +62,16 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
     } catch (e) {
       emit(ExpenseError(e.toString()));
     }
+  }
+
+  void _onClearAllExpenses(ClearAllExpenses event, Emitter<ExpenseState> emit) {
+    emit(const ExpenseLoaded([]));
+    // TODO: Clear from Firebase
+    // await _firebaseRepository.clearAllExpenses();
+  }
+
+  // Helper method to call from UI
+  void clearAllExpenses() {
+    add(ClearAllExpenses());
   }
 }

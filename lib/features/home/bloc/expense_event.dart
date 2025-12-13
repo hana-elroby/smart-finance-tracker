@@ -42,3 +42,8 @@ class UpdateExpense extends ExpenseEvent {
   @override
   List<Object?> get props => [expense];
 }
+
+// Clear all expenses
+class ClearAllExpenses extends ExpenseEvent {
+  const ClearAllExpenses();
+}

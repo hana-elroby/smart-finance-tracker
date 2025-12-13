@@ -14,7 +14,6 @@ class HomeBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 80,
       decoration: BoxDecoration(
         color: const Color(0xFFE8E9F3),
         borderRadius: const BorderRadius.only(
@@ -23,16 +22,17 @@ class HomeBottomNav extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+        child: Container(
+          height: 70,
+          padding: const EdgeInsets.symmetric(horizontal: 15.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(Icons.home_rounded, 0, false),
-              _buildNavItem(Icons.notifications_outlined, 1, false),
-              const SizedBox(width: 70),
-              _buildNavItem(Icons.analytics_outlined, 2, false),
-              _buildNavItem(Icons.person_outline, 3, false),
+              _buildNavItem(Icons.home_rounded, 'Home', 0),
+              _buildNavItem(Icons.local_offer_outlined, 'Offers', 1),
+              const SizedBox(width: 60),
+              _buildNavItem(Icons.analytics_outlined, 'Analysis', 2),
+              _buildNavItem(Icons.person_outline, 'Account', 3),
             ],
           ),
         ),
@@ -40,24 +40,44 @@ class HomeBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, int index, bool isHome) {
+  Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = selectedIndex == index;
 
     return GestureDetector(
       onTap: () => onItemSelected(index),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Icon(
-            icon, 
-            color: isSelected ? Colors.white : Colors.grey, 
-            size: 28,
-          ),
+      child: SizedBox(
+        width: 65,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: isSelected ? Colors.white : Colors.grey,
+                  size: 26,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : Colors.grey,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

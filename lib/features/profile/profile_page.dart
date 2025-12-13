@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/widgets/simple_bottom_nav.dart';
 import '../analysis/analysis_page.dart';
+import '../home/bloc/expense_bloc.dart';
 
 /// Profile Page - صفحة الملف الشخصي
 class ProfilePage extends StatefulWidget {
@@ -99,9 +101,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.grey.shade600,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // User Name
                   const Text(
                     'Bassant Yasser',
@@ -111,9 +113,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.black,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Menu Items
                   _buildMenuItem(
                     icon: Icons.person_outline,
@@ -127,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-                  
+
                   _buildMenuItem(
                     icon: Icons.security,
                     title: 'Security',
@@ -140,7 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-                  
+
                   _buildMenuItem(
                     icon: Icons.settings,
                     title: 'Setting',
@@ -153,7 +155,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-                  
+
                   _buildMenuItem(
                     icon: Icons.help_outline,
                     title: 'Help',
@@ -166,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-                  
+
                   _buildMenuItem(
                     icon: Icons.logout,
                     title: 'Logout',
@@ -208,11 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: const Color(0xFF00BCD4),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                child: Icon(icon, color: Colors.white, size: 24),
               ),
               const SizedBox(width: 16),
               Text(
@@ -224,11 +222,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const Spacer(),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey,
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),
@@ -246,10 +240,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           title: const Text(
             'Logout',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
           ),
           content: const Text(
             'Are you sure you want to logout?',
@@ -258,10 +249,7 @@ class _ProfilePageState extends State<ProfilePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
               onPressed: () {
@@ -274,10 +262,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 );
               },
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -301,9 +286,15 @@ class _ProfilePageState extends State<ProfilePage> {
         break;
       case 2:
         // Go to Analysis
+        final expenseBloc = context.read<ExpenseBloc>();
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const AnalysisPage()),
+          MaterialPageRoute(
+            builder: (context) => BlocProvider.value(
+              value: expenseBloc,
+              child: const AnalysisPage(),
+            ),
+          ),
         );
         break;
       case 3:

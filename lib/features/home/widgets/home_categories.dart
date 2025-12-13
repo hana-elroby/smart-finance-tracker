@@ -8,9 +8,13 @@ import '../bloc/expense_state.dart';
 class HomeCategories extends StatelessWidget {
   final Function(String category, IconData icon, LinearGradient gradient)
   onCategoryTap;
+  final ExpenseBloc expenseBloc;
 
-  const HomeCategories({super.key, required this.onCategoryTap});
-
+  const HomeCategories({
+    super.key,
+    required this.onCategoryTap,
+    required this.expenseBloc,
+  });
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -32,7 +36,10 @@ class HomeCategories extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CategoriesPage(),
+                    builder: (context) => BlocProvider.value(
+                      value: expenseBloc,
+                      child: const CategoriesPage(),
+                    ),
                   ),
                 );
               },
@@ -95,7 +102,7 @@ class HomeCategories extends StatelessWidget {
                 Expanded(
                   child: _buildCategoryCard(
                     'Health',
-                    Icons.favorite,
+                    Icons.favorite_border,
                     '${healthTotal.toStringAsFixed(0)} EGP',
                     AppColors.healthGradient,
                   ),
@@ -115,49 +122,51 @@ class HomeCategories extends StatelessWidget {
     LinearGradient gradient,
   ) {
     return Builder(
-      builder: (context) => GestureDetector(
-        onTap: () => onCategoryTap(title, icon, gradient),
-        child: Container(
-          width: 140,
-          height: 150,
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(icon, color: Colors.white, size: 32),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+      builder: (context) {
+        return GestureDetector(
+          onTap: () => onCategoryTap(title, icon, gradient),
+          child: Container(
+            width: 140,
+            height: 150,
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: Colors.white, size: 32),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      amount,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 4),
+                      Text(
+                        amount,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
