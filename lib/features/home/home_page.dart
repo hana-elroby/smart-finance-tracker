@@ -103,7 +103,10 @@ class _HomePageContentState extends State<_HomePageContent> {
                   expenseBloc: _expenseBloc,
                 ),
                 const SizedBox(height: 24),
-                const SizedBox(height: 400, child: HomeSpendingChart()),
+                SizedBox(
+                  height: 400,
+                  child: HomeSpendingChart(expenseBloc: _expenseBloc),
+                ),
                 const SizedBox(height: 100),
               ],
             ),

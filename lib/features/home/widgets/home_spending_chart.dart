@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../analysis/analysis_page.dart';
+import '../bloc/expense_bloc.dart';
 
 class HomeSpendingChart extends StatelessWidget {
-  const HomeSpendingChart({super.key});
+  final ExpenseBloc expenseBloc;
+
+  const HomeSpendingChart({super.key, required this.expenseBloc});
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +85,10 @@ class HomeSpendingChart extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const AnalysisPage(),
+                              builder: (context) => BlocProvider.value(
+                                value: expenseBloc,
+                                child: const AnalysisPage(),
+                              ),
                             ),
                           );
                         },
