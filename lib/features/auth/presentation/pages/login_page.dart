@@ -22,10 +22,16 @@ class _LoginPageState extends State<LoginPage> {
   final apiService = ApiService(baseUrl: "https://your-backend.com");
   bool _isPasswordVisible = false;
   
+@override
+void initState() {
+  super.initState();
+  // Only setup listeners here if needed
+  _authService.setupListeners();
+}
 
   void _handleLogin() async {
        if (_formKey.currentState!.validate()) {
-    try {
+        try {
     User  ? user = await _authService.signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text.trim(),

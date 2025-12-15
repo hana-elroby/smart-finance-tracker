@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/services/api_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,21 +12,34 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+   bool _tokenSent = false; // prevents duplicate calls
     @override
   void initState() {
     super.initState();
     _getIdToken();    // CALL THE FUNCTION HERE
   }
+  
 
   Future<void> _getIdToken() async {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null) {
-      final idToken = await user.getIdToken();
-      print("Firebase ID Token: $idToken");
+   if (user == null) return;
+   
 
-      // TODO: send token to backend here
-      // ApiService.verifyUser(idToken);
+    String? idToken;
+
+    try {
+      // ✅ Get ID token AFTER navigation
+      idToken = await user.getIdToken(true);
+      debugPrint("Firebase ID Token (JWT): $idToken");
+
+      // ✅ Send token to backend ONCE
+      if (!_tokenSent && idToken != null) {
+        _tokenSent = true;
+        await ApiService.verifyUser(idToken);
+      }
+    } catch (e) {
+      debugPrint("Backend verification failed: $e");
     }
   }
 
