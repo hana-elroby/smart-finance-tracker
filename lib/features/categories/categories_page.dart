@@ -34,7 +34,7 @@ class _CategoriesPageContent extends StatefulWidget {
 }
 
 class _CategoriesPageContentState extends State<_CategoriesPageContent> {
-  int _selectedIndex = 0; // للـ navbar
+  int _selectedIndex = 2; // Categories is index 2 in navbar
   ExpenseBloc? _expenseBloc;
 
   // Custom categories list
@@ -535,11 +535,15 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     const Text(
                       'New Category',
                       style: TextStyle(
@@ -713,7 +717,8 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                         ),
                       ],
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -953,16 +958,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
         );
         break;
       case 2:
-        // Navigate to Analysis
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BlocProvider.value(
-              value: _expenseBloc!,
-              child: const AnalysisPage(),
-            ),
-          ),
-        );
+        // Already on Categories - do nothing
         break;
       case 3:
         // Navigate to Profile

@@ -60,7 +60,7 @@ class QRScannerBottomSheet extends StatelessWidget {
                       children: [
                         // Camera Option
                         Expanded(
-                          child: InkWell(
+                          child: GestureDetector(
                             onTap: () {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -70,7 +70,6 @@ class QRScannerBottomSheet extends StatelessWidget {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(12),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Column(
@@ -124,7 +123,7 @@ class QRScannerBottomSheet extends StatelessWidget {
                         ),
                         // Gallery Option
                         Expanded(
-                          child: InkWell(
+                          child: GestureDetector(
                             onTap: () {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -134,7 +133,6 @@ class QRScannerBottomSheet extends StatelessWidget {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(12),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Column(

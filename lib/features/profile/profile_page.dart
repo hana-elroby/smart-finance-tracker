@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/widgets/simple_bottom_nav.dart';
-import '../analysis/analysis_page.dart';
+import 'package:graduation_project/features/categories/categories_page.dart';
 import '../home/bloc/expense_bloc.dart';
 
 /// Profile Page - صفحة الملف الشخصي
@@ -271,6 +271,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _onNavItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
     switch (index) {
       case 0:
         // Go to Home
@@ -279,26 +283,33 @@ class _ProfilePageState extends State<ProfilePage> {
       case 1:
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Notifications - Coming soon!'),
+            content: Text('Offers - Coming soon!'),
             backgroundColor: AppColors.primary,
           ),
         );
+        // Reset selection back to profile after showing snackbar
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            setState(() {
+              _selectedIndex = 3;
+            });
+          }
+        });
         break;
       case 2:
-        // Go to Analysis
-        final expenseBloc = context.read<ExpenseBloc>();
+        // Go to Categories
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => BlocProvider.value(
-              value: expenseBloc,
-              child: const AnalysisPage(),
-            ),
+            builder: (context) => const CategoriesPage(),
           ),
         );
         break;
       case 3:
-        // Already on Profile - do nothing
+        // Already on Profile - just update selection
+        setState(() {
+          _selectedIndex = 3;
+        });
         break;
     }
   }

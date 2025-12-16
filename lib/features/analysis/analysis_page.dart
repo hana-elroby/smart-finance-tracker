@@ -23,7 +23,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFECEDF1),
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -98,7 +98,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         children: [
                           const Icon(
                             Icons.calendar_today,
-                            color: Color(0xFF00BCD4),
+                            color: Color(0xFF1976D2),
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -151,7 +151,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         children: [
                           const Icon(
                             Icons.calendar_today,
-                            color: Color(0xFF00BCD4),
+                            color: Color(0xFF1976D2),
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -220,7 +220,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00BCD4),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1D86D0), Color(0xFF0F446A)],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
@@ -233,7 +237,11 @@ class _AnalysisPageState extends State<AnalysisPage> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00BCD4),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1D86D0), Color(0xFF0F446A)],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
@@ -533,6 +541,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
   }
 
   void _onNavItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
     switch (index) {
       case 0:
         // Go to Home
@@ -545,9 +557,16 @@ class _AnalysisPageState extends State<AnalysisPage> {
             backgroundColor: AppColors.primary,
           ),
         );
+        // Reset selection back to analysis
+        setState(() {
+          _selectedIndex = 2;
+        });
         break;
       case 2:
-        // Already on Analysis - do nothing
+        // Already on Analysis - just update selection
+        setState(() {
+          _selectedIndex = 2;
+        });
         break;
       case 3:
         // Go to Profile
@@ -605,7 +624,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
           width: 14,
           height: greenHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF4ADE80),
+            color: const Color(0xFF1976D2),
             borderRadius: BorderRadius.circular(7),
           ),
         ),
@@ -615,7 +634,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
           width: 14,
           height: blueHeight,
           decoration: BoxDecoration(
-            color: const Color(0xFF3B82F6),
+            color: const Color(0xFFE91E63),
             borderRadius: BorderRadius.circular(7),
           ),
         ),
@@ -629,7 +648,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
       height: barHeight > 0 ? barHeight : 5,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF4ADE80), Color(0xFF3B82F6)],
+          colors: [Color(0xFF1976D2), Color(0xFFE91E63)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -647,7 +666,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
           height: barHeight > 0 ? barHeight : 5,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF4ADE80), Color(0xFF3B82F6)],
+              colors: [Color(0xFF1976D2), Color(0xFFE91E63)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),

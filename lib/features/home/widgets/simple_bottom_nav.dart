@@ -29,8 +29,8 @@ class SimpleBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildNavItem(Icons.home_rounded, 'Home', 0),
-              _buildNavItem(Icons.local_offer_outlined, 'Offers', 1),
-              _buildNavItem(Icons.analytics_outlined, 'Analysis', 2),
+              _buildNavItem(Icons.local_offer, 'Offers', 1),
+              _buildNavItem(Icons.grid_view, 'Categories', 2),
               _buildNavItem(Icons.person_outline, 'Account', 3),
             ],
           ),
@@ -49,20 +49,10 @@ class SimpleBottomNav extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: isSelected ? Colors.white : Colors.grey,
-                  size: 26,
-                ),
-              ),
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : Colors.cyan,
+              size: 26,
             ),
             const SizedBox(height: 2),
             Text(
@@ -70,7 +60,7 @@ class SimpleBottomNav extends StatelessWidget {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isSelected ? AppColors.primary : Colors.grey,
+                color: isSelected ? AppColors.primary : Colors.cyan,
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),

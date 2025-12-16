@@ -15,7 +15,7 @@ class HomeBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFE8E9F3),
+        color: const Color(0xFFFFFFFF),
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
@@ -29,9 +29,9 @@ class HomeBottomNav extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _buildNavItem(Icons.home_rounded, 'Home', 0),
-              _buildNavItem(Icons.local_offer_outlined, 'Offers', 1),
-              const SizedBox(width: 60),
-              _buildNavItem(Icons.analytics_outlined, 'Analysis', 2),
+              _buildNavItem(Icons.local_offer, 'Offers', 1),
+              const SizedBox(width: 40,),
+              _buildNavItem(Icons.grid_view, 'Categories', 2),
               _buildNavItem(Icons.person_outline, 'Account', 3),
             ],
           ),
@@ -51,26 +51,16 @@ class HomeBottomNav extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Icon(
-                  icon,
-                  color: isSelected ? Colors.white : Colors.grey,
-                  size: 26,
-                ),
-              ),
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : Colors.cyan,
+              size: 26,
             ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? AppColors.primary : Colors.grey,
+                color: isSelected ? AppColors.primary : Colors.cyan,
                 fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
