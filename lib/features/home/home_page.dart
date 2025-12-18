@@ -13,10 +13,23 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
    bool _tokenSent = false; // prevents duplicate calls
+   String? _userName;
+
     @override
   void initState() {
     super.initState();
+    _getUserName();
     _getIdToken();    // CALL THE FUNCTION HERE
+  }
+  
+
+  Future<void> _getUserName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        _userName = user.displayName ?? user.email?.split('@')[0] ?? 'User';
+      });
+    }
   }
   
 
@@ -47,7 +60,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Smart Finance Tracker'),
+        title: Text(_userName != null ? 'Hi $_userName!' : 'Smart Finance Tracker'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -77,4 +90,5 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  
 }

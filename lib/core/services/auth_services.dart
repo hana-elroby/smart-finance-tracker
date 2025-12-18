@@ -124,5 +124,10 @@ Future<User?> signInWithGoogle() async {
   }
 }
 
+  // Sign up with Google (same as sign in, Firebase handles account creation)
+  Future<User?> signUpWithGoogle() async {
+    return await signInWithGoogle();
+  }
+
 
 }

@@ -340,6 +340,7 @@ void initState() {
                                     final userCredential = await AuthService().signInWithGoogle();
                                    if (userCredential != null) {
                                    print('Signed in as: ${userCredential.displayName}');
+                                   Navigator.pushReplacementNamed(context, AppRoutes.home);
                                   }
                                 },
                               ),
