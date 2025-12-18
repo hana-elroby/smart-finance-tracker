@@ -102,7 +102,7 @@ class _MainLayoutState extends State<MainLayout>
                       const SizedBox(width: 80),
                       
                       // Right side navigation items
-                      Expanded(child: _buildSimpleNavItem(Icons.grid_view_rounded, 'Cats', 2)),
+                      Expanded(child: _buildSimpleNavItem(Icons.grid_view_rounded, 'Categories', 2)),
                       Expanded(child: _buildSimpleNavItem(Icons.person_rounded, 'Profile', 3)),
                     ],
                   )
@@ -111,7 +111,7 @@ class _MainLayoutState extends State<MainLayout>
                       // All navigation items evenly distributed without center gap
                       Expanded(child: _buildSimpleNavItem(Icons.home_rounded, 'Home', 0)),
                       Expanded(child: _buildSimpleNavItem(Icons.local_offer_rounded, 'Offers', 1)),
-                      Expanded(child: _buildSimpleNavItem(Icons.grid_view_rounded, 'Cats', 2)),
+                      Expanded(child: _buildSimpleNavItem(Icons.grid_view_rounded, 'Categories', 2)),
                       Expanded(child: _buildSimpleNavItem(Icons.person_rounded, 'Profile', 3)),
                     ],
                   ),
@@ -215,19 +215,19 @@ class _MainLayoutState extends State<MainLayout>
               height: 70,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF1687F0), Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                  colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1687F0).withOpacity(0.3),
+                    color: const Color(0xFF42A5F5).withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 6),
                   ),
                   BoxShadow(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.2),
+                    color: const Color(0xFF1976D2).withOpacity(0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),

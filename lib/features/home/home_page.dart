@@ -95,7 +95,7 @@ class _HomePageContentState extends State<_HomePageContent>
   Future<void> _loadUserData() async {
     // TODO: Replace with Firebase Auth
     setState(() {
-      userName = "Bassant";
+      userName = "Bassant ";
     });
   }
 
@@ -163,13 +163,61 @@ class _HomePageContentState extends State<_HomePageContent>
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                'Smart spending leads to bright savings!',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF4B5563),
-                ),
+              Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        width: 2,
+                        color: Colors.transparent,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF0814F9), Color(0xFFF907A8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [Color(0xFF0814F9), Color(0xFFF907A8)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Smart spending leads to bright savings!',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF4B5563),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -721,8 +769,8 @@ class _HomePageContentState extends State<_HomePageContent>
         _buildProfessionalButton(
           title: 'Reminders',
           icon: Icons.notifications_rounded,
-          gradientColors: const [Color(0xFF1D86D0), Color(0xFF0F446A)], // الألوان من الصورة
-          shadowColor: const Color(0xFF1D86D0),
+          gradientColors: const [Color(0xFF42A5F5), Color(0xFF1976D2)], // ألوان أزرق فاتح
+          shadowColor: const Color(0xFF42A5F5),
           onTap: () {
             HapticFeedback.lightImpact();
             _animateCardTap(() {
@@ -740,8 +788,8 @@ class _HomePageContentState extends State<_HomePageContent>
         _buildProfessionalButton(
           title: 'Categories',
           icon: Icons.grid_view_rounded,
-          gradientColors: const [Color(0xFF1D86D0), Color(0xFF0F446A)], // نفس الألوان للتناسق
-          shadowColor: const Color(0xFF1D86D0),
+          gradientColors: const [Color(0xFF42A5F5), Color(0xFF1976D2)], // نفس الألوان للتناسق
+          shadowColor: const Color(0xFF42A5F5),
           onTap: () {
             HapticFeedback.lightImpact();
             _animateCardTap(() {
@@ -1022,37 +1070,125 @@ class _HomePageContentState extends State<_HomePageContent>
   }
 
   Widget _buildDateRangeSelector() {
-    return GestureDetector(
-      onTap: () => _showDateRangeBottomSheet(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(24), // Fully pill-shaped
-          border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.calendar_today_outlined,
-              color: const Color(0xFF64748B),
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _getDateRangeText(),
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: const Color(0xFF475569),
+        ],
+      ),
+      child: Row(
+        children: [
+          // From Date
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _selectFromDate(context),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1976D2).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today,
+                      color: Color(0xFF1976D2),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'From',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _fromDate != null 
+                            ? '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'
+                            : 'Select Date',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          
+          // Divider
+          Container(
+            width: 1,
+            height: 40,
+            color: Colors.grey.shade200,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+          ),
+          
+          // To Date
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _selectToDate(context),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1976D2).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.event,
+                      color: Color(0xFF1976D2),
+                      size: 18,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'To',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _toDate != null 
+                            ? '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'
+                            : 'Select Date',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1288,26 +1424,26 @@ class _HomePageContentState extends State<_HomePageContent>
           
           const SizedBox(height: 16),
           
-          // Date Range Filter - Simple vertical layout
+          // Date Range Filter - From left, To right
           Row(
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSimpleDateField(
-                    label: 'From',
-                    date: _fromDate,
-                    onTap: () => _selectFromDate(context),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildSimpleDateField(
-                    label: 'To',
-                    date: _toDate,
-                    onTap: () => _selectToDate(context),
-                  ),
-                ],
+              SizedBox(
+                width: 120,
+                child: _buildSimpleDateField(
+                  label: 'From',
+                  date: _fromDate,
+                  onTap: () => _selectFromDate(context),
+                ),
               ),
               const Spacer(),
+              SizedBox(
+                width: 120,
+                child: _buildSimpleDateField(
+                  label: 'To',
+                  date: _toDate,
+                  onTap: () => _selectToDate(context),
+                ),
+              ),
             ],
           ),
           
@@ -1367,8 +1503,8 @@ class _HomePageContentState extends State<_HomePageContent>
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _fromDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      firstDate: DateTime(1900), // من سنة 1900
+      lastDate: DateTime(2100), // لحد سنة 2100
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -1398,8 +1534,8 @@ class _HomePageContentState extends State<_HomePageContent>
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _toDate ?? _fromDate ?? DateTime.now(),
-      firstDate: _fromDate ?? DateTime(2020),
-      lastDate: DateTime.now(),
+      firstDate: _fromDate ?? DateTime(1900), // من سنة 1900
+      lastDate: DateTime(2100), // لحد سنة 2100
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -1539,16 +1675,28 @@ class _HomePageContentState extends State<_HomePageContent>
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: isPrimary 
-              ? const Color(0xFF003B73).withOpacity(0.05)
-              : Colors.white,
+          gradient: isPrimary 
+              ? const LinearGradient(
+                  colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                )
+              : null,
+          color: isPrimary ? null : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isPrimary 
-                ? const Color(0xFF003B73).withOpacity(0.2)
+                ? Colors.transparent
                 : const Color(0xFFE5E7EB),
             width: 1,
           ),
+          boxShadow: isPrimary ? [
+            BoxShadow(
+              color: const Color(0xFF42A5F5).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ] : null,
         ),
         child: Row(
           children: [
@@ -1558,7 +1706,7 @@ class _HomePageContentState extends State<_HomePageContent>
               height: 48,
               decoration: BoxDecoration(
                 color: isPrimary 
-                    ? const Color(0xFF003B73)
+                    ? Colors.white.withOpacity(0.2)
                     : const Color(0xFF6B7280).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -1581,7 +1729,7 @@ class _HomePageContentState extends State<_HomePageContent>
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF003B73),
+                      color: isPrimary ? Colors.white : const Color(0xFF003B73),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1590,7 +1738,7 @@ class _HomePageContentState extends State<_HomePageContent>
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
-                      color: const Color(0xFF6B7280),
+                      color: isPrimary ? Colors.white.withOpacity(0.8) : const Color(0xFF6B7280),
                     ),
                   ),
                 ],
@@ -1600,7 +1748,7 @@ class _HomePageContentState extends State<_HomePageContent>
             // Arrow Icon
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: const Color(0xFF6B7280),
+              color: isPrimary ? Colors.white : const Color(0xFF6B7280),
               size: 16,
             ),
           ],
