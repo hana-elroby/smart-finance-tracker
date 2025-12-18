@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../core/theme/app_colors.dart';
-import '../home/widgets/simple_bottom_nav.dart';
-import 'package:graduation_project/features/categories/categories_page.dart';
-import '../home/bloc/expense_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Profile Page - صفحة الملف الشخصي
 class ProfilePage extends StatefulWidget {
@@ -14,62 +10,28 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int _selectedIndex = 3; // Profile page is index 3
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF0814F9), Color(0xFFF509D6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(6),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.notifications,
-                  color: Color(0xFFFFC107),
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+    return SafeArea(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            // Header
+            Row(
+              children: [
+                Text(
+                  'Profile',
+                  style: GoogleFonts.inter(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF003B73),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             // Profile Card
             Container(
               width: double.infinity,
@@ -124,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Edit Profile - Coming soon!'),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Color(0xFF1687F0),
                         ),
                       );
                     },
@@ -137,7 +99,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Security - Coming soon!'),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Color(0xFF1687F0),
                         ),
                       );
                     },
@@ -150,7 +112,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Settings - Coming soon!'),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Color(0xFF1687F0),
                         ),
                       );
                     },
@@ -163,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Help - Coming soon!'),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Color(0xFF1687F0),
                         ),
                       );
                     },
@@ -181,10 +143,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: SimpleBottomNav(
-        selectedIndex: _selectedIndex,
-        onItemSelected: _onNavItemTapped,
       ),
     );
   }
@@ -270,47 +228,4 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    switch (index) {
-      case 0:
-        // Go to Home
-        Navigator.pop(context);
-        break;
-      case 1:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Offers - Coming soon!'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-        // Reset selection back to profile after showing snackbar
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            setState(() {
-              _selectedIndex = 3;
-            });
-          }
-        });
-        break;
-      case 2:
-        // Go to Categories
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const CategoriesPage(),
-          ),
-        );
-        break;
-      case 3:
-        // Already on Profile - just update selection
-        setState(() {
-          _selectedIndex = 3;
-        });
-        break;
-    }
-  }
 }

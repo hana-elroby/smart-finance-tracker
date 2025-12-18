@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import '../../core/theme/app_colors.dart';
 import '../home/dialogs/category_dialog.dart';
@@ -8,10 +9,7 @@ import '../home/dialogs/manual_entry_dialog.dart';
 import '../home/dialogs/voice_recording_dialog.dart';
 import '../home/dialogs/success_dialog.dart';
 import '../home/dialogs/category_analysis_dialog.dart';
-import '../home/widgets/simple_bottom_nav.dart';
-import '../home/home_page.dart';
-import '../analysis/analysis_page.dart';
-import '../profile/profile_page.dart';
+
 import '../home/bloc/expense_bloc.dart';
 import '../home/bloc/expense_state.dart';
 
@@ -34,7 +32,6 @@ class _CategoriesPageContent extends StatefulWidget {
 }
 
 class _CategoriesPageContentState extends State<_CategoriesPageContent> {
-  int _selectedIndex = 2; // Categories is index 2 in navbar
   ExpenseBloc? _expenseBloc;
 
   // Custom categories list
@@ -97,65 +94,28 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   @override
   Widget build(BuildContext context) {
     if (_expenseBloc == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
     return BlocProvider.value(
       value: _expenseBloc!,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: const Text(
-            'categories',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0814F9), Color(0xFFF509D6)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(6),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.notifications,
-                    color: Color(0xFFFFC107),
-                    size: 22,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
+      child: SafeArea(
+        child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header
+                Text(
+                  'Categories',
+                  style: GoogleFonts.inter(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF003B73),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 // Categories Grid (2x2 + Add button)
                 BlocBuilder<ExpenseBloc, ExpenseState>(
                   builder: (context, state) {
@@ -313,10 +273,6 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
               ],
             ),
           ),
-        ),
-        bottomNavigationBar: SimpleBottomNav(
-          selectedIndex: _selectedIndex,
-          onItemSelected: _onNavItemTapped,
         ),
       ),
     );
@@ -936,42 +892,4 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
     );
   }
 
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    switch (index) {
-      case 0:
-        // Navigate back to Home
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-        break;
-      case 1:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Offers - Coming soon!'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
-        break;
-      case 2:
-        // Already on Categories - do nothing
-        break;
-      case 3:
-        // Navigate to Profile
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BlocProvider.value(
-              value: _expenseBloc!,
-              child: const ProfilePage(),
-            ),
-          ),
-        );
-        break;
-    }
-  }
 }

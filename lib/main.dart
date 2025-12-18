@@ -7,7 +7,7 @@ import 'core/services/sync_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/auth_page.dart';
-import 'features/home/home_page.dart';
+import 'widgets/main_layout.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.splash: (context) => const SplashPage(),
         AppRoutes.onboarding: (context) => const OnboardingPage(),
         AppRoutes.auth: (context) => const AuthPage(),
-        AppRoutes.home: (context) => const HomePage(),
+        AppRoutes.home: (context) => const MainLayout(),
       },
     );
   }
