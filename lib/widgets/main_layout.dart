@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/home/home_page.dart';
 import '../features/categories/categories_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/offers/offers_page.dart';
+import '../features/home/bloc/expense_bloc.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -51,10 +53,13 @@ class _MainLayoutState extends State<MainLayout>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      body: _getPage(_selectedIndex),
-      bottomNavigationBar: _buildCustomBottomNav(),
+    return BlocProvider(
+      create: (context) => ExpenseBloc(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: _getPage(_selectedIndex),
+        bottomNavigationBar: _buildCustomBottomNav(),
+      ),
     );
   }
 

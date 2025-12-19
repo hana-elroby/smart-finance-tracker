@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import '../../core/theme/app_colors.dart';
 import '../home/bloc/expense_bloc.dart';
 import '../home/bloc/expense_state.dart';
+import '../items/items_page.dart';
 
 /// Categories Page - عرض الفئات مع Pie Chart
 /// يعرض pie chart ديناميك وقائمة الفئات
@@ -13,10 +14,7 @@ class CategoriesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ExpenseBloc(),
-      child: const _CategoriesPageContent(),
-    );
+    return const _CategoriesPageContent();
   }
 }
 
@@ -252,36 +250,50 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   }
 
   Widget _buildCategoryItem(String name, IconData icon, Color color, double amount) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemsPage(
+              categoryName: name,
+              categoryIcon: icon,
+              categoryColor: color,
             ),
           ),
-          const Spacer(),
-          Text(
-            'EGP ${amount.toInt()}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
             ),
-          ),
-        ],
+            const Spacer(),
+            Text(
+              'EGP ${amount.toInt()}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
