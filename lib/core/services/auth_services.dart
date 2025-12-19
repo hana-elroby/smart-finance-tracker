@@ -30,14 +30,14 @@ class AuthService {
     });
 
   // 3. User profile changes (displayName, photoURL)
-  _idTokenSub = _auth.idTokenChanges().listen((User? user) async {
-      if (user == null) {
-        print('IDToken: User signed out');
-      } else {
-        final tokenResult = await user.getIdTokenResult(true);
-        print('IDToken: User signed in, claims: ${tokenResult.claims}');
-      }
-    });
+  // _idTokenSub = _auth.idTokenChanges().listen((User? user) async {
+  //     if (user == null) {
+  //       print('IDToken: User signed out');
+  //     } else {
+  //       final tokenResult = await user.getIdTokenResult(true);
+  //       print('IDToken: User signed in, claims: ${tokenResult.claims}');
+  //     }
+  //   });
 
     // 3. User profile changes (displayName, photoURL)
     _userSub = _auth.userChanges().listen((User? user) {
