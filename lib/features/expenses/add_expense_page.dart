@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/models/expense.dart';
@@ -109,7 +108,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                       color: const Color(0xFFF8F8F8),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     child: Row(
@@ -149,7 +148,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     color: const Color(0xFFF8F8F8),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFF42A5F5).withOpacity(0.2),
+                      color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                     ),
                   ),
                   child: Row(
@@ -196,13 +195,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -249,13 +248,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -301,13 +300,13 @@ class _AddExpensePageState extends State<AddExpensePage> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: const Color(0xFF42A5F5).withOpacity(0.2),
+                        color: const Color(0xFF42A5F5).withValues(alpha: 0.2),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -421,3 +420,4 @@ class _AddExpensePageState extends State<AddExpensePage> {
     }
   }
 }
+

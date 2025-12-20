@@ -27,18 +27,18 @@ class TestApp extends StatelessWidget {
                       icon: Icons.notifications_rounded,
                       text: 'Reminders',
                       onTap: () {
-                        print('Reminders tapped');
+                        debugPrint('Reminders tapped');
                       },
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Categories Button
                     ModernActionButton(
                       icon: Icons.grid_view_rounded,
                       text: 'Categories',
                       onTap: () {
-                        print('Categories tapped');
+                        debugPrint('Categories tapped');
                       },
                     ),
                   ],

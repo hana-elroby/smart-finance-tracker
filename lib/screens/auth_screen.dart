@@ -85,7 +85,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00BCD4).withOpacity(0.4),
+                              color: const Color(0xFF00BCD4).withValues(alpha: 0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -145,7 +145,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF01579B).withOpacity(0.4),
+                              color: const Color(0xFF01579B).withValues(alpha: 0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -188,3 +188,4 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 }
+

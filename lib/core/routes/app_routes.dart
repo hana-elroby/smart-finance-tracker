@@ -7,3 +7,4 @@ class AppRoutes {
   static const String otpVerification = '/otp-verification';
   static const String changePassword = '/change-password';
 }
+

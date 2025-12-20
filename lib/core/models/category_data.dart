@@ -31,3 +31,4 @@ const List<CategoryData> defaultCategories = [
     gradient: AppColors.healthGradient,
   ),
 ];
+

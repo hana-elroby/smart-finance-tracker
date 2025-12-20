@@ -1,3 +1,12 @@
+/// @deprecated Use ExpenseModel from data/models/expense_model.dart
+///
+/// This duplicate model has different field types (int? id vs String id)
+/// and should be migrated to the proper data layer model.
+///
+/// Migration:
+/// - Import 'data/models/expense_model.dart' instead
+/// - Update field access patterns accordingly
+@Deprecated('Use ExpenseModel from data/models/expense_model.dart instead')
 class Expense {
   int? id;
   String title;

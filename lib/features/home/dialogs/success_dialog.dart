@@ -21,7 +21,7 @@ class SuccessDialog extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.2),
+                color: AppColors.success.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -72,3 +72,4 @@ class SuccessDialog extends StatelessWidget {
     );
   }
 }
+

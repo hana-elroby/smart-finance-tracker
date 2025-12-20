@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-import '../../core/theme/app_colors.dart';
 import '../home/bloc/expense_bloc.dart';
 import '../home/bloc/expense_state.dart';
+import '../home/bloc/expense_event.dart';
+import '../../core/models/expense.dart';
+import '../../widgets/dialogs/add_options_bottom_sheet.dart';
+import '../../widgets/dialogs/manual_entry_dialog.dart';
 
 /// Items Page - عرض العناصر في كل فئة
 /// تعرض كل الـ items الموجودة في فئة معينة مع chart وقائمة
@@ -22,13 +26,12 @@ class ItemsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ExpenseBloc(),
-      child: _ItemsPageContent(
-        categoryName: categoryName,
-        categoryIcon: categoryIcon,
-        categoryColor: categoryColor,
-      ),
+    // Use existing BlocProvider from parent (MainLayout)
+    // Don't create new one - share the same ExpenseBloc
+    return _ItemsPageContent(
+      categoryName: categoryName,
+      categoryIcon: categoryIcon,
+      categoryColor: categoryColor,
     );
   }
 }
@@ -61,7 +64,11 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
   void _setDefaultDates() {
     final now = DateTime.now();
     setState(() {
-      _fromDate = DateTime(now.year, now.month, 1); // First day of current month
+      _fromDate = DateTime(
+        now.year,
+        now.month,
+        1,
+      ); // First day of current month
       _toDate = now; // Today
     });
   }
@@ -93,22 +100,22 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           children: [
             // Date Selectors
             _buildDateSelectors(),
-            
+
             const SizedBox(height: 30),
-            
+
             // Bar Chart
             _buildBarChart(),
-            
+
             const SizedBox(height: 30),
-            
+
             // Items List
             _buildItemsList(),
-            
+
             const SizedBox(height: 20),
-            
+
             // Add Transaction Button
             _buildAddTransactionButton(),
-            
+
             const SizedBox(height: 30),
           ],
         ),
@@ -153,12 +160,12 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withOpacity(0.3),
+            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withOpacity(0.1),
+              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -190,14 +197,79 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
   Widget _buildBarChart() {
     return BlocBuilder<ExpenseBloc, ExpenseState>(
       builder: (context, state) {
-        // Sample data for the chart with item names and quantities
-        final chartData = [
-          {'item': 'Pizza', 'quantity': 5.0},
-          {'item': 'Burger', 'quantity': 3.0},
-          {'item': 'Coffee', 'quantity': 8.0},
-          {'item': 'Pasta', 'quantity': 2.0},
-          {'item': 'Sushi', 'quantity': 6.0},
-        ];
+        // Show placeholder when no data
+        if (state is! ExpenseLoaded || state.isEmpty) {
+          return Container(
+            height: 250,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.bar_chart_rounded,
+                    size: 48,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No items yet',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Get real items for this category
+        final categoryExpenses = state.getExpensesByCategory(
+          widget.categoryName,
+        );
+
+        // Group by item name and calculate totals
+        final Map<String, double> itemTotals = {};
+        for (var expense in categoryExpenses) {
+          final name = expense.title;
+          itemTotals[name] = (itemTotals[name] ?? 0) + expense.amount;
+        }
+
+        // Convert to chart data format
+        final chartData = itemTotals.entries
+            .take(5) // Top 5 items
+            .map((e) => {'item': e.key, 'quantity': e.value})
+            .toList();
+
+        if (chartData.isEmpty) {
+          return Container(
+            height: 250,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Center(
+              child: Text(
+                'No items in this category',
+                style: GoogleFonts.inter(color: Colors.grey),
+              ),
+            ),
+          );
+        }
 
         return Container(
           height: 250,
@@ -207,7 +279,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -225,41 +297,63 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
   Widget _buildItemsList() {
     return BlocBuilder<ExpenseBloc, ExpenseState>(
       builder: (context, state) {
-        // Sample items data - replace with real data from the category
-        final items = [
-          {
-            'name': 'McDonald',
-            'date': 'Today, 17:40 PM',
-            'amount': 26.64,
-            'icon': Icons.fastfood,
-          },
-          {
-            'name': 'PizzaHut',
-            'date': 'March 10, 15:00 PM',
-            'amount': 46.40,
-            'icon': Icons.local_pizza,
-          },
-          {
-            'name': 'Coffee',
-            'date': 'March 10, 13:00 PM',
-            'amount': 46.40,
-            'icon': Icons.coffee,
-          },
-          {
-            'name': 'PizzaHut',
-            'date': 'March 10, 13:00 PM',
-            'amount': 46.40,
-            'icon': Icons.local_pizza,
-          },
-        ];
+        // Show empty state when no data
+        if (state is! ExpenseLoaded || state.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(40),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.receipt_long_rounded,
+                    size: 64,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No items added yet',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Tap + to add your first expense',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Get real items for this category
+        final items = state.getExpensesByCategory(widget.categoryName);
+
+        if (items.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(40),
+            child: Center(
+              child: Text(
+                'No items in this category',
+                style: GoogleFonts.inter(color: Colors.grey),
+              ),
+            ),
+          );
+        }
 
         return Column(
-          children: items.map((item) {
+          children: items.map((expense) {
             return _buildItemCard(
-              item['name'] as String,
-              item['date'] as String,
-              item['amount'] as double,
-              item['icon'] as IconData,
+              expense.title,
+              _formatDate(expense.date),
+              expense.amount,
+              _getCategoryIcon(expense.category),
             );
           }).toList(),
         );
@@ -267,7 +361,41 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
     );
   }
 
-  Widget _buildItemCard(String name, String date, double amount, IconData icon) {
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return 'Today, ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    }
+    return '${date.day}/${date.month}, ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food & Drink':
+        return Icons.restaurant;
+      case 'Shopping':
+        return Icons.shopping_bag;
+      case 'Bills':
+        return Icons.receipt;
+      case 'Health':
+        return Icons.favorite;
+      case 'Transport':
+        return Icons.directions_car;
+      case 'Entertainment':
+        return Icons.movie;
+      default:
+        return Icons.category;
+    }
+  }
+
+  Widget _buildItemCard(
+    String name,
+    String date,
+    double amount,
+    IconData icon,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -280,7 +408,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF42A5F5).withOpacity(0.3),
+            color: const Color(0xFF42A5F5).withValues(alpha: 0.3),
             blurRadius: 6,
             offset: const Offset(0, 3),
           ),
@@ -292,7 +420,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: Colors.white, size: 20),
@@ -315,7 +443,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                   date,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -329,22 +457,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
   Widget _buildAddTransactionButton() {
     return Center(
       child: GestureDetector(
-        onTap: () {
-          // TODO: Add functionality to open add expense page
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Add Transaction - Coming soon!',
-                style: GoogleFonts.inter(color: Colors.white),
-              ),
-              backgroundColor: const Color(0xFF42A5F5),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        },
+        onTap: () => _showAddOptions(),
         child: Container(
           width: 70,
           height: 70,
@@ -357,30 +470,76 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF42A5F5).withOpacity(0.3),
+                color: const Color(0xFF42A5F5).withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: const Color(0xFF1976D2).withOpacity(0.2),
+                color: const Color(0xFF1976D2).withValues(alpha: 0.2),
                 blurRadius: 6,
                 offset: const Offset(0, 3),
               ),
-              BoxShadow(
+              const BoxShadow(
                 color: Colors.white,
                 blurRadius: 0,
-                offset: const Offset(0, 0),
+                offset: Offset(0, 0),
                 spreadRadius: 2,
               ),
             ],
           ),
-          child: const Icon(
-            Icons.add_rounded,
-            color: Colors.white,
-            size: 32,
-          ),
+          child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
         ),
       ),
+    );
+  }
+
+  void _showAddOptions() {
+    showAddOptionsBottomSheet(
+      context,
+      categoryName: widget.categoryName,
+      onManualTap: () async {
+        final result = await showManualEntryDialog(
+          context,
+          initialCategory: widget.categoryName,
+        );
+        if (result != null && mounted) {
+          // Add the expense to BLoC
+          final expense = Expense(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            title: result['title'] as String,
+            amount: result['amount'] as double,
+            category: result['category'] as String,
+            date: result['date'] as DateTime,
+          );
+          context.read<ExpenseBloc>().add(AddExpense(expense));
+
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added ${result['title']}'),
+              backgroundColor: const Color(0xFF4CAF50),
+            ),
+          );
+        }
+      },
+      onVoiceTap: () {
+        // TODO: Implement voice input
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Voice input - Coming soon!'),
+            backgroundColor: Color(0xFFFF9800),
+          ),
+        );
+      },
+      onScanTap: () {
+        // TODO: Implement scan receipt
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scan receipt - Coming soon!'),
+            backgroundColor: Color(0xFF2196F3),
+          ),
+        );
+      },
     );
   }
 
@@ -428,9 +587,12 @@ class BarChartPainter extends CustomPainter {
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
-    final maxQuantity = data.map((e) => e['quantity'] as double).reduce(math.max);
-    final barWidth = (size.width - 40) / (data.length * 1.5);
-    final spacing = barWidth * 0.5;
+    final maxQuantity = data
+        .map((e) => e['quantity'] as double)
+        .reduce(math.max);
+    // Make bars thinner - reduce width multiplier
+    final barWidth = (size.width - 60) / (data.length * 2.5);
+    final spacing = barWidth * 1.0;
 
     // Draw Y-axis label
     final yAxisPainter = TextPainter(
@@ -450,7 +612,7 @@ class BarChartPainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final quantity = data[i]['quantity'] as double;
       final barHeight = (quantity / maxQuantity) * (size.height - 50);
-      
+
       final x = 30 + i * (barWidth + spacing);
       final y = size.height - barHeight - 30;
 
@@ -486,10 +648,7 @@ class BarChartPainter extends CustomPainter {
       final namePainter = TextPainter(
         text: TextSpan(
           text: itemName.length > 6 ? '${itemName.substring(0, 6)}.' : itemName,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 10,
-          ),
+          style: const TextStyle(color: Colors.grey, fontSize: 10),
         ),
         textDirection: TextDirection.ltr,
       );

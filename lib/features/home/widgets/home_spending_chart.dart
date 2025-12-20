@@ -18,7 +18,7 @@ class HomeSpendingChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -40,81 +40,84 @@ class HomeSpendingChart extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Labels on the left - aligned to left
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLabel('Shopping'),
-                        const SizedBox(height: 24),
-                        _buildLabel('Activities'),
-                        const SizedBox(height: 24),
-                        _buildLabel('Food'),
-                        const SizedBox(height: 24),
-                        _buildLabel('Bills'),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 30),
-                  // Vertical Bars on the right - centered (Fixed heights for design)
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Labels on the left - aligned to left
+                    Flexible(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildVerticalBar(0.68, AppColors.chartBar2),
-                          const SizedBox(width: 12),
-                          _buildVerticalBar(1.0, AppColors.chartBar1),
-                          const SizedBox(width: 12),
-                          _buildVerticalBar(0.83, AppColors.chartBar2),
-                          const SizedBox(width: 12),
-                          _buildVerticalBar(0.58, AppColors.chartBar1),
+                          _buildLabel('Shopping'),
+                          const SizedBox(height: 24),
+                          _buildLabel('Activities'),
+                          const SizedBox(height: 24),
+                          _buildLabel('Food'),
+                          const SizedBox(height: 24),
+                          _buildLabel('Bills'),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      // See all button below bars
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BlocProvider.value(
-                                value: expenseBloc,
-                                child: const AnalysisPage(),
-                              ),
-                            ),
-                          );
-                        },
-                        child: const Row(
+                    ),
+                    const SizedBox(width: 20),
+                    // Vertical Bars on the right - centered (Fixed heights for design)
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'See all',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward,
-                              size: 16,
-                              color: Colors.black,
-                            ),
+                            _buildVerticalBar(0.68, AppColors.chartBar2),
+                            const SizedBox(width: 12),
+                            _buildVerticalBar(1.0, AppColors.chartBar1),
+                            const SizedBox(width: 12),
+                            _buildVerticalBar(0.83, AppColors.chartBar2),
+                            const SizedBox(width: 12),
+                            _buildVerticalBar(0.58, AppColors.chartBar1),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 16),
+                        // See all button below bars
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BlocProvider.value(
+                                  value: expenseBloc,
+                                  child: const AnalysisPage(),
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'See all',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward,
+                                size: 16,
+                                color: Colors.black,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

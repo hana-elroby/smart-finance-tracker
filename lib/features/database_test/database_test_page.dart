@@ -14,7 +14,6 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   final SyncService _syncService = SyncService();
   List<Expense> _expenses = [];
-  bool _isSyncing = false;
 
   @override
   void initState() {
@@ -27,11 +26,11 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
     setState(() {
       _expenses = expensesMap.map((e) => Expense.fromMap(e)).toList();
     });
-    
+
     // عرض إحصائيات
     int synced = _expenses.where((e) => e.isSynced == 1).length;
     int notSynced = _expenses.where((e) => e.isSynced == 0).length;
-    print('📊 Stats: $synced synced, $notSynced waiting to sync');
+    debugPrint('📊 Stats: $synced synced, $notSynced waiting to sync');
   }
 
   Future<void> _addTestExpense() async {
@@ -43,42 +42,23 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
       createdAt: DateTime.now().toString(),
     );
     int id = await _dbHelper.addExpense(expense.toMap());
-    print('➕ Added expense #$id');
-    
+    debugPrint('➕ Added expense #$id');
+
     // فحص النت وعمل sync
     bool hasNet = await _syncService.hasInternet();
     if (hasNet) {
-      print('📶 Internet available - Syncing now...');
+      debugPrint('📶 Internet available - Syncing now...');
       await _syncService.syncExpenses();
     } else {
-      print('📵 No internet - Will sync later');
+      debugPrint('📵 No internet - Will sync later');
     }
-    
+
     _loadExpenses();
   }
 
   Future<void> _deleteExpense(int id) async {
     await _dbHelper.deleteExpense(id);
     _loadExpenses();
-  }
-
-  Future<void> _syncNow() async {
-    setState(() => _isSyncing = true);
-    
-    await _syncService.manualSync();
-    
-    setState(() => _isSyncing = false);
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Sync completed!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    }
-    
-    _loadExpenses(); // Refresh list
   }
 
   @override

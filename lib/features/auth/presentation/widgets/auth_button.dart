@@ -41,3 +41,4 @@ class AuthButton extends StatelessWidget {
     );
   }
 }
+

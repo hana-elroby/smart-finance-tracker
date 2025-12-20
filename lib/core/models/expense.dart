@@ -1,3 +1,11 @@
+/// @deprecated Use ExpenseEntity from domain/entities and ExpenseModel from data/models
+///
+/// Migration guide:
+/// - For domain logic: Use ExpenseEntity from 'domain/entities/expense_entity.dart'
+/// - For data operations: Use ExpenseModel from 'data/models/expense_model.dart'
+///
+/// This class is kept for backward compatibility with the old BLoC
+@Deprecated('Use ExpenseEntity (domain) and ExpenseModel (data) instead')
 class Expense {
   final String id;
   final double amount;

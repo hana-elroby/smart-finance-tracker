@@ -315,7 +315,7 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -458,7 +458,7 @@ class _HomePageState extends State<HomePage> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, -5),
               ),
@@ -493,7 +493,7 @@ class _HomePageState extends State<HomePage> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 15,
                     spreadRadius: 1,
                     offset: const Offset(0, 3),
@@ -643,7 +643,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.textSecondary.withOpacity(0.3),
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -679,7 +679,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.textSecondary.withOpacity(0.3),
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
                       width: 1.5,
                     ),
                     borderRadius: BorderRadius.circular(12),
@@ -768,7 +768,7 @@ class _HomePageState extends State<HomePage> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: gradient.colors.first.withOpacity(
+                            color: gradient.colors.first.withValues(alpha: 
                               isRecording ? 0.6 : 0.3,
                             ),
                             blurRadius: isRecording ? 30 : 15,
@@ -781,7 +781,7 @@ class _HomePageState extends State<HomePage> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isRecording
-                              ? Colors.white.withOpacity(0.2)
+                              ? Colors.white.withValues(alpha: 0.2)
                               : Colors.transparent,
                         ),
                         child: const Icon(
@@ -836,7 +836,7 @@ class _HomePageState extends State<HomePage> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.2),
+                  color: AppColors.success.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -909,7 +909,7 @@ class _HomePageState extends State<HomePage> {
               width: 50,
               height: 5,
               decoration: BoxDecoration(
-                color: AppColors.textSecondary.withOpacity(0.3),
+                color: AppColors.textSecondary.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -946,7 +946,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.purple.withOpacity(0.3),
+                      color: Colors.purple.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -958,7 +958,7 @@ class _HomePageState extends State<HomePage> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -1018,7 +1018,7 @@ class _HomePageState extends State<HomePage> {
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     width: 1.5,
                   ),
                 ),
@@ -1028,7 +1028,7 @@ class _HomePageState extends State<HomePage> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -1422,3 +1422,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+

@@ -98,7 +98,7 @@ class CategoryDialog extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: AppColors.textSecondary.withOpacity(0.3),
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -134,7 +134,7 @@ class CategoryDialog extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: AppColors.textSecondary.withOpacity(0.3),
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -166,3 +166,4 @@ class CategoryDialog extends StatelessWidget {
     );
   }
 }
+

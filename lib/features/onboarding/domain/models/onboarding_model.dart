@@ -15,3 +15,4 @@ class OnboardingModel {
     this.animationPadding,
   });
 }
+

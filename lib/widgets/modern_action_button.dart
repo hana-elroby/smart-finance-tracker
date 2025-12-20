@@ -14,7 +14,7 @@ class ModernActionButton extends StatefulWidget {
     required this.text,
     required this.onTap,
     this.width = 190,
-    this.height = 60,
+    this.height = 70,
   });
 
   @override
@@ -25,7 +25,6 @@ class _ModernActionButtonState extends State<ModernActionButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -34,13 +33,9 @@ class _ModernActionButtonState extends State<ModernActionButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.97,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -50,24 +45,15 @@ class _ModernActionButtonState extends State<ModernActionButton>
   }
 
   void _handleTapDown(TapDownDetails details) {
-    setState(() {
-      _isPressed = true;
-    });
     _animationController.forward();
   }
 
   void _handleTapUp(TapUpDetails details) {
-    setState(() {
-      _isPressed = false;
-    });
     _animationController.reverse();
     widget.onTap();
   }
 
   void _handleTapCancel() {
-    setState(() {
-      _isPressed = false;
-    });
     _animationController.reverse();
   }
 
@@ -89,13 +75,13 @@ class _ModernActionButtonState extends State<ModernActionButton>
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     offset: const Offset(0, 3),
                     blurRadius: 12,
                     spreadRadius: 0,
                   ),
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     offset: const Offset(0, 1),
                     blurRadius: 6,
                     spreadRadius: 0,
@@ -108,42 +94,43 @@ class _ModernActionButtonState extends State<ModernActionButton>
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1687F0).withOpacity(0.78),
+                      color: const Color(0xFF1687F0).withValues(alpha: 0.78),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+                        horizontal: 20,
+                        vertical: 14,
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // أيقونة صغيرة على الشمال
+                          // أيقونة
                           Container(
                             width: 36,
                             height: 36,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               widget.icon,
                               color: Colors.white,
-                              size: 18,
+                              size: 20,
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // النص جنب الأيقونة
+                          // النص بجانب الأيقونة
                           Text(
                             widget.text,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.1,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),

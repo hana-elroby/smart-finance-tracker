@@ -88,7 +88,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -141,7 +141,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -196,7 +196,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -418,7 +418,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -476,7 +476,7 @@ class _AnalysisPageState extends State<AnalysisPage> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -636,50 +636,6 @@ class _AnalysisPageState extends State<AnalysisPage> {
           decoration: BoxDecoration(
             color: const Color(0xFFE91E63),
             borderRadius: BorderRadius.circular(7),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBarOnly(double barHeight) {
-    return Container(
-      width: 20,
-      height: barHeight > 0 ? barHeight : 5,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1976D2), Color(0xFFE91E63)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-    );
-  }
-
-  Widget _buildBar(String day, double barHeight) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 20,
-          height: barHeight > 0 ? barHeight : 5,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF1976D2), Color(0xFFE91E63)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          day,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Colors.grey,
-            fontWeight: FontWeight.w600,
           ),
         ),
       ],

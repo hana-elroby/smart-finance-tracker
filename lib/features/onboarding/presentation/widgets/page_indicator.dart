@@ -32,3 +32,4 @@ class PageIndicator extends StatelessWidget {
     );
   }
 }
+

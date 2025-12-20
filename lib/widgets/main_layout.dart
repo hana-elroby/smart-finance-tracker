@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import '../features/home/home_page.dart';
 import '../features/categories/categories_page.dart';
 import '../features/profile/profile_page.dart';
@@ -10,46 +11,44 @@ import '../features/home/bloc/expense_bloc.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
-  
-  const MainLayout({
-    super.key,
-    this.initialIndex = 0,
-  });
+
+  const MainLayout({super.key, this.initialIndex = 0});
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout>
-    with TickerProviderStateMixin {
+class _MainLayoutState extends State<MainLayout> {
   late int _selectedIndex;
-  late AnimationController _fabAnimationController;
-  late Animation<double> _fabScaleAnimation;
+  final GlobalKey<CurvedNavigationBarState> _bottomNavigationKey = GlobalKey();
+  late PageController _pageController;
+
+  // Navy Blue Colors - كحلي
+  static const Color _navyBlue = Color(0xFF003566);
+  static const Color _navyLight = Color(0xFF1D4E89);
+
+  // Pages list - 4 pages
+  final List<Widget> _pages = const [
+    HomePage(),
+    OffersPage(),
+    CategoriesPage(),
+    ProfilePage(),
+  ];
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    
-    _fabAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    
-    _fabScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: Curves.easeInOut,
-    ));
+    _pageController = PageController(initialPage: widget.initialIndex);
   }
 
   @override
   void dispose() {
-    _fabAnimationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
+
+  bool get _isHomePage => _selectedIndex == 0;
 
   @override
   Widget build(BuildContext context) {
@@ -57,128 +56,242 @@ class _MainLayoutState extends State<MainLayout>
       create: (context) => ExpenseBloc(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        body: _getPage(_selectedIndex),
-        bottomNavigationBar: _buildCustomBottomNav(),
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: _pages,
+        ),
+        extendBody: true,
+        bottomNavigationBar: _isHomePage
+            ? _buildCurvedNavWithPlus()
+            : _buildCurvedNavWithoutPlus(),
       ),
     );
   }
 
-  Widget _getPage(int index) {
-    switch (index) {
-      case 0:
-        return const HomePage();
-      case 1:
-        return const OffersPage();
-      case 2:
-        return const CategoriesPage();
-      case 3:
-        return const ProfilePage();
-      default:
-        return const HomePage();
-    }
+  /// Curved Nav Bar مع Plus Button - للـ Home فقط
+  Widget _buildCurvedNavWithPlus() {
+    return CurvedNavigationBar(
+      key: _bottomNavigationKey,
+      index: 0, // Home is always selected when on home
+      height: 65.0,
+      items: <Widget>[
+        _buildNavIcon(Icons.home_rounded, 'Home', isSelected: true),
+        _buildNavIcon(Icons.local_offer_rounded, 'Offers', isSelected: false),
+        _buildCenterButton(), // Plus button
+        _buildNavIcon(Icons.grid_view_rounded, 'Categories', isSelected: false),
+        _buildNavIcon(Icons.person_rounded, 'Profile', isSelected: false),
+      ],
+      color: Colors.white,
+      buttonBackgroundColor: _navyBlue,
+      backgroundColor: Colors.transparent,
+      animationCurve: Curves.easeInOutCubic,
+      animationDuration: const Duration(milliseconds: 400),
+      onTap: _onNavTappedWithPlus,
+      letIndexChange: (index) => true,
+    );
   }
 
+  /// Curved Nav Bar بدون Plus - لباقي الصفحات
+  Widget _buildCurvedNavWithoutPlus() {
+    return CurvedNavigationBar(
+      index: _selectedIndex,
+      height: 65.0,
+      items: <Widget>[
+        _buildNavIcon(
+          Icons.home_rounded,
+          'Home',
+          isSelected: _selectedIndex == 0,
+        ),
+        _buildNavIcon(
+          Icons.local_offer_rounded,
+          'Offers',
+          isSelected: _selectedIndex == 1,
+        ),
+        _buildNavIcon(
+          Icons.grid_view_rounded,
+          'Categories',
+          isSelected: _selectedIndex == 2,
+        ),
+        _buildNavIcon(
+          Icons.person_rounded,
+          'Profile',
+          isSelected: _selectedIndex == 3,
+        ),
+      ],
+      color: Colors.white,
+      buttonBackgroundColor: _navyBlue,
+      backgroundColor: Colors.transparent,
+      animationCurve: Curves.easeInOutCubic,
+      animationDuration: const Duration(milliseconds: 400),
+      onTap: _onNavTappedWithoutPlus,
+      letIndexChange: (index) => true,
+    );
+  }
 
+  Widget _buildCenterButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showAddExpenseBottomSheet();
+      },
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [_navyLight, _navyBlue],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: _navyBlue.withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.add_rounded, size: 32, color: Colors.white),
+      ),
+    );
+  }
 
-  Widget _buildCustomBottomNav() {
-    return Container(
-      height: 75,
-      child: Stack(
-        clipBehavior: Clip.none,
+  /// Navigation handler for Home page (5 items with Plus)
+  void _onNavTappedWithPlus(int index) {
+    HapticFeedback.lightImpact();
+
+    // If center button (Plus) tapped - do nothing, GestureDetector handles it
+    if (index == 2) {
+      return;
+    }
+
+    // Convert 5-item nav index to page index
+    int pageIndex;
+    if (index < 2) {
+      pageIndex = index; // 0, 1 -> 0, 1
+    } else {
+      pageIndex = index - 1; // 3, 4 -> 2, 3
+    }
+
+    setState(() {
+      _selectedIndex = pageIndex;
+    });
+
+    _pageController.animateToPage(
+      pageIndex,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  /// Navigation handler for other pages (4 items without Plus)
+  void _onNavTappedWithoutPlus(int index) {
+    HapticFeedback.lightImpact();
+
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  Widget _buildNavIcon(
+    IconData icon,
+    String label, {
+    required bool isSelected,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Custom shaped navigation bar with conditional notch
-          CustomPaint(
-            size: Size(MediaQuery.of(context).size.width, 75),
-            painter: BottomNavPainter(showNotch: _shouldShowFAB()),
+          Icon(
+            icon,
+            size: isSelected ? 28 : 24,
+            color: isSelected ? Colors.white : _navyBlue,
           ),
-          
-          // Navigation content - نفس اللي في الـ Home
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: _shouldShowFAB() 
-                ? Row(
-                    children: [
-                      // Left side navigation items
-                      Expanded(child: _buildSimpleNavItem(Icons.home_rounded, 'Home', 0)),
-                      Expanded(child: _buildSimpleNavItem(Icons.local_offer_rounded, 'Offers', 1)),
-                      
-                      // Center space for FAB
-                      const SizedBox(width: 80),
-                      
-                      // Right side navigation items
-                      Expanded(child: _buildSimpleNavItem(Icons.grid_view_rounded, 'Categories', 2)),
-                      Expanded(child: _buildSimpleNavItem(Icons.person_rounded, 'Profile', 3)),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      // All navigation items evenly distributed without center gap
-                      Expanded(child: _buildSimpleNavItem(Icons.home_rounded, 'Home', 0)),
-                      Expanded(child: _buildSimpleNavItem(Icons.local_offer_rounded, 'Offers', 1)),
-                      Expanded(child: _buildSimpleNavItem(Icons.grid_view_rounded, 'Categories', 2)),
-                      Expanded(child: _buildSimpleNavItem(Icons.person_rounded, 'Profile', 3)),
-                    ],
-                  ),
+          if (!isSelected) ...[
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: _navyBlue,
+              ),
             ),
-          ),
-          
-          // Center FAB positioned in the notch (only on Home and Categories)
-          if (_shouldShowFAB())
-            Positioned(
-              left: MediaQuery.of(context).size.width / 2 - 35,
-              top: -12,
-              child: _buildCenterFAB(),
-            ),
+          ],
         ],
       ),
     );
   }
 
-  bool _shouldShowFAB() {
-    return _selectedIndex == 0 || _selectedIndex == 2; // Home or Categories
-  }
-
-  Widget _buildSimpleNavItem(IconData icon, String label, int index) {
-    final isSelected = _selectedIndex == index;
-    const selectedColor = Color(0xFF003B73);
-    
-    return GestureDetector(
-      onTap: () => _onNavItemTapped(index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+  void _showAddExpenseBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.4,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon container - حجم ثابت وصغير
+            const SizedBox(height: 12),
             Container(
-              width: 36, // حجم صغير ثابت
-              height: 36,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                color: isSelected ? selectedColor.withOpacity(0.15) : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                isSelected ? _getFilledIcon(icon) : icon,
-                color: isSelected ? selectedColor : Colors.grey.shade500,
-                size: 20, // أيقونة صغيرة
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
-            const SizedBox(height: 4), // زودت المساحة من 2 لـ 4
-            
-            // Text أكبر وأوضح
+            const SizedBox(height: 20),
             Text(
-              label,
+              'Add Expense',
               style: GoogleFonts.inter(
-                fontSize: 12, // كبرت من 10 لـ 12
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600, // زودت الـ weight
-                color: isSelected ? selectedColor : Colors.grey.shade700, // غمقت اللون
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _navyBlue,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 30),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildQuickAction(
+                    icon: Icons.camera_alt_rounded,
+                    label: 'Scan Receipt',
+                    color: const Color(0xFF4CAF50),
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Implement scan receipt
+                    },
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.mic_rounded,
+                    label: 'Voice Input',
+                    color: const Color(0xFFFF9800),
+                    onTap: () {
+                      Navigator.pop(context);
+                      // TODO: Implement voice input
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -186,68 +299,130 @@ class _MainLayoutState extends State<MainLayout>
     );
   }
 
-  IconData _getFilledIcon(IconData icon) {
-    switch (icon) {
-      case Icons.home_rounded:
-        return Icons.home;
-      case Icons.local_offer_rounded:
-        return Icons.local_offer;
-      case Icons.grid_view_rounded:
-        return Icons.grid_view;
-      case Icons.person_rounded:
-        return Icons.person;
-      default:
-        return icon;
-    }
+  Widget _buildQuickAction({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Plus Button مع Animation
+class _PlusButtonWithAnimation extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const _PlusButtonWithAnimation({required this.onTap});
+
+  @override
+  State<_PlusButtonWithAnimation> createState() =>
+      _PlusButtonWithAnimationState();
+}
+
+class _PlusButtonWithAnimationState extends State<_PlusButtonWithAnimation>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  static const Color _navyBlue = Color(0xFF003566);
+  static const Color _navyLight = Color(0xFF1D4E89);
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
-  Widget _buildCenterFAB() {
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _controller.forward();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    _controller.reverse();
+    setState(() => _isPressed = false);
+    widget.onTap();
+  }
+
+  void _onTapCancel() {
+    _controller.reverse();
+    setState(() => _isPressed = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => _fabAnimationController.forward(),
-      onTapUp: (_) => _fabAnimationController.reverse(),
-      onTapCancel: () => _fabAnimationController.reverse(),
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        _showAddExpenseBottomSheet();
-      },
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
       child: AnimatedBuilder(
-        animation: _fabScaleAnimation,
+        animation: _scaleAnimation,
         builder: (context, child) {
           return Transform.scale(
-            scale: _fabScaleAnimation.value,
+            scale: _scaleAnimation.value,
             child: Container(
-              width: 70,
-              height: 70,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
+                gradient: LinearGradient(
+                  colors: _isPressed
+                      ? [_navyBlue, _navyLight] // لون مختلف لما متداس
+                      : [_navyLight, _navyBlue],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF42A5F5).withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                  BoxShadow(
-                    color: const Color(0xFF1976D2).withOpacity(0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                  BoxShadow(
-                    color: Colors.white,
-                    blurRadius: 0,
-                    offset: const Offset(0, 0),
-                    spreadRadius: 2,
+                    color: _navyBlue.withValues(alpha: _isPressed ? 0.6 : 0.4),
+                    blurRadius: _isPressed ? 16 : 12,
+                    offset: Offset(0, _isPressed ? 8 : 6),
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.add_rounded,
-                color: Colors.white,
                 size: 32,
+                color: Colors.white,
               ),
             ),
           );
@@ -255,128 +430,4 @@ class _MainLayoutState extends State<MainLayout>
       ),
     );
   }
-
-  void _onNavItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  void _showAddExpenseBottomSheet() {
-    // TODO: Implement add expense bottom sheet
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Add Expense - Coming soon!'),
-        backgroundColor: Color(0xFF1687F0),
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-}
-
-/// Custom painter for bottom navigation bar with conditional center notch
-class BottomNavPainter extends CustomPainter {
-  final bool showNotch;
-  
-  const BottomNavPainter({this.showNotch = true});
-  
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.1)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-
-    final path = Path();
-    final shadowPath = Path();
-
-    // Start from bottom left
-    path.moveTo(0, size.height);
-    shadowPath.moveTo(0, size.height);
-
-    // Left side of navigation bar
-    path.lineTo(0, 0);
-    shadowPath.lineTo(0, -2);
-
-    if (showNotch) {
-      // Draw with notch
-      const double notchRadius = 40.0;
-      const double notchMargin = 7.0;
-      final double centerX = size.width / 2;
-
-      // Top left to start of notch
-      path.lineTo(centerX - notchRadius - notchMargin, 0);
-      shadowPath.lineTo(centerX - notchRadius - notchMargin, -2);
-
-      // Create smooth notch curve
-      path.quadraticBezierTo(
-        centerX - notchRadius, 0,
-        centerX - notchRadius, notchMargin,
-      );
-      shadowPath.quadraticBezierTo(
-        centerX - notchRadius, -2,
-        centerX - notchRadius, notchMargin - 2,
-      );
-
-      // Notch curve - left side
-      path.arcToPoint(
-        Offset(centerX + notchRadius, notchMargin),
-        radius: const Radius.circular(notchRadius),
-        clockwise: false,
-      );
-      shadowPath.arcToPoint(
-        Offset(centerX + notchRadius, notchMargin - 2),
-        radius: const Radius.circular(notchRadius),
-        clockwise: false,
-      );
-
-      // Notch curve - right side
-      path.quadraticBezierTo(
-        centerX + notchRadius, 0,
-        centerX + notchRadius + notchMargin, 0,
-      );
-      shadowPath.quadraticBezierTo(
-        centerX + notchRadius, -2,
-        centerX + notchRadius + notchMargin, -2,
-      );
-    } else {
-      // Draw straight line without notch
-      path.lineTo(size.width, 0);
-      shadowPath.lineTo(size.width, -2);
-    }
-
-    // Right side of navigation bar (if notch was drawn, this continues from notch end)
-    if (showNotch) {
-      path.lineTo(size.width, 0);
-      shadowPath.lineTo(size.width, -2);
-    }
-
-    // Bottom right
-    path.lineTo(size.width, size.height);
-    shadowPath.lineTo(size.width, size.height);
-
-    // Close the path
-    path.close();
-    shadowPath.close();
-
-    // Draw shadow first
-    canvas.drawPath(shadowPath, shadowPaint);
-
-    // Draw the main navigation bar
-    canvas.drawPath(path, paint);
-
-    // Add subtle inner shadow for depth
-    final innerShadowPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.05)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas.drawPath(path, innerShadowPaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

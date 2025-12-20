@@ -74,7 +74,7 @@ class HomeCategories extends StatelessWidget {
               shoppingTotal = state.getCategoryTotal('Shopping');
               billsTotal = state.getCategoryTotal('Bills');
               healthTotal = state.getCategoryTotal('Health');
-              print(
+              debugPrint(
                 '📊 Totals - Shopping: $shoppingTotal, Bills: $billsTotal, Health: $healthTotal',
               );
             }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-import '../../core/theme/app_colors.dart';
 import '../home/bloc/expense_bloc.dart';
 import '../home/bloc/expense_state.dart';
 import '../items/items_page.dart';
+import '../../widgets/chart_placeholder.dart';
+import '../../widgets/dialogs/add_category_dialog.dart';
 
 /// Categories Page - عرض الفئات مع Pie Chart
 /// يعرض pie chart ديناميك وقائمة الفئات
@@ -29,6 +31,17 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   DateTime? _fromDate;
   DateTime? _toDate;
 
+  // Default categories that cannot be deleted
+  final List<Map<String, dynamic>> _defaultCategories = [
+    {'name': 'Food & Drink', 'icon': Icons.restaurant, 'isDefault': true},
+    {'name': 'Shopping', 'icon': Icons.shopping_bag, 'isDefault': true},
+    {'name': 'Bills', 'icon': Icons.receipt, 'isDefault': true},
+    {'name': 'Health', 'icon': Icons.favorite, 'isDefault': true},
+  ];
+
+  // Custom categories added by user (can be deleted)
+  List<Map<String, dynamic>> _customCategories = [];
+
   @override
   void initState() {
     super.initState();
@@ -38,10 +51,19 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   void _setDefaultDates() {
     final now = DateTime.now();
     setState(() {
-      _fromDate = DateTime(now.year, now.month, 1); // First day of current month
+      _fromDate = DateTime(
+        now.year,
+        now.month,
+        1,
+      ); // First day of current month
       _toDate = now; // Today
     });
   }
+
+  List<Map<String, dynamic>> get _allCategories => [
+    ..._defaultCategories,
+    ..._customCategories,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +72,9 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false, // No back button - this is a tab page
         title: Text(
-          'categories',
+          'Categories',
           style: GoogleFonts.inter(
             color: Colors.black,
             fontSize: 20,
@@ -70,17 +89,17 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           children: [
             // Date Selectors
             _buildDateSelectors(),
-            
+
             const SizedBox(height: 30),
-            
+
             // Pie Chart
             _buildPieChart(),
-            
+
             const SizedBox(height: 30),
-            
+
             // Categories List
             _buildCategoriesList(),
-            
+
             const SizedBox(height: 30),
           ],
         ),
@@ -125,12 +144,12 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withOpacity(0.3),
+            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withOpacity(0.1),
+              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -162,37 +181,46 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   Widget _buildPieChart() {
     return BlocBuilder<ExpenseBloc, ExpenseState>(
       builder: (context, state) {
+        // Show placeholder when no data exists
+        if (state is ExpenseLoaded && state.isEmpty) {
+          return const ChartPlaceholder(
+            title: 'Spending by Category',
+            height: 150,
+            type: ChartPlaceholderType.pie,
+          );
+        }
+
         Map<String, double> categoryTotals = {};
         double totalAmount = 0;
 
-        if (state is ExpenseLoaded) {
-          // Calculate totals for each category
-          categoryTotals['Food'] = state.getCategoryTotal('Food & Drink');
-          categoryTotals['Shopping'] = state.getCategoryTotal('Shopping');
-          categoryTotals['Bills'] = state.getCategoryTotal('Bills');
-          categoryTotals['Health'] = state.getCategoryTotal('Health');
-          categoryTotals['Transport'] = state.getCategoryTotal('Transport');
-          categoryTotals['Entertainment'] = state.getCategoryTotal('Entertainment');
+        if (state is ExpenseLoaded && state.hasData) {
+          // Calculate totals for ALL categories (default + custom)
+          for (var cat in _allCategories) {
+            final name = cat['name'] as String;
+            final total = state.getCategoryTotal(name);
+            if (total > 0) {
+              categoryTotals[name] = total;
+            }
+          }
 
-          totalAmount = categoryTotals.values.fold(0, (sum, amount) => sum + amount);
+          totalAmount = categoryTotals.values.fold(
+            0,
+            (sum, amount) => sum + amount,
+          );
         }
 
-        // Default data if no expenses
+        // If still no data after calculation, show placeholder
         if (totalAmount == 0) {
-          categoryTotals = {
-            'Food': 300,
-            'Shopping': 790,
-            'Bills': 200,
-            'Health': 150,
-            'Transport': 100,
-            'Entertainment': 80,
-          };
-          totalAmount = categoryTotals.values.fold(0, (sum, amount) => sum + amount);
+          return const ChartPlaceholder(
+            title: 'Spending by Category',
+            height: 150,
+            type: ChartPlaceholderType.pie,
+          );
         }
 
         return SizedBox(
-          width: 250,
-          height: 250,
+          width: 220,
+          height: 220,
           child: CustomPaint(
             painter: PieChartPainter(categoryTotals, totalAmount),
           ),
@@ -204,61 +232,166 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   Widget _buildCategoriesList() {
     return BlocBuilder<ExpenseBloc, ExpenseState>(
       builder: (context, state) {
+        // Get category totals from real data
         Map<String, double> categoryTotals = {};
-
         if (state is ExpenseLoaded) {
-          categoryTotals['Food'] = state.getCategoryTotal('Food & Drink');
-          categoryTotals['Shopping'] = state.getCategoryTotal('Shopping');
-          categoryTotals['Bills'] = state.getCategoryTotal('Bills');
-          categoryTotals['Health'] = state.getCategoryTotal('Health');
-          categoryTotals['Transport'] = state.getCategoryTotal('Transport');
-          categoryTotals['Entertainment'] = state.getCategoryTotal('Entertainment');
-        } else {
-          // Default data
-          categoryTotals = {
-            'Food': 300,
-            'Shopping': 790,
-            'Bills': 200,
-            'Health': 150,
-            'Transport': 100,
-            'Entertainment': 80,
-          };
+          for (var cat in _allCategories) {
+            final name = cat['name'] as String;
+            categoryTotals[name] = state.getCategoryTotal(name);
+          }
         }
 
-        final categories = [
-          {'name': 'Food', 'icon': Icons.restaurant, 'color': const Color(0xFF1976D2)},
-          {'name': 'Shopping', 'icon': Icons.shopping_bag, 'color': const Color(0xFF1976D2)},
-          {'name': 'Bills', 'icon': Icons.receipt, 'color': const Color(0xFF1976D2)},
-          {'name': 'Health', 'icon': Icons.favorite, 'color': const Color(0xFF1976D2)},
-          {'name': 'Transport', 'icon': Icons.directions_car, 'color': const Color(0xFF1976D2)},
-          {'name': 'Entertainment', 'icon': Icons.movie, 'color': const Color(0xFF1976D2)},
-        ];
-
         return Column(
-          children: categories.map((category) {
-            final amount = categoryTotals[category['name']] ?? 0;
-            return _buildCategoryItem(
-              category['name'] as String,
-              category['icon'] as IconData,
-              category['color'] as Color,
-              amount,
-            );
-          }).toList(),
+          children: [
+            // Default Categories (4 main ones)
+            ..._defaultCategories.map((category) {
+              final amount = categoryTotals[category['name']] ?? 0;
+              return _buildCategoryItem(
+                category['name'] as String,
+                category['icon'] as IconData,
+                const Color(0xFF1976D2),
+                amount,
+                isDefault: true,
+              );
+            }),
+
+            // Custom Categories (can be deleted)
+            ..._customCategories.map((category) {
+              final amount = categoryTotals[category['name']] ?? 0;
+              return _buildCategoryItem(
+                category['name'] as String,
+                category['icon'] as IconData,
+                const Color(0xFF1976D2),
+                amount,
+                isDefault: false,
+                onDelete: () => _deleteCategory(category['name'] as String),
+              );
+            }),
+
+            const SizedBox(height: 16),
+
+            // Add Category Button
+            _buildAddCategoryButton(),
+          ],
         );
       },
     );
   }
 
-  Widget _buildCategoryItem(String name, IconData icon, Color color, double amount) {
+  Widget _buildAddCategoryButton() {
+    return GestureDetector(
+      onTap: _addNewCategory,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: const Color(0xFF1976D2).withValues(alpha: 0.3),
+            width: 2,
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1976D2).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                color: Color(0xFF1976D2),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Add Category',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1976D2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addNewCategory() async {
+    HapticFeedback.lightImpact();
+    final result = await showAddCategoryDialog(context);
+    if (result != null) {
+      setState(() {
+        _customCategories.add({
+          'name': result['name'],
+          'icon': result['icon'],
+          'isDefault': false,
+        });
+      });
+    }
+  }
+
+  void _deleteCategory(String name) {
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Delete Category',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$name"?',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() {
+                _customCategories.removeWhere((cat) => cat['name'] == name);
+              });
+            },
+            child: Text('Delete', style: GoogleFonts.inter(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryItem(
+    String name,
+    IconData icon,
+    Color color,
+    double amount, {
+    bool isDefault = true,
+    VoidCallback? onDelete,
+  }) {
     return GestureDetector(
       onTap: () {
+        // Pass the existing ExpenseBloc to ItemsPage
+        final expenseBloc = context.read<ExpenseBloc>();
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ItemsPage(
-              categoryName: name,
-              categoryIcon: icon,
-              categoryColor: color,
+            builder: (_) => BlocProvider.value(
+              value: expenseBloc,
+              child: ItemsPage(
+                categoryName: name,
+                categoryIcon: icon,
+                categoryColor: color,
+              ),
             ),
           ),
         );
@@ -275,15 +408,16 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 12),
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            Expanded(
+              child: Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
             ),
-            const Spacer(),
             Text(
               'EGP ${amount.toInt()}',
               style: const TextStyle(
@@ -292,13 +426,30 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                 color: Colors.black87,
               ),
             ),
+            // Delete button for custom categories only
+            if (!isDefault && onDelete != null) ...[
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: onDelete,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
-
-
 
   Future<void> _selectFromDate() async {
     final DateTime? picked = await showDatePicker(
@@ -342,7 +493,7 @@ class PieChartPainter extends CustomPainter {
 
     final colors = [
       const Color(0xFF1976D2), // Food - Dark Blue
-      const Color(0xFF2196F3), // Shopping - Blue  
+      const Color(0xFF2196F3), // Shopping - Blue
       const Color(0xFF64B5F6), // Bills - Light Blue
       const Color(0xFF90CAF9), // Health - Lighter Blue
       const Color(0xFFBBDEFB), // Transport - Very Light Blue
@@ -355,7 +506,7 @@ class PieChartPainter extends CustomPainter {
     categoryTotals.forEach((category, amount) {
       if (amount > 0) {
         final sweepAngle = (amount / totalAmount) * 2 * math.pi;
-        
+
         final paint = Paint()
           ..color = colors[colorIndex % colors.length]
           ..style = PaintingStyle.fill;
@@ -370,7 +521,8 @@ class PieChartPainter extends CustomPainter {
 
         // Draw percentage text
         final percentage = ((amount / totalAmount) * 100).round();
-        if (percentage >= 10) { // Only show text for segments >= 10%
+        if (percentage >= 10) {
+          // Only show text for segments >= 10%
           final textAngle = startAngle + sweepAngle / 2;
           final textRadius = radius * 0.7;
           final textX = center.dx + textRadius * math.cos(textAngle);
@@ -391,7 +543,10 @@ class PieChartPainter extends CustomPainter {
           textPainter.layout();
           textPainter.paint(
             canvas,
-            Offset(textX - textPainter.width / 2, textY - textPainter.height / 2),
+            Offset(
+              textX - textPainter.width / 2,
+              textY - textPainter.height / 2,
+            ),
           );
         }
 

@@ -47,3 +47,4 @@ class UpdateExpense extends ExpenseEvent {
 class ClearAllExpenses extends ExpenseEvent {
   const ClearAllExpenses();
 }
+

@@ -38,3 +38,4 @@ class HomeProgressBar extends StatelessWidget {
     );
   }
 }
+

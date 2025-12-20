@@ -30,8 +30,8 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false, // Prevent back button
+    return PopScope(
+      canPop: false, // Prevent back button
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
@@ -72,8 +72,8 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: widget.gradient.colors.first.withOpacity(
-                          isRecording ? 0.6 : 0.3,
+                        color: widget.gradient.colors.first.withValues(
+                          alpha: isRecording ? 0.6 : 0.3,
                         ),
                         blurRadius: isRecording ? 30 : 15,
                         spreadRadius: isRecording ? 8 : 3,
@@ -85,7 +85,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isRecording
-                          ? Colors.white.withOpacity(0.2)
+                          ? Colors.white.withValues(alpha: 0.2)
                           : Colors.transparent,
                     ),
                     child: const Icon(Icons.mic, color: Colors.white, size: 50),
@@ -122,6 +122,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
 
                         Navigator.pop(context);
                         Future.delayed(const Duration(milliseconds: 200), () {
+                          if (!context.mounted) return;
                           showDialog(
                             context: context,
                             barrierDismissible: false,
@@ -142,7 +143,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                         ? []
                         : [
                             BoxShadow(
-                              color: AppColors.success.withOpacity(0.4),
+                              color: AppColors.success.withValues(alpha: 0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
