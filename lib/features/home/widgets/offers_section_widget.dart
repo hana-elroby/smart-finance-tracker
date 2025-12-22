@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -40,10 +40,10 @@ class OffersSection extends StatelessWidget {
       title: 'Smart Savings',
       subtitle: 'Track & Save More',
       brand: 'FinTrack',
-      brandColor: Color(0xFF1687F0),
+      brandColor: Color(0xFF1478E0),
       imageUrl:
           'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop&crop=center',
-      fallbackGradient: [Color(0xFF1687F0), Color(0xFF0F446A)],
+      fallbackGradient: [Color(0xFF1478E0), Color(0xFF0F446A)],
     ),
     OfferData(
       title: 'Budget Goals',
@@ -98,7 +98,7 @@ class OffersSection extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF003B73),
+            color: const Color(0xFF0D5DB8),
           ),
         ),
         GestureDetector(
@@ -305,3 +305,5 @@ class OffersSection extends StatelessWidget {
     );
   }
 }
+
+

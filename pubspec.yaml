@@ -55,6 +55,10 @@ dependencies:
   # Curved Bottom Navigation Bar
   curved_navigation_bar: ^1.0.6
   intl: ^0.20.2
+  
+  # Local Notifications
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
 
 dev_dependencies:
   flutter_test:

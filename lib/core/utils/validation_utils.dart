@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Validation utilities for forms
 class ValidationUtils {
@@ -88,7 +88,7 @@ class SnackBarHelper {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: const Color(0xFF1687F0),
+        backgroundColor: const Color(0xFF1478E0),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -104,3 +104,5 @@ class SnackBarHelper {
     );
   }
 }
+
+

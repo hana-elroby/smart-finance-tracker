@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 import '../../../../domain/entities/expense_entity.dart';
 
 /// Base expense state
@@ -48,3 +48,5 @@ class ExpenseOperationSuccess extends ExpenseState {
   @override
   List<Object?> get props => [message];
 }
+
+

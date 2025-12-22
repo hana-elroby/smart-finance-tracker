@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../widgets/modern_action_button.dart';
 import '../../widgets/chart_placeholder.dart';
+import '../../services/notification_service.dart';
 
 import 'dialogs/voice_recording_dialog.dart';
 import 'dialogs/qr_scanner_bottom_sheet.dart';
@@ -12,8 +13,12 @@ import 'bloc/expense_bloc.dart';
 import 'bloc/expense_state.dart';
 import 'package:graduation_project/features/categories/categories_page.dart';
 import 'package:graduation_project/features/reminders/reminders_page.dart';
+import 'package:graduation_project/features/reminders/bloc/reminder_bloc.dart';
+import 'package:graduation_project/features/notifications/notifications_page.dart';
 import '../offers/offers_page.dart';
 import '../../widgets/main_layout.dart';
+import '../profile/bloc/user_bloc.dart';
+import '../profile/bloc/user_state.dart';
 
 /// Professional Home Page - Modern Expense Tracking
 /// Features: Header, Navigation Cards, Date Filter, Chart, FAB
@@ -35,7 +40,6 @@ class _HomePageContent extends StatefulWidget {
 
 class _HomePageContentState extends State<_HomePageContent>
     with TickerProviderStateMixin {
-  String userName = "Bassant";
   late ExpenseBloc _expenseBloc;
   DateTime? _fromDate;
   DateTime? _toDate;
@@ -51,7 +55,6 @@ class _HomePageContentState extends State<_HomePageContent>
     super.initState();
     _expenseBloc = context.read<ExpenseBloc>();
     _initializeAnimations();
-    _loadUserData();
     _setDefaultDates();
   }
 
@@ -87,13 +90,6 @@ class _HomePageContentState extends State<_HomePageContent>
     setState(() {
       _fromDate = DateTime(2024, 1, 1); // Default start date
       _toDate = DateTime.now();
-    });
-  }
-
-  Future<void> _loadUserData() async {
-    // TODO: Replace with Firebase Auth
-    setState(() {
-      userName = "Bassant ";
     });
   }
 
@@ -139,149 +135,179 @@ class _HomePageContentState extends State<_HomePageContent>
   }
 
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // النص والكوتة
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Hi $userName',
-                style: GoogleFonts.inter(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF003B73),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
+    return BlocBuilder<UserBloc, UserState>(
+      builder: (context, userState) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // النص والكوتة
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(width: 2, color: Colors.transparent),
+                  Text(
+                    'Hi ${userState.firstName}',
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0D5DB8),
                     ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF0814F9), Color(0xFFF907A8)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Container(
-                        margin: const EdgeInsets.all(2),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 20,
+                        height: 20,
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(2),
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(width: 2, color: Colors.transparent),
                         ),
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFF0814F9), Color(0xFFF907A8)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ).createShader(bounds),
-                          child: const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 12,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF0814F9), Color(0xFFF907A8)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Color(0xFF0814F9), Color(0xFFF907A8)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: const Icon(
+                                Icons.check,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Smart spending leads to bright savings!',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF4B5563),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Smart spending leads to bright savings!',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF4B5563),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        // الجرس الجميل زي الصورة
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RemindersPage()),
-            );
-          },
-          child: Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF0814F9), // أزرق
-                  Color(0xFF8B5CF6), // بنفسجي
-                  Color(0xFFEC4899), // وردي
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-            ),
-            child: Container(
-              margin: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Stack(
-                children: [
-                  // الجرس البرتقالي/الأصفر
-                  Center(
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFFFE994), // أصفر فاتح
-                          Color(0xFFFF8C00), // برتقالي
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ).createShader(bounds),
-                      child: const Icon(
-                        Icons.notifications,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  // النقطة الحمراء (notification badge)
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEF4444), // أحمر
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-        ),
-      ],
+            // الجرس الجميل زي الصورة
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                ).then((_) {
+                  // Refresh when coming back
+                  (context as Element).markNeedsBuild();
+                });
+              },
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF0814F9), // أزرق
+                      Color(0xFF8B5CF6), // بنفسجي
+                      Color(0xFFEC4899), // وردي
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(5),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Stack(
+                    children: [
+                      // الجرس البرتقالي/الأصفر
+                      Center(
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color(0xFFFFE994), // أصفر فاتح
+                              Color(0xFFFF8C00), // برتقالي
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ).createShader(bounds),
+                          child: const Icon(
+                            Icons.notifications,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                      // Badge with unread count
+                      Builder(
+                        builder: (context) {
+                          final unreadCount = NotificationService()
+                              .notificationHistory
+                              .where((n) => !n.isRead)
+                              .length;
+                          if (unreadCount == 0) return const SizedBox();
+                          return Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                unreadCount > 9 ? '9+' : '$unreadCount',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -297,7 +323,7 @@ class _HomePageContentState extends State<_HomePageContent>
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFF003B73),
+                color: const Color(0xFF0D5DB8),
               ),
             ),
             GestureDetector(
@@ -355,10 +381,10 @@ class _HomePageContentState extends State<_HomePageContent>
         'title': 'Smart Savings',
         'subtitle': 'Track & Save More',
         'brand': 'FinTrack',
-        'brandColor': const Color(0xFF1687F0),
+        'brandColor': const Color(0xFF1478E0),
         'imageUrl':
             'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop&crop=center',
-        'fallbackGradient': [const Color(0xFF1687F0), const Color(0xFF0F446A)],
+        'fallbackGradient': [const Color(0xFF1478E0), const Color(0xFF0F446A)],
       },
       {
         'title': 'Budget Goals',
@@ -552,9 +578,12 @@ class _HomePageContentState extends State<_HomePageContent>
             text: 'Reminders',
             onTap: () {
               HapticFeedback.lightImpact();
+              final reminderBloc = context.read<ReminderBloc>();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const RemindersPage()),
+                MaterialPageRoute(
+                  builder: (context) => RemindersPage(reminderBloc: reminderBloc),
+                ),
               );
             },
           ),
@@ -770,9 +799,12 @@ class _HomePageContentState extends State<_HomePageContent>
           onTap: () {
             HapticFeedback.lightImpact();
             _animateCardTap(() {
+              final reminderBloc = context.read<ReminderBloc>();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const RemindersPage()),
+                MaterialPageRoute(
+                  builder: (context) => RemindersPage(reminderBloc: reminderBloc),
+                ),
               );
             });
           },
@@ -1007,7 +1039,7 @@ class _HomePageContentState extends State<_HomePageContent>
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.w600, // أخف شوية
-                      color: const Color(0xFF003B73),
+                      color: const Color(0xFF0D5DB8),
                     ),
                   ),
                 ],
@@ -1032,12 +1064,12 @@ class _HomePageContentState extends State<_HomePageContent>
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
+            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
+              color: const Color(0xFF1478E0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -1048,7 +1080,7 @@ class _HomePageContentState extends State<_HomePageContent>
           children: [
             Icon(
               Icons.calendar_today_outlined,
-              color: const Color(0xFF1687F0),
+              color: const Color(0xFF1478E0),
               size: 16,
             ),
             const SizedBox(width: 8),
@@ -1405,7 +1437,28 @@ class _HomePageContentState extends State<_HomePageContent>
           return const ChartPlaceholder(
             title: 'Your Spending Overview',
             height: 160,
-            type: ChartPlaceholderType.line,
+            type: ChartPlaceholderType.bar,
+          );
+        }
+        
+        // Also show placeholder for non-loaded states
+        if (state is! ExpenseLoaded) {
+          return const ChartPlaceholder(
+            title: 'Your Spending Overview',
+            height: 160,
+            type: ChartPlaceholderType.bar,
+          );
+        }
+
+        // Get real expense data
+        final expenses = state.expenses;
+        
+        // If no expenses, show placeholder
+        if (expenses.isEmpty) {
+          return const ChartPlaceholder(
+            title: 'Your Spending Overview',
+            height: 160,
+            type: ChartPlaceholderType.bar,
           );
         }
 
@@ -1422,7 +1475,7 @@ class _HomePageContentState extends State<_HomePageContent>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF003B73).withValues(alpha: 0.08),
+                color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -1472,7 +1525,38 @@ class _HomePageContentState extends State<_HomePageContent>
                   painter: ModernExpenseChartPainter(
                     fromDate: _fromDate,
                     toDate: _toDate,
+                    expenses: expenses,
                   ),
+                ),
+              ),
+              
+              // Tap hint - more visible
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.touch_app_rounded,
+                      size: 16,
+                      color: const Color(0xFF0D5DB8),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'اضغط على العمود لعرض التفاصيل',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: const Color(0xFF0D5DB8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1599,7 +1683,7 @@ class _HomePageContentState extends State<_HomePageContent>
                     style: GoogleFonts.inter(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF003B73),
+                      color: const Color(0xFF0D5DB8),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1730,7 +1814,7 @@ class _HomePageContentState extends State<_HomePageContent>
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isPrimary ? Colors.white : const Color(0xFF003B73),
+                      color: isPrimary ? Colors.white : const Color(0xFF0D5DB8),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1770,7 +1854,7 @@ class _HomePageContentState extends State<_HomePageContent>
           category: 'General',
           icon: Icons.mic_rounded,
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E5F9D), Color(0xFF003B73)],
+            colors: [Color(0xFF1E5F9D), Color(0xFF0D5DB8)],
           ),
           onSuccess: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1826,7 +1910,7 @@ class _HomePageContentState extends State<_HomePageContent>
                     style: GoogleFonts.inter(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF003B73),
+                      color: const Color(0xFF0D5DB8),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1904,14 +1988,31 @@ class _HomePageContentState extends State<_HomePageContent>
 class ModernExpenseChartPainter extends CustomPainter {
   final DateTime? fromDate;
   final DateTime? toDate;
+  final List<dynamic> expenses;
 
-  ModernExpenseChartPainter({this.fromDate, this.toDate});
+  ModernExpenseChartPainter({this.fromDate, this.toDate, this.expenses = const []});
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Generate dynamic data based on expenses
+    var chartResult = _generateChartData();
+    var chartData = chartResult['amounts'] as List<double>;
+    var chartCounts = chartResult['counts'] as List<int>;
+    
+    // If no data, don't draw anything
+    if (chartData.isEmpty) return;
+    
+    // If only one data point, add a zero point at start to make a line
+    if (chartData.length == 1) {
+      chartData = [0, chartData.first];
+      chartCounts = [0, chartCounts.first];
+    }
+    
+    final points = _calculatePoints(chartData, size);
+    if (points.isEmpty) return;
+    
     final paint = Paint()
-      ..color =
-          const Color(0xFF1687F0) // أزرق أساسي زي الصورة
+      ..color = const Color(0xFF1478E0)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1919,26 +2020,19 @@ class ModernExpenseChartPainter extends CustomPainter {
     final fillPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          const Color(0xFF1687F0).withValues(alpha: 0.25), // أزرق فاتح
-          const Color(0xFF8B5CF6).withValues(alpha: 0.08), // بنفسجي أقل
-          const Color(0xFFEC4899).withValues(alpha: 0.04), // وردي أقل جداً
+          const Color(0xFF1478E0).withValues(alpha: 0.25),
+          const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+          const Color(0xFFEC4899).withValues(alpha: 0.04),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    // Generate dynamic mock data based on date range
-    final mockData = _generateMockData();
-    final points = _calculatePoints(mockData, size);
-
     // Create smooth curve path
     final path = Path();
     path.moveTo(0, size.height);
-
-    // Add first point
     path.lineTo(points.first.dx, points.first.dy);
 
-    // Create smooth curves between points
     for (int i = 1; i < points.length; i++) {
       final cp1 = Offset(
         points[i - 1].dx + (points[i].dx - points[i - 1].dx) * 0.4,
@@ -1951,11 +2045,9 @@ class ModernExpenseChartPainter extends CustomPainter {
       path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, points[i].dx, points[i].dy);
     }
 
-    // Close path for fill
     path.lineTo(size.width, size.height);
     path.close();
 
-    // Draw filled area
     canvas.drawPath(path, fillPaint);
 
     // Draw line
@@ -1970,49 +2062,59 @@ class ModernExpenseChartPainter extends CustomPainter {
         points[i].dx - (points[i].dx - points[i - 1].dx) * 0.4,
         points[i].dy,
       );
-      linePath.cubicTo(
-        cp1.dx,
-        cp1.dy,
-        cp2.dx,
-        cp2.dy,
-        points[i].dx,
-        points[i].dy,
-      );
+      linePath.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, points[i].dx, points[i].dy);
     }
     canvas.drawPath(linePath, paint);
 
-    // Draw data points
+    // Draw data points with quantity labels
     final pointPaint = Paint()
-      ..color = const Color(0xFF1687F0)
+      ..color = const Color(0xFF1478E0)
       ..style = PaintingStyle.fill;
 
     final pointBorderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    for (final point in points) {
-      // Draw white border
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    for (int i = 0; i < points.length; i++) {
+      final point = points[i];
       canvas.drawCircle(point, 6, pointBorderPaint);
-      // Draw colored center
       canvas.drawCircle(point, 4, pointPaint);
+      
+      // Draw quantity count above each point (skip zero values)
+      if (i < chartCounts.length && chartCounts[i] > 0) {
+        final count = chartCounts[i];
+        textPainter.text = TextSpan(
+          text: '$count',
+          style: GoogleFonts.inter(
+            color: const Color(0xFF1478E0),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        );
+        textPainter.layout();
+        
+        // Position above the point
+        textPainter.paint(
+          canvas,
+          Offset(point.dx - textPainter.width / 2, point.dy - 22),
+        );
+      }
     }
 
-    // Draw grid lines (subtle)
+    // Draw grid lines
     final gridPaint = Paint()
       ..color = const Color(0xFFE5E7EB)
       ..strokeWidth = 1;
 
-    // Horizontal grid lines
     for (int i = 1; i < 5; i++) {
       final y = (size.height / 5) * i;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
     // Draw axis labels
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-
-    // Y-axis labels (dynamic amounts)
-    final yLabels = _generateYAxisLabels(mockData);
+    final yLabels = _generateYAxisLabels(chartData);
     for (int i = 0; i < yLabels.length; i++) {
       textPainter.text = TextSpan(
         text: yLabels[i],
@@ -2029,9 +2131,8 @@ class ModernExpenseChartPainter extends CustomPainter {
       );
     }
 
-    // X-axis labels (dynamic based on date range)
-    final xLabels = _generateXAxisLabels();
-    for (int i = 0; i < xLabels.length; i++) {
+    final xLabels = _generateXAxisLabels(chartData.length);
+    for (int i = 0; i < xLabels.length && i < points.length; i++) {
       textPainter.text = TextSpan(
         text: xLabels[i],
         style: GoogleFonts.inter(
@@ -2041,39 +2142,78 @@ class ModernExpenseChartPainter extends CustomPainter {
         ),
       );
       textPainter.layout();
+      final xPos = points.length > 1 
+          ? (size.width / (points.length - 1)) * i 
+          : size.width / 2;
       textPainter.paint(
         canvas,
-        Offset(
-          (size.width / (xLabels.length - 1)) * i - textPainter.width / 2,
-          size.height + 10,
-        ),
+        Offset(xPos - textPainter.width / 2, size.height + 10),
       );
     }
   }
 
-  // Generate mock expense data based on date range
-  List<double> _generateMockData() {
-    if (fromDate == null || toDate == null) {
-      // Default data if no dates selected
-      return [850, 1200, 950, 1400, 800, 1100, 750];
+  // Generate chart data from real expenses grouped by time
+  // Returns both amounts and counts
+  Map<String, dynamic> _generateChartData() {
+    if (expenses.isEmpty) return {'amounts': <double>[], 'counts': <int>[]};
+    
+    // Filter expenses by date range
+    final filteredExpenses = expenses.where((e) {
+      final date = e.date as DateTime;
+      if (fromDate != null && date.isBefore(fromDate!)) return false;
+      if (toDate != null && date.isAfter(toDate!)) return false;
+      return true;
+    }).toList();
+    
+    if (filteredExpenses.isEmpty) return {'amounts': <double>[], 'counts': <int>[]};
+    
+    // Calculate date range
+    final daysDiff = (toDate ?? DateTime.now()).difference(fromDate ?? DateTime(2024, 1, 1)).inDays;
+    
+    if (daysDiff <= 7) {
+      // Group by day for week view
+      final Map<int, double> dailyTotals = {};
+      final Map<int, int> dailyCounts = {};
+      for (var expense in filteredExpenses) {
+        final day = (expense.date as DateTime).day;
+        dailyTotals[day] = (dailyTotals[day] ?? 0) + (expense.amount as double);
+        dailyCounts[day] = (dailyCounts[day] ?? 0) + 1;
+      }
+      // Sort by day and return values
+      final sortedKeys = dailyTotals.keys.toList()..sort();
+      return {
+        'amounts': sortedKeys.map((k) => dailyTotals[k]!).toList(),
+        'counts': sortedKeys.map((k) => dailyCounts[k]!).toList(),
+      };
+    } else if (daysDiff <= 31) {
+      // Group by week for month view
+      final Map<int, double> weeklyTotals = {};
+      final Map<int, int> weeklyCounts = {};
+      for (var expense in filteredExpenses) {
+        final week = ((expense.date as DateTime).day / 7).ceil();
+        weeklyTotals[week] = (weeklyTotals[week] ?? 0) + (expense.amount as double);
+        weeklyCounts[week] = (weeklyCounts[week] ?? 0) + 1;
+      }
+      final sortedKeys = weeklyTotals.keys.toList()..sort();
+      return {
+        'amounts': sortedKeys.map((k) => weeklyTotals[k]!).toList(),
+        'counts': sortedKeys.map((k) => weeklyCounts[k]!).toList(),
+      };
+    } else {
+      // Group by month for longer periods
+      final Map<int, double> monthlyTotals = {};
+      final Map<int, int> monthlyCounts = {};
+      for (var expense in filteredExpenses) {
+        final month = (expense.date as DateTime).month;
+        monthlyTotals[month] = (monthlyTotals[month] ?? 0) + (expense.amount as double);
+        monthlyCounts[month] = (monthlyCounts[month] ?? 0) + 1;
+      }
+      final sortedKeys = monthlyTotals.keys.toList()..sort();
+      return {
+        'amounts': sortedKeys.map((k) => monthlyTotals[k]!).toList(),
+        'counts': sortedKeys.map((k) => monthlyCounts[k]!).toList(),
+      };
     }
-
-    final daysDiff = toDate!.difference(fromDate!).inDays;
-    final dataPoints = (daysDiff / 7).ceil().clamp(3, 12); // 3-12 points
-
-    // Generate realistic expense data
-    final List<double> data = [];
-    final random = DateTime.now().millisecond; // Simple seed
-
-    for (int i = 0; i < dataPoints; i++) {
-      // Base amount with some variation
-      final baseAmount = 800 + (random % 600); // 800-1400 range
-      final variation = (random * (i + 1)) % 400 - 200; // ±200 variation
-      final amount = (baseAmount + variation).clamp(200, 1600).toDouble();
-      data.add(amount);
-    }
-
-    return data;
   }
 
   // Calculate chart points from data
@@ -2098,51 +2238,56 @@ class ModernExpenseChartPainter extends CustomPainter {
     }).toList();
   }
 
-  // Generate X-axis labels based on date range
-  List<String> _generateXAxisLabels() {
-    if (fromDate == null || toDate == null) {
-      return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-    }
-
-    final daysDiff = toDate!.difference(fromDate!).inDays;
-
+  // Generate X-axis labels based on time period
+  List<String> _generateXAxisLabels(int dataCount) {
+    if (dataCount <= 0 || expenses.isEmpty) return ['', 'Today'];
+    
+    // Calculate date range
+    final daysDiff = (toDate ?? DateTime.now()).difference(fromDate ?? DateTime(2024, 1, 1)).inDays;
+    
+    // Filter expenses by date range
+    final filteredExpenses = expenses.where((e) {
+      final date = e.date as DateTime;
+      if (fromDate != null && date.isBefore(fromDate!)) return false;
+      if (toDate != null && date.isAfter(toDate!)) return false;
+      return true;
+    }).toList();
+    
+    if (filteredExpenses.isEmpty) return ['', 'Today'];
+    
     if (daysDiff <= 7) {
-      // Show days for week view
-      return List.generate(7, (i) {
-        final date = fromDate!.add(Duration(days: i));
-        return '${date.day}';
-      });
+      // Show day numbers for week view
+      final Set<int> days = {};
+      for (var expense in filteredExpenses) {
+        days.add((expense.date as DateTime).day);
+      }
+      final sortedDays = days.toList()..sort();
+      
+      // If only one day, add "Start" label
+      if (sortedDays.length == 1) {
+        return ['Start', '${sortedDays.first}'];
+      }
+      return sortedDays.map((d) => '$d').toList();
     } else if (daysDiff <= 31) {
-      // Show weeks for month view
-      return ['W1', 'W2', 'W3', 'W4'];
+      // Show week numbers for month view
+      final actualDataCount = dataCount > 1 ? dataCount : 2;
+      if (dataCount == 1) return ['Start', 'W1'];
+      return List.generate(actualDataCount, (i) => 'W${i + 1}');
     } else {
-      // Show months for longer periods
-      final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
-      ];
-      final startMonth = fromDate!.month - 1;
-      final monthCount =
-          ((toDate!.year - fromDate!.year) * 12 +
-                  toDate!.month -
-                  fromDate!.month +
-                  1)
-              .clamp(1, 12);
-
-      return List.generate(monthCount, (i) {
-        final monthIndex = (startMonth + i) % 12;
-        return months[monthIndex];
-      });
+      // Show month names for longer periods
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      final Set<int> monthIndices = {};
+      for (var expense in filteredExpenses) {
+        monthIndices.add((expense.date as DateTime).month - 1);
+      }
+      final sortedMonths = monthIndices.toList()..sort();
+      
+      // If only one month, add "Start" label
+      if (sortedMonths.length == 1) {
+        return ['Start', months[sortedMonths.first]];
+      }
+      return sortedMonths.map((m) => months[m]).toList();
     }
   }
 
@@ -2174,7 +2319,9 @@ class ModernExpenseChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
     if (oldDelegate is! ModernExpenseChartPainter) return true;
-    return oldDelegate.fromDate != fromDate || oldDelegate.toDate != toDate;
+    return oldDelegate.fromDate != fromDate || 
+           oldDelegate.toDate != toDate ||
+           oldDelegate.expenses.length != expenses.length;
   }
 }
 
@@ -2335,3 +2482,5 @@ class ExpenseChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
+
+

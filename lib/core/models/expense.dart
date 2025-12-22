@@ -1,4 +1,4 @@
-/// @deprecated Use ExpenseEntity from domain/entities and ExpenseModel from data/models
+﻿/// @deprecated Use ExpenseEntity from domain/entities and ExpenseModel from data/models
 ///
 /// Migration guide:
 /// - For domain logic: Use ExpenseEntity from 'domain/entities/expense_entity.dart'
@@ -66,3 +66,5 @@ class Expense {
     );
   }
 }
+
+

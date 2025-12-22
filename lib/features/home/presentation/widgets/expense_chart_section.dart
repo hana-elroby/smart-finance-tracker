@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Expense chart section widget
@@ -30,7 +30,7 @@ class ExpenseChartSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF003B73).withValues(alpha: 0.08),
+            color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -109,12 +109,12 @@ class _SimpleDateField extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
+            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
+              color: const Color(0xFF1478E0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -125,7 +125,7 @@ class _SimpleDateField extends StatelessWidget {
           children: [
             const Icon(
               Icons.calendar_today_outlined,
-              color: Color(0xFF1687F0),
+              color: Color(0xFF1478E0),
               size: 16,
             ),
             const SizedBox(width: 8),
@@ -154,7 +154,7 @@ class _ExpenseChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF1687F0)
+      ..color = const Color(0xFF1478E0)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -162,7 +162,7 @@ class _ExpenseChartPainter extends CustomPainter {
     final fillPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          const Color(0xFF1687F0).withValues(alpha: 0.25),
+          const Color(0xFF1478E0).withValues(alpha: 0.25),
           const Color(0xFF8B5CF6).withValues(alpha: 0.08),
           const Color(0xFFEC4899).withValues(alpha: 0.04),
         ],
@@ -223,7 +223,7 @@ class _ExpenseChartPainter extends CustomPainter {
 
     // Draw data points
     final pointPaint = Paint()
-      ..color = const Color(0xFF1687F0)
+      ..color = const Color(0xFF1478E0)
       ..style = PaintingStyle.fill;
 
     final pointBorderPaint = Paint()
@@ -291,3 +291,5 @@ class _ExpenseChartPainter extends CustomPainter {
     return oldDelegate.fromDate != fromDate || oldDelegate.toDate != toDate;
   }
 }
+
+

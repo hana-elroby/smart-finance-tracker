@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class SimpleBottomNav extends StatelessWidget {
@@ -71,4 +71,6 @@ class SimpleBottomNav extends StatelessWidget {
     );
   }
 }
+
+
 

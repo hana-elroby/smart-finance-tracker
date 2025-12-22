@@ -1,4 +1,4 @@
-// ثوابت التطبيق - معلومات ثابتة تستخدم في كل التطبيق
+﻿// ثوابت التطبيق - معلومات ثابتة تستخدم في كل التطبيق
 // App Constants - Fixed values used throughout the app
 class AppConstants {
   AppConstants._();
@@ -71,3 +71,5 @@ class AppConstants {
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration syncDelay = Duration(seconds: 1);
 }
+
+

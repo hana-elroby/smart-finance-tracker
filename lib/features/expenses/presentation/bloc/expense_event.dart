@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 import '../../../../domain/entities/expense_entity.dart';
 
 /// Base expense event
@@ -67,3 +67,5 @@ class SyncExpensesEvent extends ExpenseEvent {
 class ClearAllExpensesEvent extends ExpenseEvent {
   const ClearAllExpensesEvent();
 }
+
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -112,7 +112,7 @@ class AddExpenseBottomSheet extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF003B73),
+              color: const Color(0xFF0D5DB8),
             ),
           ),
           const SizedBox(height: 8),
@@ -207,7 +207,7 @@ class _ActionRow extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isPrimary ? Colors.white : const Color(0xFF003B73),
+                      color: isPrimary ? Colors.white : const Color(0xFF0D5DB8),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -301,7 +301,7 @@ class OCROptionsBottomSheet extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF003B73),
+                    color: const Color(0xFF0D5DB8),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -357,3 +357,5 @@ class OCROptionsBottomSheet extends StatelessWidget {
     );
   }
 }
+
+

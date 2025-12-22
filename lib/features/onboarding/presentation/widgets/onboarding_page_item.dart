@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import '../../domain/models/onboarding_model.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -109,4 +109,6 @@ class OnboardingPageItem extends StatelessWidget {
     );
   }
 }
+
+
 

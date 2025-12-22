@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -31,7 +31,7 @@ class HomeHeader extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF003B73),
+                  color: const Color(0xFF0D5DB8),
                 ),
               ),
               const SizedBox(height: 8),
@@ -104,7 +104,7 @@ class HomeHeader extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Notifications - Coming soon!'),
-              backgroundColor: Color(0xFF1687F0),
+              backgroundColor: Color(0xFF1478E0),
               duration: Duration(seconds: 1),
             ),
           );
@@ -163,3 +163,5 @@ class HomeHeader extends StatelessWidget {
     );
   }
 }
+
+

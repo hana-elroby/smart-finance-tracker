@@ -1,4 +1,4 @@
-/// Extension on String for common utilities
+﻿/// Extension on String for common utilities
 extension StringExtension on String {
   /// Capitalize first letter
   String get capitalize {
@@ -51,3 +51,5 @@ extension NullableStringExtension on String? {
   /// Check if not null and not empty
   bool get isNotNullOrEmpty => !isNullOrEmpty;
 }
+
+

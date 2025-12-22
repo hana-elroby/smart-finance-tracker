@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +8,10 @@ import '../features/categories/categories_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/offers/offers_page.dart';
 import '../features/home/bloc/expense_bloc.dart';
+import '../features/reminders/bloc/reminder_bloc.dart';
+import '../features/profile/bloc/user_bloc.dart';
+import '../features/categories/bloc/category_bloc.dart';
+import 'dialogs/voice_input_dialog.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -22,10 +26,11 @@ class _MainLayoutState extends State<MainLayout> {
   late int _selectedIndex;
   final GlobalKey<CurvedNavigationBarState> _bottomNavigationKey = GlobalKey();
   late PageController _pageController;
+  bool _showFloatingOptions = false; // Track if floating options are visible
 
-  // Navy Blue Colors - كحلي
-  static const Color _navyBlue = Color(0xFF003566);
-  static const Color _navyLight = Color(0xFF1D4E89);
+  // Navy Blue Colors - أزرق
+  static const Color _navyBlue = Color(0xFF0D5DB8);
+  static const Color _navyLight = Color(0xFF1478E0);
 
   // Pages list - 4 pages
   final List<Widget> _pages = const [
@@ -52,19 +57,117 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ExpenseBloc(),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => ExpenseBloc()),
+        BlocProvider(create: (context) => ReminderBloc()),
+        BlocProvider(create: (context) => UserBloc()),
+        BlocProvider(create: (context) => CategoryBloc()),
+      ],
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
-        body: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: _pages,
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: _pages,
+            ),
+            // Floating options overlay
+            if (_showFloatingOptions && _isHomePage) _buildFloatingOptions(),
+          ],
         ),
         extendBody: true,
         bottomNavigationBar: _isHomePage
             ? _buildCurvedNavWithPlus()
             : _buildCurvedNavWithoutPlus(),
+      ),
+    );
+  }
+
+  // Floating Scan and Voice buttons above Plus
+  Widget _buildFloatingOptions() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _showFloatingOptions = false);
+      },
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.3),
+        child: Stack(
+          children: [
+            // Scan button (left)
+            Positioned(
+              bottom: 100,
+              left: MediaQuery.of(context).size.width / 2 - 90,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _showFloatingOptions = false);
+                  _showScanOptions();
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey[300]!, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: Color(0xFF374151),
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+            // Voice button (right)
+            Positioned(
+              bottom: 100,
+              right: MediaQuery.of(context).size.width / 2 - 90,
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _showFloatingOptions = false);
+                  _showVoiceInput();
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey[300]!, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.mic_rounded,
+                        color: const Color(0xFF3B82F6),
+                        size: 28,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -133,7 +236,9 @@ class _MainLayoutState extends State<MainLayout> {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        _showAddExpenseBottomSheet();
+        setState(() {
+          _showFloatingOptions = !_showFloatingOptions;
+        });
       },
       child: Container(
         width: 56,
@@ -153,7 +258,11 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           ],
         ),
-        child: const Icon(Icons.add_rounded, size: 32, color: Colors.white),
+        child: AnimatedRotation(
+          turns: _showFloatingOptions ? 0.125 : 0, // Rotate 45 degrees when open
+          duration: const Duration(milliseconds: 200),
+          child: const Icon(Icons.add_rounded, size: 32, color: Colors.white),
+        ),
       ),
     );
   }
@@ -232,23 +341,23 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  void _showAddExpenseBottomSheet() {
+  void _showScanOptions() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.4,
+        padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 12),
+            // Handle bar
             Container(
               width: 40,
               height: 4,
@@ -259,77 +368,124 @@ class _MainLayoutState extends State<MainLayout> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Add Expense',
+              'Scan Receipt',
               style: GoogleFonts.inter(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: _navyBlue,
               ),
             ),
-            const SizedBox(height: 30),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildQuickAction(
-                    icon: Icons.camera_alt_rounded,
-                    label: 'Scan Receipt',
-                    color: const Color(0xFF4CAF50),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Implement scan receipt
-                    },
+            const SizedBox(height: 24),
+            
+            // Camera and Gallery options - same style as Items page
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                // Camera
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Opening Camera...'),
+                        backgroundColor: Color(0xFF4CAF50),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Color(0xFF3B82F6),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Camera',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF374151),
+                        ),
+                      ),
+                    ],
                   ),
-                  _buildQuickAction(
-                    icon: Icons.mic_rounded,
-                    label: 'Voice Input',
-                    color: const Color(0xFFFF9800),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Implement voice input
-                    },
+                ),
+                // Gallery
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Opening Gallery...'),
+                        backgroundColor: Color(0xFF4CAF50),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEC4899).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFEC4899).withValues(alpha: 0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.photo_library_rounded,
+                          color: Color(0xFFEC4899),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Gallery',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF374151),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQuickAction({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-        ],
-      ),
-    );
+  void _showVoiceInput() async {
+    final result = await showVoiceInputDialog(context);
+    if (result != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added: $result'),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
   }
 }
 
@@ -350,8 +506,8 @@ class _PlusButtonWithAnimationState extends State<_PlusButtonWithAnimation>
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
 
-  static const Color _navyBlue = Color(0xFF003566);
-  static const Color _navyLight = Color(0xFF1D4E89);
+  static const Color _navyBlue = Color(0xFF0D5DB8);
+  static const Color _navyLight = Color(0xFF1478E0);
 
   @override
   void initState() {
@@ -431,3 +587,5 @@ class _PlusButtonWithAnimationState extends State<_PlusButtonWithAnimation>
     );
   }
 }
+
+

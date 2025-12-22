@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'dart:ui';
 
 class ModernActionButton extends StatefulWidget {
@@ -94,7 +94,7 @@ class _ModernActionButtonState extends State<ModernActionButton>
                   filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1687F0).withValues(alpha: 0.78),
+                      color: const Color(0xFF1478E0).withValues(alpha: 0.78),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: Padding(
@@ -145,3 +145,5 @@ class _ModernActionButtonState extends State<ModernActionButton>
     );
   }
 }
+
+

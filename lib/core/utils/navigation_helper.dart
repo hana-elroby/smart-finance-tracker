@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class NavigationHelper {
   static void pushReplacement(BuildContext context, Widget page) {
@@ -15,4 +15,6 @@ class NavigationHelper {
     Navigator.of(context).pop();
   }
 }
+
+
 

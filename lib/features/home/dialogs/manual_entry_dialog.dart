@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/expense.dart';
@@ -313,3 +313,5 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
     );
   }
 }
+
+

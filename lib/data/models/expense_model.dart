@@ -1,4 +1,4 @@
-import '../../domain/entities/expense_entity.dart';
+﻿import '../../domain/entities/expense_entity.dart';
 
 /// Data model for expense - includes serialization logic
 /// Used by data sources (SQLite, Firebase, API)
@@ -130,3 +130,5 @@ class ExpenseModel {
     );
   }
 }
+
+

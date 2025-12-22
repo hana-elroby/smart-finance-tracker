@@ -1,10 +1,10 @@
-// ألوان التطبيق - جميع الألوان المستخدمة في التطبيق
+﻿// ألوان التطبيق - جميع الألوان المستخدمة في التطبيق
 // App Colors - All colors used in the application
 import 'package:flutter/material.dart';
 
 class AppColors {
   // الألوان الأساسية - Primary colors
-  static const Color primary = Color(0xFF003566);
+  static const Color primary = Color(0xFF0D5DB8);
   static const Color secondary = Color(0xFF00CCFF);
   static const Color background = Color(0xFFF5F7FA);
   static const Color cardBackground = Color(0xFFFFFFFF);
@@ -33,7 +33,7 @@ class AppColors {
   static const LinearGradient shoppingGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF00CCFF), Color(0xFF003566)],
+    colors: [Color(0xFF00CCFF), Color(0xFF0D5DB8)],
   );
 
   static const LinearGradient billsGradient = LinearGradient(
@@ -89,7 +89,7 @@ class AppColors {
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF003566), Color(0xFF00CCFF)],
+    colors: [Color(0xFF0D5DB8), Color(0xFF00CCFF)],
   );
 
   // Accent color
@@ -97,7 +97,7 @@ class AppColors {
 
   // ========== Chart/Spending Colors ==========
   static const Color chartBar1 = Color(0xFFC5C9D0); // Light gray bar
-  static const Color chartBar2 = Color(0xFF003566); // Dark blue bar
+  static const Color chartBar2 = Color(0xFF0D5DB8); // Dark blue bar
   static const Color chartBackground = Color(0xFFF4F3F3); // Chart background
 
   // ========== Categories Page Gradients (أفتح للعين) ==========
@@ -143,4 +143,6 @@ class AppColors {
     colors: [Color(0xFFFFC176), Color(0xFFF58FB5)],
   );
 }
+
+
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Date range filter widget for expense charts
@@ -60,12 +60,12 @@ class _DateField extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
+            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
+              color: const Color(0xFF1478E0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -76,7 +76,7 @@ class _DateField extends StatelessWidget {
           children: [
             const Icon(
               Icons.calendar_today_outlined,
-              color: Color(0xFF1687F0),
+              color: Color(0xFF1478E0),
               size: 16,
             ),
             const SizedBox(width: 8),
@@ -99,3 +99,5 @@ class _DateField extends StatelessWidget {
     return '${date.day}/${date.month}';
   }
 }
+
+

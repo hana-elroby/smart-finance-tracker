@@ -1,4 +1,4 @@
-/// Extension on DateTime for formatting and manipulation
+﻿/// Extension on DateTime for formatting and manipulation
 extension DateExtension on DateTime {
   /// Format as dd/MM/yyyy
   String get formatted => '$day/$month/$year';
@@ -89,3 +89,5 @@ extension DateExtension on DateTime {
     return '$monthName $year – ${toDate.monthName} ${toDate.year}';
   }
 }
+
+

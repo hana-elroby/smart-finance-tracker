@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Extension on BuildContext for quick access to common properties
 extension ContextExtension on BuildContext {
@@ -51,3 +51,5 @@ extension ContextExtension on BuildContext {
     showSnackBar(message, backgroundColor: const Color(0xFFF44336));
   }
 }
+
+

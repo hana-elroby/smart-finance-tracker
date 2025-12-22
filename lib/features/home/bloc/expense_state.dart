@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 import '../../../core/models/expense.dart';
 
 abstract class ExpenseState extends Equatable {
@@ -91,3 +91,5 @@ class ExpenseError extends ExpenseState {
   @override
   List<Object?> get props => [message];
 }
+
+

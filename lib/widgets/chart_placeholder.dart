@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Chart Placeholder Widget
@@ -19,14 +19,18 @@ class ChartPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          colors: [Colors.white, Color(0xFFF8FAFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
+            color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -35,15 +39,16 @@ class ChartPlaceholder extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Title
           Text(
             title,
             style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF003566),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF374151),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
           _buildPlaceholderContent(),
         ],
       ),
@@ -51,61 +56,181 @@ class ChartPlaceholder extends StatelessWidget {
   }
 
   Widget _buildPlaceholderContent() {
+    // For pie chart, show simpler content
+    if (type == ChartPlaceholderType.pie) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPiePlaceholder(),
+            const SizedBox(height: 16),
+            Text(
+              'Category breakdown will appear here',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // For bar chart - show real chart style with days
+    if (type == ChartPlaceholderType.bar) {
+      return _buildRealBarChartPlaceholder();
+    }
+    
+    // For line charts
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Placeholder illustration based on type
-        _buildPlaceholderIllustration(),
-        const SizedBox(height: 12),
-        // Message
+        _buildLinePlaceholder(),
+        const SizedBox(height: 16),
         Text(
           'No data yet',
           style: GoogleFonts.inter(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B7280),
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[500],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Add items to see your charts',
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF9CA3AF),
+      ],
+    );
+  }
+  
+  Widget _buildRealBarChartPlaceholder() {
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    
+    return Column(
+      children: [
+        // Y-axis labels and chart area
+        SizedBox(
+          height: 160,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Y-axis labels
+              SizedBox(
+                width: 35,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('500', style: _axisLabelStyle()),
+                    Text('400', style: _axisLabelStyle()),
+                    Text('300', style: _axisLabelStyle()),
+                    Text('200', style: _axisLabelStyle()),
+                    Text('100', style: _axisLabelStyle()),
+                    Text('0', style: _axisLabelStyle()),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Chart area with grid and bars
+              Expanded(
+                child: Stack(
+                  children: [
+                    // Grid lines
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(6, (index) => 
+                        Container(
+                          height: 1,
+                          color: const Color(0xFFE5E7EB),
+                        ),
+                      ),
+                    ),
+                    // Bars
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(7, (index) => 
+                          _buildEmptyBar(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 10),
-        // Add button hint
+        const SizedBox(height: 8),
+        // X-axis labels (days)
+        Padding(
+          padding: const EdgeInsets.only(left: 43),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: days.map((day) => 
+              SizedBox(
+                width: 32,
+                child: Text(
+                  day,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ).toList(),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Message
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF003566).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.add_circle_outline_rounded,
-                size: 14,
-                color: Color(0xFF003566),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: Colors.grey[500],
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 10),
               Text(
-                'Tap + to add expense',
+                'No expenses recorded yet',
                 style: GoogleFonts.inter(
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF003566),
+                  color: const Color(0xFF6B7280),
                 ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+  
+  TextStyle _axisLabelStyle() {
+    return GoogleFonts.inter(
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+      color: const Color(0xFF9CA3AF),
+    );
+  }
+  
+  Widget _buildEmptyBar() {
+    return Container(
+      width: 24,
+      height: 8,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D5DB8).withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
     );
   }
 
@@ -121,53 +246,51 @@ class ChartPlaceholder extends StatelessWidget {
   }
 
   Widget _buildLinePlaceholder() {
-    // Create a nice animated-looking line chart preview
     return SizedBox(
-      height: 60,
+      height: 80,
       child: CustomPaint(
-        size: const Size(double.infinity, 60),
+        size: const Size(double.infinity, 80),
         painter: _LinePlaceholderPainter(),
       ),
     );
   }
 
   Widget _buildPiePlaceholder() {
-    // Create a colorful pie chart preview
     return SizedBox(
-      width: 80,
-      height: 80,
+      width: 100,
+      height: 100,
       child: CustomPaint(painter: _PiePlaceholderPainter()),
     );
   }
 
   Widget _buildBarPlaceholder() {
     return SizedBox(
-      height: 60,
+      height: 80,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(5, (index) {
-          final heights = [30.0, 50.0, 25.0, 40.0, 35.0];
-          final colors = [
-            const Color(0xFF003566).withValues(alpha: 0.3),
-            const Color(0xFF003566).withValues(alpha: 0.5),
-            const Color(0xFF003566).withValues(alpha: 0.25),
-            const Color(0xFF003566).withValues(alpha: 0.4),
-            const Color(0xFF003566).withValues(alpha: 0.35),
-          ];
-          return Container(
-            width: 35,
-            height: heights[index],
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colors[index], colors[index].withValues(alpha: 0.1)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          );
-        }),
+        children: [
+          _buildPlaceholderBar(35),
+          const SizedBox(width: 12),
+          _buildPlaceholderBar(55),
+          const SizedBox(width: 12),
+          _buildPlaceholderBar(40),
+          const SizedBox(width: 12),
+          _buildPlaceholderBar(70),
+          const SizedBox(width: 12),
+          _buildPlaceholderBar(50),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderBar(double height) {
+    return Container(
+      width: 28,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D5DB8).withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(6),
       ),
     );
   }
@@ -177,7 +300,7 @@ class _LinePlaceholderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF003566).withValues(alpha: 0.3)
+      ..color = const Color(0xFF0D5DB8).withValues(alpha: 0.3)
       ..strokeWidth = 3
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -185,8 +308,8 @@ class _LinePlaceholderPainter extends CustomPainter {
     final fillPaint = Paint()
       ..shader = LinearGradient(
         colors: [
-          const Color(0xFF003566).withValues(alpha: 0.15),
-          const Color(0xFF003566).withValues(alpha: 0.02),
+          const Color(0xFF0D5DB8).withValues(alpha: 0.15),
+          const Color(0xFF0D5DB8).withValues(alpha: 0.02),
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -256,7 +379,7 @@ class _LinePlaceholderPainter extends CustomPainter {
 
     // Draw dots at each point
     final dotPaint = Paint()
-      ..color = const Color(0xFF003566).withValues(alpha: 0.5)
+      ..color = const Color(0xFF0D5DB8).withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
     for (var point in points) {
       canvas.drawCircle(point, 4, dotPaint);
@@ -275,8 +398,8 @@ class _PiePlaceholderPainter extends CustomPainter {
 
     // Colors for pie segments
     final colors = [
-      const Color(0xFF003566),
-      const Color(0xFF1687F0),
+      const Color(0xFF0D5DB8),
+      const Color(0xFF1478E0),
       const Color(0xFF64B5F6),
       const Color(0xFFBBDEFB),
     ];
@@ -312,7 +435,7 @@ class _PiePlaceholderPainter extends CustomPainter {
       text: const TextSpan(
         text: '0%',
         style: TextStyle(
-          color: Color(0xFF003566),
+          color: Color(0xFF0D5DB8),
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
@@ -334,3 +457,5 @@ class _PiePlaceholderPainter extends CustomPainter {
 }
 
 enum ChartPlaceholderType { line, pie, bar }
+
+

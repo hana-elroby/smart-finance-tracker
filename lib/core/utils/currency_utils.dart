@@ -1,4 +1,4 @@
-/// Currency and number formatting utilities
+﻿/// Currency and number formatting utilities
 class CurrencyUtils {
   CurrencyUtils._();
 
@@ -38,3 +38,5 @@ class CurrencyUtils {
     return double.tryParse(cleaned);
   }
 }
+
+

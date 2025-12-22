@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Custom painter for modern expense chart
@@ -13,8 +13,8 @@ class ExpenseChartPainter extends CustomPainter {
     this.fromDate,
     this.toDate,
     this.data,
-    this.lineColor = const Color(0xFF1687F0),
-    this.fillColor = const Color(0xFF1687F0),
+    this.lineColor = const Color(0xFF1478E0),
+    this.fillColor = const Color(0xFF1478E0),
   });
 
   @override
@@ -305,7 +305,7 @@ class ChartSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF003B73).withValues(alpha: 0.08),
+            color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -359,12 +359,12 @@ class ChartSection extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
+            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
+              color: const Color(0xFF1478E0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -375,7 +375,7 @@ class ChartSection extends StatelessWidget {
           children: [
             const Icon(
               Icons.calendar_today_outlined,
-              color: Color(0xFF1687F0),
+              color: Color(0xFF1478E0),
               size: 16,
             ),
             const SizedBox(width: 8),
@@ -396,3 +396,5 @@ class ChartSection extends StatelessWidget {
     );
   }
 }
+
+

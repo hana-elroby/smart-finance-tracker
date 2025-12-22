@@ -1,4 +1,4 @@
-import '../../repositories/expense_repository.dart';
+﻿import '../../repositories/expense_repository.dart';
 import '../base_usecase.dart';
 
 /// Use case for clearing all expenses
@@ -12,3 +12,5 @@ class ClearAllExpensesUseCase implements UseCaseNoParams<void> {
     return _repository.clearAll();
   }
 }
+
+

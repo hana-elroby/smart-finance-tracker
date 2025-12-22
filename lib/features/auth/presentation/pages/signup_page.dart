@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
@@ -499,4 +499,6 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
+
+
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'sync_service.dart';
 
 // مثال: إزاي تستخدمي الـ Sync في التطبيق
@@ -54,3 +54,5 @@ class SyncButton extends StatelessWidget {
     );
   }
 }
+
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -124,7 +124,7 @@ class _HomePageRefactoredState extends State<HomePageRefactored> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Notifications - Coming soon!'),
-        backgroundColor: Color(0xFF1687F0),
+        backgroundColor: Color(0xFF1478E0),
         duration: Duration(seconds: 1),
       ),
     );
@@ -161,7 +161,7 @@ class _HomePageRefactoredState extends State<HomePageRefactored> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Manual entry - Coming soon!'),
-        backgroundColor: Color(0xFF1687F0),
+        backgroundColor: Color(0xFF1478E0),
       ),
     );
   }
@@ -184,7 +184,7 @@ class _HomePageRefactoredState extends State<HomePageRefactored> {
           category: 'General',
           icon: Icons.mic_rounded,
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E5F9D), Color(0xFF003B73)],
+            colors: [Color(0xFF1E5F9D), Color(0xFF0D5DB8)],
           ),
           onSuccess: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -274,3 +274,5 @@ class _HomePageRefactoredState extends State<HomePageRefactored> {
     }
   }
 }
+
+

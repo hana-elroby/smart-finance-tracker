@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -8,6 +8,7 @@ class AddOptionsBottomSheet extends StatelessWidget {
   final VoidCallback? onManualTap;
   final VoidCallback? onVoiceTap;
   final VoidCallback? onScanTap;
+  final bool showScan; // Option to hide scan
 
   const AddOptionsBottomSheet({
     super.key,
@@ -15,6 +16,7 @@ class AddOptionsBottomSheet extends StatelessWidget {
     this.onManualTap,
     this.onVoiceTap,
     this.onScanTap,
+    this.showScan = true,
   });
 
   @override
@@ -48,7 +50,7 @@ class AddOptionsBottomSheet extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF003566),
+              color: const Color(0xFF0D5DB8),
             ),
           ),
           const SizedBox(height: 24),
@@ -79,17 +81,18 @@ class AddOptionsBottomSheet extends StatelessWidget {
                   onVoiceTap?.call();
                 },
               ),
-              _buildOption(
-                context,
-                icon: Icons.camera_alt_rounded,
-                label: 'Scan',
-                color: const Color(0xFF2196F3),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  Navigator.pop(context);
-                  onScanTap?.call();
-                },
-              ),
+              if (showScan)
+                _buildOption(
+                  context,
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Scan',
+                  color: const Color(0xFF2196F3),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                    onScanTap?.call();
+                  },
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -141,6 +144,7 @@ void showAddOptionsBottomSheet(
   VoidCallback? onManualTap,
   VoidCallback? onVoiceTap,
   VoidCallback? onScanTap,
+  bool showScan = true,
 }) {
   showModalBottomSheet(
     context: context,
@@ -150,6 +154,9 @@ void showAddOptionsBottomSheet(
       onManualTap: onManualTap,
       onVoiceTap: onVoiceTap,
       onScanTap: onScanTap,
+      showScan: showScan,
     ),
   );
 }
+
+

@@ -1,4 +1,4 @@
-import '../../repositories/expense_repository.dart';
+﻿import '../../repositories/expense_repository.dart';
 import '../base_usecase.dart';
 
 /// Use case for deleting an expense
@@ -12,3 +12,5 @@ class DeleteExpenseUseCase implements UseCase<void, String> {
     return _repository.deleteExpense(expenseId);
   }
 }
+
+

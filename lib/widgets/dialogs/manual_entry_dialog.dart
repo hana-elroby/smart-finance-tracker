@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -64,7 +64,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                             style: GoogleFonts.inter(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF003566),
+                              color: const Color(0xFF0D5DB8),
                             ),
                           ),
                           if (widget.initialCategory != null) ...[
@@ -89,53 +89,62 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                 ),
                 const SizedBox(height: 20),
 
-                // Title Field
+                // 1. Date Field (First)
+                _buildDateField(),
+                const SizedBox(height: 16),
+
+                // 2. Title Field
                 _buildTextField(
                   controller: _titleController,
-                  label: 'Title',
+                  label: 'Item Name',
                   hint: 'e.g., Coffee, Lunch, Medicine',
-                  icon: Icons.title_rounded,
-                  validator: (v) => v?.isEmpty ?? true ? 'Enter a title' : null,
+                  icon: Icons.shopping_bag_outlined,
+                  validator: (v) => v?.isEmpty ?? true ? 'Enter item name' : null,
                 ),
                 const SizedBox(height: 16),
 
-                // Unit Price Field
-                _buildTextField(
-                  controller: _unitPriceController,
-                  label: 'Unit Price (EGP)',
-                  hint: '0.00',
-                  icon: Icons.attach_money_rounded,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                // 3. Quantity & 4. Unit Price (Side by side)
+                Row(
+                  children: [
+                    // Quantity
+                    Expanded(
+                      child: _buildCompactField(
+                        controller: _quantityController,
+                        label: 'Qty',
+                        hint: '1',
+                        icon: Icons.add_circle_outline,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Unit Price
+                    Expanded(
+                      flex: 2,
+                      child: _buildCompactField(
+                        controller: _unitPriceController,
+                        label: 'Unit Price',
+                        hint: '0.00',
+                        icon: Icons.payments_outlined,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                        ],
+                        onChanged: (_) => setState(() {}),
+                        validator: (v) {
+                          if (v?.isEmpty ?? true) return 'Required';
+                          if (double.tryParse(v!) == null) return 'Invalid';
+                          return null;
+                        },
+                      ),
+                    ),
                   ],
-                  onChanged: (_) => setState(() {}), // Refresh total
-                  validator: (v) {
-                    if (v?.isEmpty ?? true) return 'Enter price';
-                    if (double.tryParse(v!) == null) return 'Invalid price';
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-                // Quantity Field
-                _buildTextField(
-                  controller: _quantityController,
-                  label: 'Quantity',
-                  hint: '1',
-                  icon: Icons.numbers_rounded,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  onChanged: (_) => setState(() {}), // Refresh total
-                ),
-                const SizedBox(height: 16),
-
-                // Total Amount (Calculated)
+                // 5. Total Amount (Calculated)
                 _buildTotalAmount(),
-                const SizedBox(height: 16),
-
-                // Date Field
-                _buildDateField(),
                 const SizedBox(height: 24),
 
                 // Submit Button
@@ -145,10 +154,11 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                   child: ElevatedButton(
                     onPressed: _submitForm,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF003566),
+                      backgroundColor: const Color(0xFF0D5DB8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 0,
                     ),
                     child: Text(
                       'Add Expense',
@@ -199,7 +209,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
-            prefixIcon: Icon(icon, color: const Color(0xFF003566), size: 20),
+            prefixIcon: Icon(icon, color: const Color(0xFF0D5DB8), size: 20),
             filled: true,
             fillColor: const Color(0xFFF3F4F6),
             border: OutlineInputBorder(
@@ -216,37 +226,147 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
     );
   }
 
-  Widget _buildTotalAmount() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF003566).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF003566).withValues(alpha: 0.3),
+  Widget _buildCompactField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+    void Function(String)? onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF374151),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Total Amount',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF003566),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          validator: validator,
+          onChanged: onChanged,
+          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+              color: Colors.grey[400],
+              fontWeight: FontWeight.w400,
+            ),
+            prefixIcon: Icon(icon, color: const Color(0xFF0D5DB8), size: 18),
+            filled: true,
+            fillColor: const Color(0xFFF3F4F6),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
             ),
           ),
-          Text(
-            'EGP ${_totalAmount.toStringAsFixed(2)}',
-            style: GoogleFonts.inter(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF003566),
-            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTotalAmount() {
+    final quantity = int.tryParse(_quantityController.text) ?? 1;
+    final unitPrice = double.tryParse(_unitPriceController.text) ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F4F8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF94A3B8).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Calculation breakdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildCalcItem('$quantity', 'Qty'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  '×',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+              _buildCalcItem(unitPrice.toStringAsFixed(2), 'Price'),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Divider
+          Container(
+            height: 1,
+            color: const Color(0xFF94A3B8).withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 14),
+          // Total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                _totalAmount.toStringAsFixed(2),
+                style: GoogleFonts.inter(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCalcItem(String value, String label) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF334155),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF94A3B8),
+          ),
+        ),
+      ],
     );
   }
 
@@ -275,7 +395,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
               children: [
                 const Icon(
                   Icons.calendar_today_rounded,
-                  color: Color(0xFF003566),
+                  color: Color(0xFF0D5DB8),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -331,3 +451,5 @@ Future<Map<String, dynamic>?> showManualEntryDialog(
     builder: (context) => ManualEntryDialog(initialCategory: initialCategory),
   );
 }
+
+

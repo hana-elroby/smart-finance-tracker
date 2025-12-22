@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 
 /// Pure expense entity for domain layer
 /// Contains only business data, no serialization logic
@@ -58,3 +58,5 @@ class ExpenseEntity extends Equatable {
     createdAt,
   ];
 }
+
+

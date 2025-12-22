@@ -1,4 +1,4 @@
-import '../../repositories/expense_repository.dart';
+﻿import '../../repositories/expense_repository.dart';
 import '../base_usecase.dart';
 
 /// Use case for getting totals by category
@@ -12,3 +12,5 @@ class GetCategoryTotalsUseCase implements UseCaseNoParams<Map<String, double>> {
     return _repository.getTotalsByCategory();
   }
 }
+
+

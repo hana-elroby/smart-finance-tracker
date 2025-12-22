@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 import '../../../core/models/expense.dart';
 
 abstract class ExpenseEvent extends Equatable {
@@ -47,4 +47,6 @@ class UpdateExpense extends ExpenseEvent {
 class ClearAllExpenses extends ExpenseEvent {
   const ClearAllExpenses();
 }
+
+
 

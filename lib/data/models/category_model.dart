@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// Category model for expense categorization
 class CategoryModel {
@@ -26,7 +26,7 @@ class CategoryModel {
       nameAr: 'تسوق',
       icon: Icons.shopping_bag_rounded,
       color: Color(0xFF00CCFF),
-      gradientColors: [Color(0xFF00CCFF), Color(0xFF003566)],
+      gradientColors: [Color(0xFF00CCFF), Color(0xFF0D5DB8)],
     ),
     CategoryModel(
       id: 'bills',
@@ -117,3 +117,5 @@ class CategoryModel {
     end: Alignment.bottomRight,
   );
 }
+
+

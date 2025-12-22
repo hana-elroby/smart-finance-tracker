@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Add Category Dialog - Small dialog to add new category
 class AddCategoryDialog extends StatefulWidget {
-  const AddCategoryDialog({super.key});
+  final void Function(Map<String, dynamic> result)? onAdd;
+  
+  const AddCategoryDialog({super.key, this.onAdd});
 
   @override
   State<AddCategoryDialog> createState() => _AddCategoryDialogState();
@@ -12,6 +15,7 @@ class AddCategoryDialog extends StatefulWidget {
 class _AddCategoryDialogState extends State<AddCategoryDialog> {
   final _nameController = TextEditingController();
   IconData _selectedIcon = Icons.category_rounded;
+  String _categoryName = '';
 
   final List<IconData> _availableIcons = [
     Icons.category_rounded,
@@ -42,8 +46,31 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
     super.dispose();
   }
 
+  void _onAddPressed() {
+    final name = _categoryName.trim();
+    debugPrint('=== _onAddPressed called, name: $name ===');
+    if (name.isNotEmpty) {
+      HapticFeedback.mediumImpact();
+      final result = {
+        'name': name,
+        'icon': _selectedIcon,
+      };
+      debugPrint('=== Returning result: $result ===');
+      
+      // Use callback if provided, otherwise use Navigator
+      if (widget.onAdd != null) {
+        widget.onAdd!(result);
+        Navigator.of(context, rootNavigator: true).pop();
+      } else {
+        Navigator.of(context, rootNavigator: true).pop(result);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool canAdd = _categoryName.trim().isNotEmpty;
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
@@ -62,11 +89,11 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF003566),
+                    color: const Color(0xFF0D5DB8),
                   ),
                 ),
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
                   icon: const Icon(Icons.close, color: Colors.grey),
                 ),
               ],
@@ -85,6 +112,12 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
             const SizedBox(height: 8),
             TextField(
               controller: _nameController,
+              autofocus: true,
+              onChanged: (value) {
+                setState(() {
+                  _categoryName = value;
+                });
+              },
               decoration: InputDecoration(
                 hintText: 'e.g., Groceries, Gym, Travel',
                 hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
@@ -130,16 +163,19 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                   final icon = _availableIcons[index];
                   final isSelected = icon == _selectedIcon;
                   return GestureDetector(
-                    onTap: () => setState(() => _selectedIcon = icon),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedIcon = icon);
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF003566)
+                            ? const Color(0xFF0D5DB8)
                             : Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF003566)
+                              ? const Color(0xFF0D5DB8)
                               : Colors.grey[300]!,
                           width: 2,
                         ),
@@ -148,7 +184,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                         icon,
                         color: isSelected
                             ? Colors.white
-                            : const Color(0xFF003566),
+                            : const Color(0xFF0D5DB8),
                         size: 22,
                       ),
                     ),
@@ -166,7 +202,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF003566).withValues(alpha: 0.1),
+                  color: const Color(0xFF0D5DB8).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -174,18 +210,16 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                   children: [
                     Icon(
                       _selectedIcon,
-                      color: const Color(0xFF003566),
+                      color: const Color(0xFF0D5DB8),
                       size: 24,
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _nameController.text.isEmpty
-                          ? 'Preview'
-                          : _nameController.text,
+                      _categoryName.isEmpty ? 'Preview' : _categoryName,
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF003566),
+                        color: const Color(0xFF0D5DB8),
                       ),
                     ),
                   ],
@@ -199,16 +233,10 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  if (_nameController.text.isNotEmpty) {
-                    Navigator.pop(context, {
-                      'name': _nameController.text,
-                      'icon': _selectedIcon,
-                    });
-                  }
-                },
+                onPressed: canAdd ? _onAddPressed : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF003566),
+                  backgroundColor: const Color(0xFF0D5DB8),
+                  disabledBackgroundColor: Colors.grey[300],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -218,7 +246,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: canAdd ? Colors.white : Colors.grey[500],
                   ),
                 ),
               ),
@@ -231,9 +259,27 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
 }
 
 /// Show the Add Category Dialog
-Future<Map<String, dynamic>?> showAddCategoryDialog(BuildContext context) {
-  return showDialog<Map<String, dynamic>>(
+Future<Map<String, dynamic>?> showAddCategoryDialog(BuildContext context) async {
+  debugPrint('=== showAddCategoryDialog called ===');
+  
+  Map<String, dynamic>? result;
+  
+  await showDialog(
     context: context,
-    builder: (context) => const AddCategoryDialog(),
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      debugPrint('=== Dialog builder called ===');
+      return AddCategoryDialog(
+        onAdd: (data) {
+          debugPrint('=== onAdd callback: $data ===');
+          result = data;
+        },
+      );
+    },
   );
+  
+  debugPrint('=== Final result: $result ===');
+  return result;
 }
+
+

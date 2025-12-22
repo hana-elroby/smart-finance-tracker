@@ -1,4 +1,4 @@
-import '../../entities/expense_entity.dart';
+﻿import '../../entities/expense_entity.dart';
 import '../../repositories/expense_repository.dart';
 import '../base_usecase.dart';
 
@@ -13,3 +13,5 @@ class UpdateExpenseUseCase implements UseCase<ExpenseEntity, ExpenseEntity> {
     return _repository.updateExpense(expense);
   }
 }
+
+

@@ -1,4 +1,4 @@
-import '../entities/expense_entity.dart';
+﻿import '../entities/expense_entity.dart';
 
 /// Abstract repository interface for expenses
 /// Defines the contract that data layer must implement
@@ -42,3 +42,5 @@ abstract class ExpenseRepository {
   /// Get total amount by date range
   Future<double> getTotalByDateRange(DateTime fromDate, DateTime toDate);
 }
+
+

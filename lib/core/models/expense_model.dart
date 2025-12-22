@@ -1,4 +1,4 @@
-/// @deprecated Use ExpenseModel from data/models/expense_model.dart
+﻿/// @deprecated Use ExpenseModel from data/models/expense_model.dart
 ///
 /// This duplicate model has different field types (int? id vs String id)
 /// and should be migrated to the proper data layer model.
@@ -54,3 +54,5 @@ class Expense {
     );
   }
 }
+
+
