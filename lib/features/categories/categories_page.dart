@@ -72,7 +72,10 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false, // No back button - this is a tab page
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           'Categories',
           style: GoogleFonts.inter(

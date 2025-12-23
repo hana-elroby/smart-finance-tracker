@@ -28,7 +28,9 @@ class _RemindersPageState extends State<RemindersPage> {
     if (widget.reminderBloc != null) {
       return BlocProvider.value(
         value: widget.reminderBloc!,
-        child: _buildContent(context),
+        child: Builder(
+          builder: (blocContext) => _buildContent(blocContext),
+        ),
       );
     }
     
@@ -48,17 +50,23 @@ class _RemindersPageState extends State<RemindersPage> {
     return BlocProvider(
       create: (context) => ReminderBloc(),
       child: Builder(
-        builder: (context) => _buildContent(context),
+        builder: (blocContext) => _buildContent(blocContext),
       ),
     );
   }
 
   Widget _buildContent(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
-      appBar: _buildAppBar(),
-      body: _buildBody(),
-      floatingActionButton: _buildFAB(),
+    return BlocListener<ReminderBloc, ReminderState>(
+      listener: (context, state) {
+        // Force rebuild when state changes
+        if (mounted) setState(() {});
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        appBar: _buildAppBar(),
+        body: _buildBody(),
+        floatingActionButton: _buildFAB(),
+      ),
     );
   }
 
@@ -150,12 +158,17 @@ class _RemindersPageState extends State<RemindersPage> {
 
   Widget _buildBody() {
     return BlocBuilder<ReminderBloc, ReminderState>(
+      buildWhen: (previous, current) => true, // Always rebuild
       builder: (context, state) {
         if (state is! ReminderLoaded) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (state.reminders.isEmpty) {
+        final reminders = state.reminders;
+        final activeCount = reminders.where((r) => r.enabled).length;
+        final totalCount = reminders.length;
+
+        if (reminders.isEmpty) {
           return _buildEmptyState();
         }
 
@@ -169,13 +182,13 @@ class _RemindersPageState extends State<RemindersPage> {
                 children: [
                   _buildStatChip(
                     icon: Icons.notifications_active_rounded,
-                    label: '${state.activeCount} Active',
+                    label: '$activeCount Active',
                     color: const Color(0xFF10B981),
                   ),
                   const SizedBox(width: 12),
                   _buildStatChip(
                     icon: Icons.list_rounded,
-                    label: '${state.totalCount} Total',
+                    label: '$totalCount Total',
                     color: const Color(0xFF64748B),
                   ),
                 ],
@@ -186,8 +199,8 @@ class _RemindersPageState extends State<RemindersPage> {
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: state.reminders.length,
-                itemBuilder: (context, index) => _buildReminderCard(state.reminders[index]),
+                itemCount: reminders.length,
+                itemBuilder: (listContext, index) => _buildReminderCard(listContext, reminders[index]),
               ),
             ),
           ],
@@ -225,7 +238,7 @@ class _RemindersPageState extends State<RemindersPage> {
     );
   }
 
-  Widget _buildReminderCard(Reminder reminder) {
+  Widget _buildReminderCard(BuildContext blocContext, Reminder reminder) {
     final isSelected = _selectedIds.contains(reminder.id);
 
     return GestureDetector(
@@ -251,7 +264,7 @@ class _RemindersPageState extends State<RemindersPage> {
         }
       },
       child: Dismissible(
-        key: Key('reminder_${reminder.id}'),
+        key: Key('reminder_${reminder.id}_${DateTime.now().millisecondsSinceEpoch}'),
         direction: _isSelectionMode ? DismissDirection.none : DismissDirection.endToStart,
         background: Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -263,9 +276,12 @@ class _RemindersPageState extends State<RemindersPage> {
           alignment: Alignment.centerRight,
           child: const Icon(Icons.delete_rounded, color: Colors.white),
         ),
-        confirmDismiss: (direction) => _confirmDelete(reminder.title),
-        onDismissed: (direction) {
-          context.read<ReminderBloc>().add(DeleteReminder(reminder.id));
+        confirmDismiss: (direction) async {
+          final confirmed = await _confirmDelete(reminder.title);
+          if (confirmed == true) {
+            blocContext.read<ReminderBloc>().add(DeleteReminder(reminder.id));
+          }
+          return false; // Don't let Dismissible remove the widget, let BLoC handle it
         },
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -390,7 +406,7 @@ class _RemindersPageState extends State<RemindersPage> {
                 Switch(
                   value: reminder.enabled,
                   onChanged: (value) {
-                    context.read<ReminderBloc>().add(ToggleReminder(reminder.id));
+                    blocContext.read<ReminderBloc>().add(ToggleReminder(reminder.id));
                   },
                   activeColor: const Color(0xFF0D5DB8),
                 ),
@@ -466,10 +482,21 @@ class _RemindersPageState extends State<RemindersPage> {
   Widget _buildFAB() {
     if (_isSelectionMode) return const SizedBox.shrink();
 
-    return FloatingActionButton(
-      onPressed: _showAddReminderDialog,
-      backgroundColor: const Color(0xFF0D5DB8),
-      child: const Icon(Icons.add, color: Colors.white, size: 28),
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FloatingActionButton(
+              onPressed: _showAddReminderDialog,
+              backgroundColor: const Color(0xFF0D5DB8),
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

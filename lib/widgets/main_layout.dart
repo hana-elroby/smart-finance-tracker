@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import '../features/home/home_page.dart';
-import '../features/categories/categories_page.dart';
+import '../features/transactions/transactions_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/offers/offers_page.dart';
 import '../features/home/bloc/expense_bloc.dart';
@@ -36,7 +36,7 @@ class _MainLayoutState extends State<MainLayout> {
   final List<Widget> _pages = const [
     HomePage(),
     OffersPage(),
-    CategoriesPage(),
+    TransactionsPage(),
     ProfilePage(),
   ];
 
@@ -182,7 +182,7 @@ class _MainLayoutState extends State<MainLayout> {
         _buildNavIcon(Icons.home_rounded, 'Home', isSelected: true),
         _buildNavIcon(Icons.local_offer_rounded, 'Offers', isSelected: false),
         _buildCenterButton(), // Plus button
-        _buildNavIcon(Icons.grid_view_rounded, 'Categories', isSelected: false),
+        _buildNavIcon(Icons.receipt_long_rounded, 'Transactions', isSelected: false),
         _buildNavIcon(Icons.person_rounded, 'Profile', isSelected: false),
       ],
       color: Colors.white,
@@ -212,8 +212,8 @@ class _MainLayoutState extends State<MainLayout> {
           isSelected: _selectedIndex == 1,
         ),
         _buildNavIcon(
-          Icons.grid_view_rounded,
-          'Categories',
+          Icons.receipt_long_rounded,
+          'Transactions',
           isSelected: _selectedIndex == 2,
         ),
         _buildNavIcon(

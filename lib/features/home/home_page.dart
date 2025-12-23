@@ -12,6 +12,7 @@ import 'dialogs/qr_scanner_bottom_sheet.dart';
 import 'bloc/expense_bloc.dart';
 import 'bloc/expense_state.dart';
 import 'package:graduation_project/features/categories/categories_page.dart';
+import 'package:graduation_project/features/categories/bloc/category_bloc.dart';
 import 'package:graduation_project/features/reminders/reminders_page.dart';
 import 'package:graduation_project/features/reminders/bloc/reminder_bloc.dart';
 import 'package:graduation_project/features/notifications/notifications_page.dart';
@@ -601,11 +602,18 @@ class _HomePageContentState extends State<_HomePageContent>
             text: 'Categories',
             onTap: () {
               HapticFeedback.lightImpact();
-              // Navigate to Categories tab in MainLayout
-              Navigator.pushReplacement(
+              // Navigate directly to Categories page with required providers
+              final expenseBloc = context.read<ExpenseBloc>();
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const MainLayout(initialIndex: 2),
+                  builder: (_) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider.value(value: expenseBloc),
+                      BlocProvider(create: (_) => CategoryBloc()),
+                    ],
+                    child: const CategoriesPage(),
+                  ),
                 ),
               );
             },
@@ -827,9 +835,18 @@ class _HomePageContentState extends State<_HomePageContent>
           onTap: () {
             HapticFeedback.lightImpact();
             _animateCardTap(() {
+              final expenseBloc = context.read<ExpenseBloc>();
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CategoriesPage()),
+                MaterialPageRoute(
+                  builder: (_) => MultiBlocProvider(
+                    providers: [
+                      BlocProvider.value(value: expenseBloc),
+                      BlocProvider(create: (_) => CategoryBloc()),
+                    ],
+                    child: const CategoriesPage(),
+                  ),
+                ),
               );
             });
           },

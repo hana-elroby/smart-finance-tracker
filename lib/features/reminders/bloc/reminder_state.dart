@@ -14,12 +14,13 @@ class ReminderInitial extends ReminderState {
 
 class ReminderLoaded extends ReminderState {
   final List<Reminder> reminders;
+  final int _timestamp; // Force rebuild on every emit
 
-  const ReminderLoaded(this.reminders);
+  ReminderLoaded(this.reminders) : _timestamp = DateTime.now().millisecondsSinceEpoch;
 
   int get activeCount => reminders.where((r) => r.enabled).length;
   int get totalCount => reminders.length;
 
   @override
-  List<Object?> get props => [reminders];
+  List<Object?> get props => [_timestamp, activeCount, totalCount];
 }

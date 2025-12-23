@@ -117,11 +117,13 @@ class ReminderBloc extends Bloc<ReminderEvent, ReminderState> {
   }
 
   void _onToggleReminder(ToggleReminder event, Emitter<ReminderState> emit) {
+    debugPrint('=== TOGGLE REMINDER: ${event.id} ===');
     if (state is ReminderLoaded) {
       final currentState = state as ReminderLoaded;
       final updatedReminders = currentState.reminders.map((r) {
         if (r.id == event.id) {
           final updated = r.copyWith(enabled: !r.enabled);
+          debugPrint('=== Toggled ${r.title}: ${r.enabled} -> ${updated.enabled} ===');
           // Schedule or cancel notification based on new state
           if (updated.enabled) {
             _notificationService.scheduleReminder(updated);
@@ -132,7 +134,10 @@ class ReminderBloc extends Bloc<ReminderEvent, ReminderState> {
         }
         return r;
       }).toList();
-      emit(ReminderLoaded(updatedReminders));
+      // Create new list to ensure state change is detected
+      final newState = ReminderLoaded(List<Reminder>.from(updatedReminders));
+      debugPrint('=== New activeCount: ${newState.activeCount} ===');
+      emit(newState);
     }
   }
 

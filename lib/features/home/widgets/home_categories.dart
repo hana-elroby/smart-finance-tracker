@@ -2,6 +2,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../categories/categories_page.dart';
+import '../../categories/bloc/category_bloc.dart';
 import '../bloc/expense_bloc.dart';
 import '../bloc/expense_state.dart';
 
@@ -36,8 +37,11 @@ class HomeCategories extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BlocProvider.value(
-                      value: expenseBloc,
+                    builder: (context) => MultiBlocProvider(
+                      providers: [
+                        BlocProvider.value(value: expenseBloc),
+                        BlocProvider(create: (_) => CategoryBloc()),
+                      ],
                       child: const CategoriesPage(),
                     ),
                   ),
