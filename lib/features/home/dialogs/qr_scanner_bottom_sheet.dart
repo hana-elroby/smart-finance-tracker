@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class QRScannerBottomSheet extends StatelessWidget {
@@ -25,7 +25,7 @@ class QRScannerBottomSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -90,7 +90,7 @@ class QRScannerBottomSheet extends StatelessWidget {
                                         BoxShadow(
                                           color: const Color(
                                             0xFF0814F9,
-                                          ).withOpacity(0.3),
+                                          ).withValues(alpha: 0.3),
                                           blurRadius: 8,
                                           offset: const Offset(0, 4),
                                         ),
@@ -153,7 +153,7 @@ class QRScannerBottomSheet extends StatelessWidget {
                                         BoxShadow(
                                           color: const Color(
                                             0xFFF509D6,
-                                          ).withOpacity(0.3),
+                                          ).withValues(alpha: 0.3),
                                           blurRadius: 8,
                                           offset: const Offset(0, 4),
                                         ),
@@ -191,3 +191,6 @@ class QRScannerBottomSheet extends StatelessWidget {
     );
   }
 }
+
+
+

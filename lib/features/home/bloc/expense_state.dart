@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+﻿import 'package:equatable/equatable.dart';
 import '../../../core/models/expense.dart';
 
 abstract class ExpenseState extends Equatable {
@@ -23,6 +23,12 @@ class ExpenseLoaded extends ExpenseState {
   final List<Expense> expenses;
 
   const ExpenseLoaded(this.expenses);
+
+  /// Returns true ONLY when real items exist
+  bool get hasData => expenses.isNotEmpty;
+
+  /// Returns true when there are no items
+  bool get isEmpty => expenses.isEmpty;
 
   // Get total for a specific category
   double getCategoryTotal(String category) {
@@ -49,7 +55,6 @@ class ExpenseLoaded extends ExpenseState {
 
     // Initialize days
     for (int i = 0; i < 7; i++) {
-      final day = startOfWeek.add(Duration(days: i));
       final dayName = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i];
       weekExpenses[dayName] = 0.0;
     }
@@ -86,3 +91,5 @@ class ExpenseError extends ExpenseState {
   @override
   List<Object?> get props => [message];
 }
+
+

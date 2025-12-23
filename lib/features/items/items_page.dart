@@ -1,9 +1,18 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
-import '../categories/category_data_store.dart';
+import '../home/bloc/expense_bloc.dart';
+import '../home/bloc/expense_state.dart';
+import '../home/bloc/expense_event.dart';
+import '../../core/models/expense.dart';
+import '../../widgets/dialogs/manual_entry_dialog.dart';
+import '../../widgets/dialogs/voice_input_dialog.dart';
 
-class ItemsPage extends StatefulWidget {
+/// Items Page - عرض العناصر في كل فئة
+/// تعرض كل الـ items الموجودة في فئة معينة مع chart وقائمة
+class ItemsPage extends StatelessWidget {
   final String categoryName;
   final IconData categoryIcon;
   final Color categoryColor;
@@ -16,48 +25,71 @@ class ItemsPage extends StatefulWidget {
   });
 
   @override
-  State<ItemsPage> createState() => _ItemsPageState();
+  Widget build(BuildContext context) {
+    // Use existing BlocProvider from parent (MainLayout)
+    // Don't create new one - share the same ExpenseBloc
+    return _ItemsPageContent(
+      categoryName: categoryName,
+      categoryIcon: categoryIcon,
+      categoryColor: categoryColor,
+    );
+  }
 }
 
-class _ItemsPageState extends State<ItemsPage> {
+class _ItemsPageContent extends StatefulWidget {
+  final String categoryName;
+  final IconData categoryIcon;
+  final Color categoryColor;
+
+  const _ItemsPageContent({
+    required this.categoryName,
+    required this.categoryIcon,
+    required this.categoryColor,
+  });
+
+  @override
+  State<_ItemsPageContent> createState() => _ItemsPageContentState();
+}
+
+class _ItemsPageContentState extends State<_ItemsPageContent> {
   DateTime? _fromDate;
   DateTime? _toDate;
-  final CategoryDataStore _dataStore = CategoryDataStore();
-  CategoryData? _category;
+  String? _selectedItemName; // Selected item name for filtering
+  bool _showFloatingOptions = false; // Track floating options visibility
 
   @override
   void initState() {
     super.initState();
     _setDefaultDates();
-    _category = _dataStore.findCategory(widget.categoryName);
   }
 
   void _setDefaultDates() {
     final now = DateTime.now();
     setState(() {
-      _fromDate = DateTime(now.year, now.month, 1);
-      _toDate = now;
+      _fromDate = DateTime(
+        now.year,
+        now.month,
+        1,
+      ); // First day of current month
+      _toDate = now; // Today
     });
   }
-
-  List<CategoryItem> get _items => _category?.items ?? [];
-
-  void _addItem(CategoryItem item) {
+  
+  // Handle bar tap - filter items by name
+  void _onBarTap(String itemName) {
     setState(() {
-      _category?.addItem(item);
-    });
-  }
-
-  void _deleteItem(int index) {
-    setState(() {
-      _category?.removeItem(index);
+      if (_selectedItemName == itemName) {
+        _selectedItemName = null; // Deselect if already selected
+      } else {
+        _selectedItemName = itemName; // Select this item
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: const Color(0xFFF8F8F8),
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -66,23 +98,159 @@ class _ItemsPageState extends State<ItemsPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.categoryName,
-          style: GoogleFonts.inter(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600),
+          'Items',
+          style: GoogleFonts.inter(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      // Date Selectors
+                      _buildDateSelectors(),
+
+                      const SizedBox(height: 30),
+
+                      // Bar Chart
+                      _buildBarChart(),
+
+                      const SizedBox(height: 30),
+
+                      // Items List
+                      _buildItemsList(),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+              // Add Transaction Button at the bottom
+              Padding(
+                padding: const EdgeInsets.only(bottom: 30, top: 10),
+                child: _buildAddTransactionButton(),
+              ),
+            ],
+          ),
+          // Floating options overlay
+          if (_showFloatingOptions) _buildFloatingOptions(),
+        ],
+      ),
+    );
+  }
+
+  // Floating Manual and Voice buttons above Plus
+  Widget _buildFloatingOptions() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _showFloatingOptions = false);
+      },
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.3),
+        child: Stack(
           children: [
-            _buildDateSelectors(),
-            const SizedBox(height: 30),
-            _buildBarChart(),
-            const SizedBox(height: 30),
-            _buildItemsList(),
-            const SizedBox(height: 20),
-            _buildAddButton(),
-            const SizedBox(height: 30),
+            // Manual button (left)
+            Positioned(
+              bottom: 120,
+              left: MediaQuery.of(context).size.width / 2 - 90,
+              child: GestureDetector(
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  setState(() => _showFloatingOptions = false);
+                  final result = await showManualEntryDialog(
+                    context,
+                    initialCategory: widget.categoryName,
+                  );
+                  if (result != null && mounted) {
+                    final expense = Expense(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      title: result['title'] as String,
+                      amount: result['amount'] as double,
+                      category: result['category'] as String,
+                      date: result['date'] as DateTime,
+                    );
+                    context.read<ExpenseBloc>().add(AddExpense(expense));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Added ${result['title']}'),
+                        backgroundColor: const Color(0xFF4CAF50),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey[300]!, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.edit_rounded,
+                    color: Color(0xFF4CAF50),
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+            // Voice button (right)
+            Positioned(
+              bottom: 120,
+              right: MediaQuery.of(context).size.width / 2 - 90,
+              child: GestureDetector(
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  setState(() => _showFloatingOptions = false);
+                  final result = await showVoiceInputDialog(context);
+                  if (result != null && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Added: $result'),
+                        backgroundColor: const Color(0xFF10B981),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey[300]!, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.mic_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -92,14 +260,32 @@ class _ItemsPageState extends State<ItemsPage> {
   Widget _buildDateSelectors() {
     return Row(
       children: [
-        SizedBox(width: 160, child: _buildSimpleDateField(label: 'From', date: _fromDate, onTap: () => _selectFromDate())),
+        SizedBox(
+          width: 160,
+          child: _buildSimpleDateField(
+            label: 'From',
+            date: _fromDate,
+            onTap: () => _selectFromDate(),
+          ),
+        ),
         const Spacer(),
-        SizedBox(width: 160, child: _buildSimpleDateField(label: 'To', date: _toDate, onTap: () => _selectToDate())),
+        SizedBox(
+          width: 160,
+          child: _buildSimpleDateField(
+            label: 'To',
+            date: _toDate,
+            onTap: () => _selectToDate(),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildSimpleDateField({required String label, required DateTime? date, required VoidCallback onTap}) {
+  Widget _buildSimpleDateField({
+    required String label,
+    required DateTime? date,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -107,15 +293,35 @@ class _ItemsPageState extends State<ItemsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF1687F0).withValues(alpha: 0.3), width: 1.5),
-          boxShadow: [BoxShadow(color: const Color(0xFF1687F0).withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 2))],
+          border: Border.all(
+            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1478E0).withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.calendar_today_outlined, color: Color(0xFF1687F0), size: 16),
+            Icon(
+              Icons.calendar_today_outlined,
+              color: const Color(0xFF1478E0),
+              size: 16,
+            ),
             const SizedBox(width: 8),
-            Text('$label: ${date != null ? '${date.day}/${date.month}' : 'Select'}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF374151))),
+            Text(
+              '$label: ${date != null ? '${date.day}/${date.month}' : 'Select'}',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
+              ),
+            ),
           ],
         ),
       ),
@@ -123,674 +329,639 @@ class _ItemsPageState extends State<ItemsPage> {
   }
 
   Widget _buildBarChart() {
-    // Sort items by total price (highest first) for chart display
-    final sortedItems = List<CategoryItem>.from(_items)
-      ..sort((a, b) => b.totalPrice.compareTo(a.totalPrice));
-    
-    final chartData = sortedItems.isEmpty
-        ? [{'item': 'No Data', 'amount': 1.0}]
-        : sortedItems.map((item) => {'item': item.name, 'amount': item.totalPrice}).toList();
+    return BlocBuilder<ExpenseBloc, ExpenseState>(
+      builder: (context, state) {
+        // Get items for this category
+        List<Expense> categoryExpenses = [];
+        if (state is ExpenseLoaded) {
+          categoryExpenses = state.getExpensesByCategory(widget.categoryName);
+        }
 
+        // Show placeholder when no items in this category
+        if (state is! ExpenseLoaded || categoryExpenses.isEmpty) {
+          return Container(
+            height: 250,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Placeholder chart bars (faded)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _buildPlaceholderBar(40),
+                      const SizedBox(width: 12),
+                      _buildPlaceholderBar(70),
+                      const SizedBox(width: 12),
+                      _buildPlaceholderBar(55),
+                      const SizedBox(width: 12),
+                      _buildPlaceholderBar(85),
+                      const SizedBox(width: 12),
+                      _buildPlaceholderBar(45),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Icon(
+                    Icons.analytics_outlined,
+                    size: 32,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Analytics will appear here',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Add items to see your spending analysis',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Group by item name and calculate totals
+        final Map<String, double> itemTotals = {};
+        for (var expense in categoryExpenses) {
+          final name = expense.title;
+          itemTotals[name] = (itemTotals[name] ?? 0) + expense.amount;
+        }
+
+        // Convert to chart data format
+        final chartData = itemTotals.entries
+            .take(7) // Top 7 items
+            .map((e) => {'item': e.key, 'quantity': e.value})
+            .toList();
+
+        return Container(
+          height: 250,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Show selected filter chip if item is selected
+              if (_selectedItemName != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Showing: $_selectedItemName',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF2563EB),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () => setState(() => _selectedItemName = null),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: Color(0xFF2563EB),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: GestureDetector(
+                  onTapUp: (details) {
+                    // Calculate which bar was tapped
+                    final tapX = details.localPosition.dx - 20; // Adjust for padding
+                    final chartWidth = MediaQuery.of(context).size.width - 80;
+                    final barWidth = (chartWidth - 60) / (chartData.length * 3.5);
+                    final spacing = barWidth * 1.5;
+                    
+                    for (int i = 0; i < chartData.length; i++) {
+                      final barStart = 30 + i * (barWidth + spacing);
+                      final barEnd = barStart + barWidth;
+                      
+                      if (tapX >= barStart && tapX <= barEnd) {
+                        _onBarTap(chartData[i]['item'] as String);
+                        break;
+                      }
+                    }
+                  },
+                  child: CustomPaint(
+                    size: const Size(double.infinity, 180),
+                    painter: BarChartPainter(chartData, selectedItem: _selectedItemName),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaceholderBar(double height) {
     return Container(
-      height: 250,
-      padding: const EdgeInsets.all(20),
+      width: 24,
+      height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 2))],
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: CustomPaint(size: const Size(double.infinity, 200), painter: BarChartPainter(chartData)),
     );
   }
 
   Widget _buildItemsList() {
-    if (_items.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          children: [
-            Icon(Icons.receipt_long, size: 60, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            Text('No items yet', style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[400])),
-          ],
-        ),
-      );
-    }
+    return BlocBuilder<ExpenseBloc, ExpenseState>(
+      builder: (context, state) {
+        // Get items for this category
+        List<Expense> items = [];
+        if (state is ExpenseLoaded) {
+          items = state.getExpensesByCategory(widget.categoryName);
+          
+          // Filter by selected item name if any
+          if (_selectedItemName != null) {
+            items = items.where((e) => e.title == _selectedItemName).toList();
+          }
+        }
 
-    return Column(
-      children: List.generate(_items.length, (index) {
-        final item = _items[index];
-        return _buildItemCard(item, index);
-      }),
-    );
-  }
-
-  Widget _buildItemCard(CategoryItem item, int index) {
-    return GestureDetector(
-      onLongPress: () => _showDeleteItemDialog(index),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF42A5F5), Color(0xFF1976D2)], begin: Alignment.centerLeft, end: Alignment.centerRight),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: const Color(0xFF42A5F5).withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40, height: 40,
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
-              child: Icon(widget.categoryIcon, color: Colors.white, size: 20),
+        // Show empty state when no items
+        if (items.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            child: Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                  const SizedBox(height: 2),
-                  Text('${item.date.day}/${item.date.month}/${item.date.year}', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.8))),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF64748B).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      widget.categoryIcon,
+                      size: 40,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _selectedItemName != null 
+                        ? 'No "$_selectedItemName" items'
+                        : 'No ${widget.categoryName} items yet',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF374151),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _selectedItemName != null
+                        ? 'Tap on another bar or clear filter'
+                        : 'Your expenses will appear here\nTap + to add your first item',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF9CA3AF),
+                      height: 1.5,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('EGP ${item.totalPrice.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                Text('${item.quantity} x ${item.unitPrice.toStringAsFixed(0)}', style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.8))),
-              ],
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _showDeleteItemDialog(index),
-              child: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.8), size: 18),
-            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Show count when filtered
+            if (_selectedItemName != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  '${items.length} item${items.length > 1 ? 's' : ''} found',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ...items.map((expense) {
+              return _buildDismissibleItemCard(expense);
+            }),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDismissibleItemCard(Expense expense) {
+    return Dismissible(
+      key: Key(expense.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(25),
         ),
+        alignment: Alignment.centerRight,
+        child: const Icon(Icons.delete_rounded, color: Colors.white, size: 28),
+      ),
+      confirmDismiss: (direction) async {
+        return await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              'Delete Item',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+            content: Text(
+              'Are you sure you want to delete "${expense.title}"?',
+              style: GoogleFonts.inter(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  'Delete',
+                  style: GoogleFonts.inter(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      onDismissed: (direction) {
+        context.read<ExpenseBloc>().add(DeleteExpense(expense.id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${expense.title} deleted'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      },
+      child: _buildItemCard(
+        expense.title,
+        _formatDate(expense.date),
+        expense.amount,
+        _getCategoryIcon(expense.category),
       ),
     );
   }
 
-  void _showDeleteItemDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Item', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-        content: Text('Delete "${_items[index].name}"?', style: GoogleFonts.inter()),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey[600]))),
-          ElevatedButton(
-            onPressed: () {
-              _deleteItem(index);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            child: Text('Delete', style: GoogleFonts.inter(color: Colors.white)),
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    if (date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day) {
+      return 'Today, ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    }
+    return '${date.day}/${date.month}, ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food & Drink':
+        return Icons.restaurant;
+      case 'Shopping':
+        return Icons.shopping_bag;
+      case 'Bills':
+        return Icons.receipt;
+      case 'Health':
+        return Icons.favorite;
+      case 'Transport':
+        return Icons.directions_car;
+      case 'Entertainment':
+        return Icons.movie;
+      default:
+        return Icons.category;
+    }
+  }
+
+  Widget _buildItemCard(
+    String name,
+    String date,
+    double amount,
+    IconData icon,
+  ) {
+    // Remove time from date (keep only date part)
+    final dateOnly = date.contains(',') ? date.split(',')[0] : date.split(' ')[0];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFCBD5E1),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E3A5F).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: const Color(0xFF1E3A5F), size: 20),
+          ),
+          const SizedBox(width: 12),
+          // Name on left
+          Text(
+            name,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
+            ),
+          ),
+          // Date in center
+          Expanded(
+            child: Center(
+              child: Text(
+                dateOnly,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ),
+          // Amount on the right with currency
+          Text(
+            '${amount.toStringAsFixed(0)} EGP',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1E3A5F),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAddButton() {
+  Widget _buildAddTransactionButton() {
     return Center(
       child: GestureDetector(
-        onTap: () => _showAddOptions(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() {
+            _showFloatingOptions = !_showFloatingOptions;
+          });
+        },
         child: Container(
-          width: 70, height: 70,
+          width: 70,
+          height: 70,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [Color(0xFF42A5F5), Color(0xFF1976D2)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             shape: BoxShape.circle,
             boxShadow: [
-              BoxShadow(color: const Color(0xFF42A5F5).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 6)),
-              const BoxShadow(color: Colors.white, blurRadius: 0, offset: Offset(0, 0), spreadRadius: 2),
+              BoxShadow(
+                color: const Color(0xFF2563EB).withValues(alpha: 0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+              const BoxShadow(
+                color: Colors.white,
+                blurRadius: 0,
+                offset: Offset(0, 0),
+                spreadRadius: 2,
+              ),
             ],
           ),
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
+          child: AnimatedRotation(
+            turns: _showFloatingOptions ? 0.125 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
+          ),
         ),
       ),
     );
   }
 
+  // Keep old method for compatibility but not used
+  // ignore: unused_element
   void _showAddOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            Text('Add Item', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 24),
-            _buildOptionTile(Icons.edit, 'Manual', 'Enter item details manually', () {
-              Navigator.pop(context);
-              _showManualAddDialog();
-            }),
-            _buildOptionTile(Icons.mic, 'Voice', 'Add item using voice', () {
-              Navigator.pop(context);
-              _showVoiceInputDialog();
-            }),
-            _buildOptionTile(Icons.document_scanner, 'OCR', 'Scan receipt or document', () {
-              Navigator.pop(context);
-              _showOCROptionsDialog();
-            }),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showVoiceInputDialog() {
-    bool isRecording = false;
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
-                        child: Icon(Icons.close, color: Colors.grey[600], size: 20),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Text('Voice Input', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600))),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                // Mic animation container
-                GestureDetector(
-                  onTap: () {
-                    setDialogState(() => isRecording = !isRecording);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: 100, height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: isRecording 
-                          ? [const Color(0xFFE53935), const Color(0xFFD32F2F)]
-                          : [const Color(0xFF42A5F5), const Color(0xFF1976D2)],
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isRecording ? const Color(0xFFE53935) : const Color(0xFF42A5F5)).withValues(alpha: 0.4),
-                          blurRadius: isRecording ? 20 : 12,
-                          spreadRadius: isRecording ? 4 : 0,
-                        ),
-                      ],
-                    ),
-                    child: Icon(isRecording ? Icons.stop : Icons.mic, color: Colors.white, size: 40),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isRecording ? 'Recording...' : 'Tap to start recording',
-                  style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 24),
-                // Save button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Add voice item (simulated)
-                      _addItem(CategoryItem(
-                        name: 'Voice Item',
-                        quantity: 1,
-                        unitPrice: 50,
-                        date: DateTime.now(),
-                        source: 'voice',
-                      ));
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle, color: Colors.white),
-                              const SizedBox(width: 8),
-                              Text('Added successfully!', style: GoogleFonts.inter(color: Colors.white)),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.check, color: Colors.white),
-                    label: Text('Save', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1976D2),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showOCROptionsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 36, height: 36,
-                      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
-                      child: Icon(Icons.close, color: Colors.grey[600], size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('Scan Receipt', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600))),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text('Choose image source', style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        _processOCR('camera');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1976D2).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF1976D2).withValues(alpha: 0.3)),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 60, height: 60,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1976D2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
-                            ),
-                            const SizedBox(height: 12),
-                            Text('Camera', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                        _processOCR('gallery');
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1976D2).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF1976D2).withValues(alpha: 0.3)),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 60, height: 60,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1976D2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Icon(Icons.photo_library, color: Colors.white, size: 28),
-                            ),
-                            const SizedBox(height: 12),
-                            Text('Gallery', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _processOCR(String source) {
-    // Simulated OCR processing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening $source for OCR...', style: GoogleFonts.inter(color: Colors.white)),
-        backgroundColor: const Color(0xFF1976D2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    // Add OCR item (simulated)
-    Future.delayed(const Duration(seconds: 1), () {
-      _addItem(CategoryItem(
-        name: 'OCR Item',
-        quantity: 1,
-        unitPrice: 100,
-        date: DateTime.now(),
-        source: 'ocr',
-      ));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('Added successfully!', style: GoogleFonts.inter(color: Colors.white)),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+    setState(() {
+      _showFloatingOptions = true;
     });
   }
 
-  Widget _buildOptionTile(IconData icon, String title, String subtitle, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(color: const Color(0xFF1976D2).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: const Color(0xFF1976D2), size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[500])),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showManualAddDialog() {
-    final nameController = TextEditingController();
-    final quantityController = TextEditingController(text: '1');
-    final priceController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
-                          child: Icon(Icons.close, color: Colors.grey[600], size: 20),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: Text('Add Item', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600))),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text('Item Name', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      hintText: 'e.g. Pizza, Coffee...',
-                      hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
-                      filled: true,
-                      fillColor: const Color(0xFFF8F8F8),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Date selector
-                  Text('Date', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (picked != null) {
-                        setDialogState(() => selectedDate = picked);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8F8F8),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_today, color: Colors.grey[600], size: 18),
-                          const SizedBox(width: 12),
-                          Text(
-                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[700]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Quantity', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: quantityController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '1',
-                                filled: true,
-                                fillColor: const Color(0xFFF8F8F8),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Unit Price (EGP)', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: priceController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                hintText: '0',
-                                filled: true,
-                                fillColor: const Color(0xFFF8F8F8),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final name = nameController.text.trim();
-                        final quantity = int.tryParse(quantityController.text) ?? 1;
-                        final price = double.tryParse(priceController.text) ?? 0;
-
-                        if (name.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter item name', style: GoogleFonts.inter(color: Colors.white)), backgroundColor: Colors.red));
-                          return;
-                        }
-                        if (price <= 0) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter valid price', style: GoogleFonts.inter(color: Colors.white)), backgroundColor: Colors.red));
-                          return;
-                        }
-
-                        _addItem(CategoryItem(name: name, quantity: quantity, unitPrice: price, date: selectedDate, source: 'manual'));
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1976D2),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text('Save', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _selectFromDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _fromDate ?? DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime(2100));
-    if (picked != null) setState(() => _fromDate = picked);
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _fromDate ?? DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && picked != _fromDate) {
+      setState(() {
+        _fromDate = picked;
+      });
+    }
   }
 
   Future<void> _selectToDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _toDate ?? DateTime.now(), firstDate: _fromDate ?? DateTime(1900), lastDate: DateTime(2100));
-    if (picked != null) setState(() => _toDate = picked);
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _toDate ?? DateTime.now(),
+      firstDate: _fromDate ?? DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && picked != _toDate) {
+      setState(() {
+        _toDate = picked;
+      });
+    }
   }
 }
 
 class BarChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
-  BarChartPainter(this.data);
+  final String? selectedItem;
+
+  BarChartPainter(this.data, {this.selectedItem});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..shader = const LinearGradient(colors: [Color(0xFF42A5F5), Color(0xFF1976D2)], begin: Alignment.topCenter, end: Alignment.bottomCenter)
-          .createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
+    final maxQuantity =
+        data.map((e) => e['quantity'] as double).reduce(math.max);
+    // Make bars thinner
+    final barWidth = (size.width - 60) / (data.length * 3.5);
+    final spacing = barWidth * 1.5;
 
-    final maxAmount = data.map((e) => e['amount'] as double).reduce(math.max);
-    // Thin bars - fixed width of 16, with dynamic spacing
-    const double barWidth = 16;
-    final totalBarsWidth = data.length * barWidth;
-    final availableSpace = size.width - 60;
-    final spacing = data.length > 1 ? (availableSpace - totalBarsWidth) / (data.length - 1) : 0.0;
-    final startX = (size.width - (totalBarsWidth + spacing * (data.length - 1))) / 2;
+    // Draw Y-axis label
+    final yAxisPainter = TextPainter(
+      text: const TextSpan(
+        text: 'EGP',
+        style: TextStyle(
+          color: Color(0xFF64748B),
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    yAxisPainter.layout();
+    yAxisPainter.paint(canvas, const Offset(0, 0));
 
     for (int i = 0; i < data.length; i++) {
-      final amount = data[i]['amount'] as double;
-      final barHeight = (amount / maxAmount) * (size.height - 50);
-      final x = startX + i * (barWidth + spacing);
+      final itemName = data[i]['item'] as String;
+      final quantity = data[i]['quantity'] as double;
+      final barHeight = (quantity / maxQuantity) * (size.height - 50);
+      final isSelected = selectedItem == itemName;
+
+      final x = 30 + i * (barWidth + spacing);
       final y = size.height - barHeight - 30;
 
-      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x, y, barWidth, barHeight), const Radius.circular(4)), paint);
+      // Different colors for selected/unselected bars
+      final paint = Paint()
+        ..shader = LinearGradient(
+          colors: isSelected 
+              ? [const Color(0xFF10B981), const Color(0xFF059669)] // Green for selected
+              : [const Color(0xFF3B82F6), const Color(0xFF2563EB)], // Blue for normal
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Rect.fromLTWH(x, y, barWidth, barHeight))
+        ..style = PaintingStyle.fill;
 
-      // Amount label on top
-      final amtPainter = TextPainter(
-        text: TextSpan(text: amount.toInt().toString(), style: const TextStyle(color: Color(0xFF1976D2), fontSize: 10, fontWeight: FontWeight.bold)),
+      // Draw bar with gradient
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, y, barWidth, barHeight),
+          const Radius.circular(6),
+        ),
+        paint,
+      );
+
+      // Draw quantity on top of bar
+      final qtyPainter = TextPainter(
+        text: TextSpan(
+          text: quantity.toInt().toString(),
+          style: TextStyle(
+            color: isSelected ? const Color(0xFF059669) : const Color(0xFF2563EB),
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         textDirection: TextDirection.ltr,
       );
-      amtPainter.layout();
-      amtPainter.paint(canvas, Offset(x + barWidth / 2 - amtPainter.width / 2, y - 16));
+      qtyPainter.layout();
+      qtyPainter.paint(
+        canvas,
+        Offset(x + barWidth / 2 - qtyPainter.width / 2, y - 18),
+      );
 
-      // Item name at bottom
-      final itemName = data[i]['item'] as String;
+      // Draw item name label (X-axis) - Vertical text close to bar
+      final displayName = itemName.length > 8 ? '${itemName.substring(0, 8)}.' : itemName;
       final namePainter = TextPainter(
-        text: TextSpan(text: itemName.length > 5 ? '${itemName.substring(0, 5)}.' : itemName, style: const TextStyle(color: Colors.grey, fontSize: 9)),
+        text: TextSpan(
+          text: displayName,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFF059669) : const Color(0xFF374151),
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
         textDirection: TextDirection.ltr,
       );
       namePainter.layout();
-      namePainter.paint(canvas, Offset(x + barWidth / 2 - namePainter.width / 2, size.height - 18));
+      
+      // Rotate text to be vertical and position close to bar bottom
+      canvas.save();
+      final centerX = x + barWidth / 2;
+      final barBottom = size.height - 30; // Bottom of the chart area
+      canvas.translate(centerX + 4, barBottom + 4);
+      canvas.rotate(-1.5708); // -90 degrees in radians
+      namePainter.paint(canvas, Offset(-namePainter.width, -namePainter.height / 2));
+      canvas.restore();
     }
   }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
+
+

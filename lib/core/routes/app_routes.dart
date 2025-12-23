@@ -1,4 +1,4 @@
-class AppRoutes {
+﻿class AppRoutes {
   static const String splash = '/';
   static const String onboarding = '/onboarding';
   static const String auth = '/auth';
@@ -7,3 +7,6 @@ class AppRoutes {
   static const String otpVerification = '/otp-verification';
   static const String changePassword = '/change-password';
 }
+
+
+

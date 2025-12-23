@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 class CategoryData {
@@ -31,3 +31,6 @@ const List<CategoryData> defaultCategories = [
     gradient: AppColors.healthGradient,
   ),
 ];
+
+
+

@@ -1,21 +1,23 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../home/bloc/expense_bloc.dart';
+import '../home/bloc/expense_state.dart';
 import '../items/items_page.dart';
-import 'category_data_store.dart';
+import '../../widgets/chart_placeholder.dart';
+import '../../widgets/dialogs/add_category_dialog.dart';
+import 'bloc/category_bloc.dart';
 
-/// Categories Page
+/// Categories Page - عرض الفئات مع Pie Chart
+/// يعرض pie chart ديناميك وقائمة الفئات
 class CategoriesPage extends StatelessWidget {
   const CategoriesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ExpenseBloc(),
-      child: const _CategoriesPageContent(),
-    );
+    return const _CategoriesPageContent();
   }
 }
 
@@ -29,7 +31,14 @@ class _CategoriesPageContent extends StatefulWidget {
 class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   DateTime? _fromDate;
   DateTime? _toDate;
-  final CategoryDataStore _dataStore = CategoryDataStore();
+
+  // Default categories that cannot be deleted
+  final List<Map<String, dynamic>> _defaultCategories = [
+    {'name': 'Food & Drink', 'icon': Icons.restaurant, 'isDefault': true},
+    {'name': 'Shopping', 'icon': Icons.shopping_bag, 'isDefault': true},
+    {'name': 'Bills', 'icon': Icons.receipt, 'isDefault': true},
+    {'name': 'Health', 'icon': Icons.favorite, 'isDefault': true},
+  ];
 
   @override
   void initState() {
@@ -40,28 +49,21 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   void _setDefaultDates() {
     final now = DateTime.now();
     setState(() {
-      _fromDate = DateTime(now.year, now.month, 1);
-      _toDate = now;
+      _fromDate = DateTime(
+        now.year,
+        now.month,
+        1,
+      ); // First day of current month
+      _toDate = now; // Today
     });
   }
 
-  void _addCategory(CategoryData category) {
-    setState(() {
-      _dataStore.addCustomCategory(category);
-    });
+  List<Map<String, dynamic>> _getAllCategories(List<Map<String, dynamic>> customCategories) {
+    return [
+      ..._defaultCategories,
+      ...customCategories,
+    ];
   }
-
-  void _deleteCategory(int index) {
-    setState(() {
-      _dataStore.removeCustomCategory(index);
-    });
-  }
-
-  void _refreshState() {
-    setState(() {});
-  }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +72,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false, // No back button - this is a tab page
         title: Text(
           'Categories',
           style: GoogleFonts.inter(
@@ -85,11 +87,19 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
+            // Date Selectors
             _buildDateSelectors(),
+
             const SizedBox(height: 30),
+
+            // Pie Chart
             _buildPieChart(),
+
             const SizedBox(height: 30),
+
+            // Categories List
             _buildCategoriesList(),
+
             const SizedBox(height: 30),
           ],
         ),
@@ -134,12 +144,12 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1687F0).withValues(alpha: 0.3),
+            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1687F0).withValues(alpha: 0.1),
+              color: const Color(0xFF1478E0).withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -148,11 +158,19 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.calendar_today_outlined, color: Color(0xFF1687F0), size: 16),
+            Icon(
+              Icons.calendar_today_outlined,
+              color: const Color(0xFF1478E0),
+              size: 16,
+            ),
             const SizedBox(width: 8),
             Text(
               '$label: ${date != null ? '${date.day}/${date.month}' : 'Select'}',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF374151)),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
+              ),
             ),
           ],
         ),
@@ -160,89 +178,534 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
     );
   }
 
+  // Track selected category for drill-down
+  String? _selectedCategory;
+  
   Widget _buildPieChart() {
-    Map<String, double> categoryTotals = {};
-    // Add all categories from data store
-    for (var cat in _dataStore.allCategories) {
-      categoryTotals[cat.name] = cat.totalAmount;
-    }
-    double totalAmount = categoryTotals.values.fold(0, (sum, amount) => sum + amount);
-    if (totalAmount == 0) totalAmount = 1;
+    return BlocBuilder<CategoryBloc, CategoryState>(
+      builder: (context, categoryState) {
+        final allCategories = _getAllCategories(categoryState.customCategories);
+        
+        return BlocBuilder<ExpenseBloc, ExpenseState>(
+          builder: (context, state) {
+            // Show placeholder when no data exists
+            if (state is ExpenseLoaded && state.isEmpty) {
+              return const ChartPlaceholder(
+                title: 'Spending by Category',
+                height: 150,
+                type: ChartPlaceholderType.pie,
+              );
+            }
 
-    return SizedBox(
-      width: 250,
-      height: 250,
-      child: CustomPaint(painter: PieChartPainter(categoryTotals, totalAmount)),
+            Map<String, double> categoryTotals = {};
+            double totalAmount = 0;
+
+            if (state is ExpenseLoaded && state.hasData) {
+              // Calculate totals for ALL categories (default + custom)
+              for (var cat in allCategories) {
+                final name = cat['name'] as String;
+                final total = state.getCategoryTotal(name);
+                if (total > 0) {
+                  categoryTotals[name] = total;
+                }
+              }
+
+              totalAmount = categoryTotals.values.fold(
+                0,
+                (sum, amount) => sum + amount,
+              );
+            }
+
+            // If still no data after calculation, show placeholder
+            if (totalAmount == 0) {
+              return const ChartPlaceholder(
+                title: 'Spending by Category',
+                height: 150,
+                type: ChartPlaceholderType.pie,
+              );
+            }
+
+            // If a category is selected, show items breakdown
+            if (_selectedCategory != null && state is ExpenseLoaded) {
+              return _buildItemsBreakdownChart(state, _selectedCategory!);
+            }
+
+            // Main categories pie chart
+            return Column(
+              children: [
+                Text(
+                  'Tap a slice to see items',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTapUp: (details) {
+                    final tappedCategory = _getTappedCategory(
+                      details.localPosition,
+                      const Size(220, 220),
+                      categoryTotals,
+                      totalAmount,
+                    );
+                    if (tappedCategory != null) {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _selectedCategory = tappedCategory;
+                      });
+                    }
+                  },
+                  child: SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: CustomPaint(
+                      painter: PieChartPainter(categoryTotals, totalAmount),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  Widget _buildCategoriesList() {
-    // Sort categories by amount (highest first)
-    final sortedMain = List<CategoryData>.from(_dataStore.mainCategories)
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
-    final sortedCustom = List<CategoryData>.from(_dataStore.customCategories)
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+  // Get which category was tapped based on position
+  String? _getTappedCategory(
+    Offset tapPosition,
+    Size size,
+    Map<String, double> categoryTotals,
+    double totalAmount,
+  ) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 20;
+    
+    // Check if tap is within the pie
+    final distance = (tapPosition - center).distance;
+    if (distance > radius) return null;
+    
+    // Calculate angle of tap
+    final dx = tapPosition.dx - center.dx;
+    final dy = tapPosition.dy - center.dy;
+    var tapAngle = math.atan2(dy, dx);
+    
+    // Normalize angle to start from top (-π/2)
+    tapAngle = tapAngle + math.pi / 2;
+    if (tapAngle < 0) tapAngle += 2 * math.pi;
+    
+    // Find which segment was tapped
+    double startAngle = 0;
+    for (final entry in categoryTotals.entries) {
+      if (entry.value > 0) {
+        final sweepAngle = (entry.value / totalAmount) * 2 * math.pi;
+        if (tapAngle >= startAngle && tapAngle < startAngle + sweepAngle) {
+          return entry.key;
+        }
+        startAngle += sweepAngle;
+      }
+    }
+    return null;
+  }
 
+  // Build items breakdown chart for selected category
+  Widget _buildItemsBreakdownChart(ExpenseLoaded state, String categoryName) {
+    // Get unique items with their totals for this category
+    final Map<String, double> itemTotals = {};
+    final Map<String, int> itemCounts = {};
+    
+    for (final expense in state.expenses) {
+      if (expense.category == categoryName) {
+        final itemName = expense.title;
+        itemTotals[itemName] = (itemTotals[itemName] ?? 0) + expense.amount;
+        itemCounts[itemName] = (itemCounts[itemName] ?? 0) + 1;
+      }
+    }
+    
+    if (itemTotals.isEmpty) {
+      return Column(
+        children: [
+          _buildBackButton(),
+          const SizedBox(height: 16),
+          Text(
+            'No items in $categoryName',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Sort by COUNT (most purchased first) - not by amount!
+    final sortedItems = itemTotals.entries.toList()
+      ..sort((a, b) => (itemCounts[b.key] ?? 0).compareTo(itemCounts[a.key] ?? 0));
+    
+    final totalCount = itemCounts.values.fold(0, (sum, v) => sum + v);
+    
     return Column(
       children: [
-        // Main categories (sorted by amount)
-        ...sortedMain.map((category) {
-          final index = _dataStore.mainCategories.indexOf(category);
-          return _buildCategoryItem(
-            category.name,
-            category.icon,
-            category.color,
-            category.totalAmount,
-            isDeletable: false,
-            isMainCategory: true,
-            mainCategoryIndex: index,
-          );
-        }),
-        // Custom categories (sorted by amount)
-        ...sortedCustom.map((category) {
-          final index = _dataStore.customCategories.indexOf(category);
-          return _buildCategoryItem(
-            category.name,
-            category.icon,
-            category.color,
-            category.totalAmount,
-            isDeletable: true,
-            onDelete: () => _showDeleteConfirmation(index),
-            onMenuTap: () => _showCategoryMenu(index),
-            customCategoryIndex: index,
-          );
-        }),
+        // Back button and title
+        _buildBackButton(),
+        const SizedBox(height: 8),
+        Text(
+          categoryName,
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1976D2),
+          ),
+        ),
+        Text(
+          'Most purchased items',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: const Color(0xFF6B7280),
+          ),
+        ),
         const SizedBox(height: 16),
-        _buildAddCategoryButton(),
+        
+        // Items pie chart (based on count)
+        SizedBox(
+          width: 200,
+          height: 200,
+          child: CustomPaint(
+            painter: ItemsPieChartPainter(
+              items: sortedItems,
+              itemCounts: itemCounts,
+              totalCount: totalCount,
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // Items legend - sorted by count
+        ...sortedItems.take(5).map((entry) {
+          final count = itemCounts[entry.key] ?? 0;
+          final percentage = ((count / totalCount) * 100).round();
+          final colorIndex = sortedItems.indexOf(entry);
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: _getItemColor(colorIndex),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    entry.key,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF374151),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1976D2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '$count×',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$percentage%',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${entry.value.toInt()} EGP',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF9CA3AF),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
 
+  Widget _buildBackButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() {
+          _selectedCategory = null;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1976D2).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.arrow_back_rounded,
+              size: 16,
+              color: Color(0xFF1976D2),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Back to Categories',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1976D2),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getItemColor(int index) {
+    final colors = [
+      const Color(0xFF1976D2),
+      const Color(0xFF42A5F5),
+      const Color(0xFF64B5F6),
+      const Color(0xFF90CAF9),
+      const Color(0xFFBBDEFB),
+    ];
+    return colors[index % colors.length];
+  }
+
+  Widget _buildCategoriesList() {
+    return BlocBuilder<CategoryBloc, CategoryState>(
+      builder: (context, categoryState) {
+        final customCategories = categoryState.customCategories;
+        final allCategories = _getAllCategories(customCategories);
+        
+        return Column(
+          children: [
+            BlocBuilder<ExpenseBloc, ExpenseState>(
+              builder: (context, state) {
+                // Get category totals from real data
+                Map<String, double> categoryTotals = {};
+                if (state is ExpenseLoaded) {
+                  for (var cat in allCategories) {
+                    final name = cat['name'] as String;
+                    categoryTotals[name] = state.getCategoryTotal(name);
+                  }
+                }
+
+                return Column(
+                  children: [
+                    // Default Categories (4 main ones)
+                    ..._defaultCategories.map((category) {
+                      final amount = categoryTotals[category['name']] ?? 0;
+                      return _buildCategoryItem(
+                        category['name'] as String,
+                        category['icon'] as IconData,
+                        const Color(0xFF1976D2),
+                        amount,
+                        isDefault: true,
+                      );
+                    }),
+
+                    // Custom Categories (can be deleted)
+                    ...customCategories.map((category) {
+                      final amount = categoryTotals[category['name']] ?? 0;
+                      return _buildCategoryItem(
+                        category['name'] as String,
+                        category['icon'] as IconData,
+                        const Color(0xFF1976D2),
+                        amount,
+                        isDefault: false,
+                        onDelete: () => _deleteCategory(category['name'] as String),
+                      );
+                    }),
+                  ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Add Category Button
+            _buildAddCategoryButton(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildAddCategoryButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          debugPrint('=== Add Category Button Tapped ===');
+          _addNewCategory();
+        },
+        borderRadius: BorderRadius.circular(25),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(
+              color: const Color(0xFF1976D2).withValues(alpha: 0.3),
+              width: 2,
+              style: BorderStyle.solid,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1976D2).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Color(0xFF1976D2),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Add Category',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1976D2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addNewCategory() async {
+    debugPrint('=== _addNewCategory START ===');
+    HapticFeedback.lightImpact();
+    
+    final result = await showAddCategoryDialog(context);
+    debugPrint('=== Result received: $result ===');
+    
+    if (result != null && result['name'] != null && result['icon'] != null) {
+      // Use CategoryBloc to add category
+      context.read<CategoryBloc>().add(AddCategory(
+        name: result['name'] as String,
+        icon: result['icon'] as IconData,
+      ));
+      
+      debugPrint('=== Category added via BLoC ===');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Category "${result['name']}" added!'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+      }
+    } else {
+      debugPrint('=== Dialog cancelled or invalid result ===');
+    }
+  }
+
+  void _deleteCategory(String name) {
+    HapticFeedback.lightImpact();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Delete Category',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$name"?',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              // Use CategoryBloc to delete category
+              context.read<CategoryBloc>().add(DeleteCategory(name));
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Category "$name" deleted'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: Text('Delete', style: GoogleFonts.inter(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCategoryItem(
-    String name, IconData icon, Color color, double amount, {
-    bool isDeletable = false,
-    bool isMainCategory = false,
-    int? mainCategoryIndex,
-    int? customCategoryIndex,
+    String name,
+    IconData icon,
+    Color color,
+    double amount, {
+    bool isDefault = true,
     VoidCallback? onDelete,
-    VoidCallback? onMenuTap,
   }) {
     return GestureDetector(
-      onTap: () async {
-        await Navigator.push(
+      onTap: () {
+        // Pass the existing ExpenseBloc to ItemsPage
+        final expenseBloc = context.read<ExpenseBloc>();
+        Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ItemsPage(
-              categoryName: name,
-              categoryIcon: icon,
-              categoryColor: color,
+            builder: (_) => BlocProvider.value(
+              value: expenseBloc,
+              child: ItemsPage(
+                categoryName: name,
+                categoryIcon: icon,
+                categoryColor: color,
+              ),
             ),
           ),
         );
-        // Refresh state after returning - data is persisted in store
-        _refreshState();
       },
-      onLongPress: isDeletable ? onDelete : null,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -256,300 +719,242 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.black87)),
+              child: Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
             ),
             Text(
               'EGP ${amount.toInt()}',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
-            if (isDeletable) ...[
-              const SizedBox(width: 8),
+            // Delete button for custom categories only
+            if (!isDefault && onDelete != null) ...[
+              const SizedBox(width: 12),
               GestureDetector(
-                onTap: onMenuTap,
-                child: Icon(Icons.more_vert, color: Colors.grey[400], size: 18),
+                onTap: onDelete,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                    size: 18,
+                  ),
+                ),
               ),
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  void _showCategoryMenu(int index) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: Text('Delete Category', style: GoogleFonts.inter(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(index);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Category', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-        content: Text('Are you sure you want to delete "${_dataStore.customCategories[index].name}"?', style: GoogleFonts.inter()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.inter(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _deleteCategory(index);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            child: Text('Delete', style: GoogleFonts.inter(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
   Future<void> _selectFromDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _fromDate ?? DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime(2100));
-    if (picked != null) setState(() => _fromDate = picked);
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _fromDate ?? DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && picked != _fromDate) {
+      setState(() {
+        _fromDate = picked;
+      });
+    }
   }
 
   Future<void> _selectToDate() async {
-    final picked = await showDatePicker(context: context, initialDate: _toDate ?? DateTime.now(), firstDate: _fromDate ?? DateTime(1900), lastDate: DateTime(2100));
-    if (picked != null) setState(() => _toDate = picked);
-  }
-
-  Widget _buildAddCategoryButton() {
-    return GestureDetector(
-      onTap: () => _showAddCategoryDialog(),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: const Color(0xFF1976D2), width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.add, color: Color(0xFF1976D2), size: 20),
-            const SizedBox(width: 8),
-            Text('Add Category', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: const Color(0xFF1976D2))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAddCategoryDialog() {
-    showDialog(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      barrierDismissible: true,
-      builder: (context) => _AddCategoryDialog(onCategoryCreated: (category) => _addCategory(category)),
+      initialDate: _toDate ?? DateTime.now(),
+      firstDate: _fromDate ?? DateTime(1900),
+      lastDate: DateTime(2100),
     );
-  }
-}
-
-class _AddCategoryDialog extends StatefulWidget {
-  final Function(CategoryData) onCategoryCreated;
-  const _AddCategoryDialog({required this.onCategoryCreated});
-
-  @override
-  State<_AddCategoryDialog> createState() => _AddCategoryDialogState();
-}
-
-class _AddCategoryDialogState extends State<_AddCategoryDialog> {
-  final _nameController = TextEditingController();
-  IconData _selectedIcon = Icons.category;
-
-  final List<IconData> _availableIcons = [
-    Icons.category, Icons.shopping_cart, Icons.restaurant, Icons.local_gas_station,
-    Icons.home, Icons.school, Icons.work, Icons.fitness_center, Icons.movie,
-    Icons.music_note, Icons.pets, Icons.flight, Icons.hotel, Icons.local_hospital,
-    Icons.local_pharmacy, Icons.car_repair, Icons.build, Icons.cleaning_services,
-    Icons.child_care, Icons.sports_soccer, Icons.pool, Icons.park, Icons.cake,
-    Icons.coffee, Icons.fastfood, Icons.local_pizza, Icons.icecream, Icons.wine_bar,
-    Icons.directions_car, Icons.phone_android,
-  ];
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 400),
-        padding: const EdgeInsets.all(24),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
-                      child: Icon(Icons.close, color: Colors.grey[600], size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('Create Category', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black))),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Text('Category Name', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  hintText: 'Enter name...',
-                  hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
-                  filled: true,
-                  fillColor: const Color(0xFFF8F8F8),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2)),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text('Select Icon', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.grey[700])),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: const Color(0xFFF8F8F8), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40, height: 40,
-                      decoration: BoxDecoration(color: const Color(0xFF1976D2), borderRadius: BorderRadius.circular(10)),
-                      child: Icon(_selectedIcon, color: Colors.white, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Text('Selected', style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600])),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                height: 160,
-                decoration: BoxDecoration(color: const Color(0xFFF8F8F8), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey[200]!)),
-                child: GridView.builder(
-                  padding: const EdgeInsets.all(10),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 6, crossAxisSpacing: 6, mainAxisSpacing: 6),
-                  itemCount: _availableIcons.length,
-                  itemBuilder: (context, index) {
-                    final icon = _availableIcons[index];
-                    final isSelected = icon == _selectedIcon;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedIcon = icon),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF1976D2) : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: isSelected ? const Color(0xFF1976D2) : Colors.grey[300]!, width: isSelected ? 2 : 1),
-                        ),
-                        child: Icon(icon, color: isSelected ? Colors.white : Colors.grey[600], size: 18),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _createCategory,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976D2),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text('Save', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _createCategory() {
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a category name', style: GoogleFonts.inter(color: Colors.white)), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating),
-      );
-      return;
+    if (picked != null && picked != _toDate) {
+      setState(() {
+        _toDate = picked;
+      });
     }
-    widget.onCategoryCreated(CategoryData(name: _nameController.text.trim(), icon: _selectedIcon));
-    Navigator.pop(context);
   }
 }
 
 class PieChartPainter extends CustomPainter {
   final Map<String, double> categoryTotals;
   final double totalAmount;
+
   PieChartPainter(this.categoryTotals, this.totalAmount);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 20;
-    final colors = [const Color(0xFF1976D2), const Color(0xFF2196F3), const Color(0xFF64B5F6), const Color(0xFF90CAF9), const Color(0xFFBBDEFB), const Color(0xFFE3F2FD)];
-    double startAngle = -math.pi / 2;
+
+    final colors = [
+      const Color(0xFF1976D2), // Food - Dark Blue
+      const Color(0xFF2196F3), // Shopping - Blue
+      const Color(0xFF64B5F6), // Bills - Light Blue
+      const Color(0xFF90CAF9), // Health - Lighter Blue
+      const Color(0xFFBBDEFB), // Transport - Very Light Blue
+      const Color(0xFFE3F2FD), // Entertainment - Pale Blue
+    ];
+
+    double startAngle = -math.pi / 2; // Start from top
     int colorIndex = 0;
 
     categoryTotals.forEach((category, amount) {
       if (amount > 0) {
         final sweepAngle = (amount / totalAmount) * 2 * math.pi;
-        final paint = Paint()..color = colors[colorIndex % colors.length]..style = PaintingStyle.fill;
-        canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, true, paint);
+
+        final paint = Paint()
+          ..color = colors[colorIndex % colors.length]
+          ..style = PaintingStyle.fill;
+
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius),
+          startAngle,
+          sweepAngle,
+          true,
+          paint,
+        );
+
+        // Draw percentage text
         final percentage = ((amount / totalAmount) * 100).round();
         if (percentage >= 10) {
+          // Only show text for segments >= 10%
           final textAngle = startAngle + sweepAngle / 2;
           final textRadius = radius * 0.7;
           final textX = center.dx + textRadius * math.cos(textAngle);
           final textY = center.dy + textRadius * math.sin(textAngle);
+
           final textPainter = TextPainter(
-            text: TextSpan(text: '$category\n$percentage%', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            text: TextSpan(
+              text: '$category\n$percentage%',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             textAlign: TextAlign.center,
             textDirection: TextDirection.ltr,
           );
           textPainter.layout();
-          textPainter.paint(canvas, Offset(textX - textPainter.width / 2, textY - textPainter.height / 2));
+          textPainter.paint(
+            canvas,
+            Offset(
+              textX - textPainter.width / 2,
+              textY - textPainter.height / 2,
+            ),
+          );
         }
+
         startAngle += sweepAngle;
         colorIndex++;
       }
     });
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
+}
+
+
+
+
+// Pie chart painter for items breakdown (based on count)
+class ItemsPieChartPainter extends CustomPainter {
+  final List<MapEntry<String, double>> items;
+  final Map<String, int> itemCounts;
+  final int totalCount;
+
+  ItemsPieChartPainter({
+    required this.items,
+    required this.itemCounts,
+    required this.totalCount,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 10;
+
+    final colors = [
+      const Color(0xFF1976D2),
+      const Color(0xFF42A5F5),
+      const Color(0xFF64B5F6),
+      const Color(0xFF90CAF9),
+      const Color(0xFFBBDEFB),
+    ];
+
+    double startAngle = -math.pi / 2;
+
+    for (int i = 0; i < items.length && i < 5; i++) {
+      final item = items[i];
+      final count = itemCounts[item.key] ?? 0;
+      final sweepAngle = (count / totalCount) * 2 * math.pi;
+
+      final paint = Paint()
+        ..color = colors[i % colors.length]
+        ..style = PaintingStyle.fill;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        true,
+        paint,
+      );
+
+      // Draw count text for large segments
+      final percentage = ((count / totalCount) * 100).round();
+      if (percentage >= 15) {
+        final textAngle = startAngle + sweepAngle / 2;
+        final textRadius = radius * 0.65;
+        final textX = center.dx + textRadius * math.cos(textAngle);
+        final textY = center.dy + textRadius * math.sin(textAngle);
+
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: '$count×',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          Offset(
+            textX - textPainter.width / 2,
+            textY - textPainter.height / 2,
+          ),
+        );
+      }
+
+      startAngle += sweepAngle;
+    }
+
+    // Draw center circle (donut style)
+    final centerPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius * 0.4, centerPaint);
   }
 
   @override

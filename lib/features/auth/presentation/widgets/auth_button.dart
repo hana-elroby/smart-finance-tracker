@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class AuthButton extends StatelessWidget {
   final String text;
@@ -41,3 +41,6 @@ class AuthButton extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../categories/categories_page.dart';
@@ -74,7 +74,7 @@ class HomeCategories extends StatelessWidget {
               shoppingTotal = state.getCategoryTotal('Shopping');
               billsTotal = state.getCategoryTotal('Bills');
               healthTotal = state.getCategoryTotal('Health');
-              print(
+              debugPrint(
                 '📊 Totals - Shopping: $shoppingTotal, Bills: $billsTotal, Health: $healthTotal',
               );
             }
@@ -170,3 +170,5 @@ class HomeCategories extends StatelessWidget {
     );
   }
 }
+
+

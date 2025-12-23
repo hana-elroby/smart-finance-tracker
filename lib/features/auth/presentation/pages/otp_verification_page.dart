@@ -1,14 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import 'change_password_page.dart';
-import 'login_page.dart';
 
 class OTPVerificationPage extends StatefulWidget {
   final String email;
   final String fromPage; // 'signup' or 'forgot_password'
-  
+
   const OTPVerificationPage({
     super.key,
     required this.email,
@@ -20,7 +19,10 @@ class OTPVerificationPage extends StatefulWidget {
 }
 
 class _OTPVerificationPageState extends State<OTPVerificationPage> {
-  final List<TextEditingController> _controllers = List.generate(6, (index) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
   bool _isLoading = false;
 
@@ -46,7 +48,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
   void _verifyOTP() async {
     // جمع الـ OTP من كل الـ TextFields
     String otp = _controllers.map((controller) => controller.text).join();
-    
+
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -63,6 +65,8 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
 
     // محاكاة عملية التحقق
     await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
 
     setState(() {
       _isLoading = false;
@@ -84,10 +88,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else if (widget.fromPage == 'forgot_password') {
         // لو جاي من Forgot Password، نروح لـ Change Password
-        NavigationHelper.push(
-          context,
-          ChangePasswordPage(email: widget.email),
-        );
+        NavigationHelper.push(context, ChangePasswordPage(email: widget.email));
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -139,10 +140,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                 const SizedBox(height: 16),
                 Text(
                   'We sent a verification code to',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -154,7 +152,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -179,7 +177,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // OTP Input Fields
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -222,9 +220,9 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                           );
                         }),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Verify Button
                       Container(
                         width: double.infinity,
@@ -242,7 +240,9 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                           borderRadius: BorderRadius.circular(28),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00BCD4).withValues(alpha: 0.4),
+                              color: const Color(
+                                0xFF00BCD4,
+                              ).withValues(alpha: 0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -277,9 +277,9 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
                                 ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Resend Code
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -320,3 +320,5 @@ class _OTPVerificationPageState extends State<OTPVerificationPage> {
     );
   }
 }
+
+

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_colors.dart';
 import 'core/services/sync_service.dart';
+import 'services/notification_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/auth_page.dart';
@@ -14,6 +15,13 @@ void main() async {
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Notification Service
+  try {
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Notification service initialization error: $e');
+  }
 
   // Initialize Sync Service
   try {
@@ -48,3 +56,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+
+

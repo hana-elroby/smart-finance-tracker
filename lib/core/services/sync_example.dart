@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'sync_service.dart';
 
 // مثال: إزاي تستخدمي الـ Sync في التطبيق
@@ -8,7 +8,7 @@ class SyncExample {
   static void initSync() {
     final syncService = SyncService();
     syncService.startListening(); // يبدأ يراقب النت
-    print('✅ Sync service started');
+    debugPrint('✅ Sync service started');
   }
 
   // 2️⃣ لو عايزة تعملي sync يدوي (زرار Sync مثلاً)
@@ -19,9 +19,7 @@ class SyncExample {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
     // عمل sync
@@ -30,9 +28,9 @@ class SyncExample {
     // إخفاء loading
     if (context.mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Sync completed!')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('✅ Sync completed!')));
     }
   }
 
@@ -56,3 +54,5 @@ class SyncButton extends StatelessWidget {
     );
   }
 }
+
+

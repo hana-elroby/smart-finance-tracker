@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/models/expense.dart';
@@ -243,15 +243,15 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                 Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      print('🔘 Save button pressed!');
-                      print('💵 Amount text: "${amountController.text}"');
+                      debugPrint('🔘 Save button pressed!');
+                      debugPrint('💵 Amount text: "${amountController.text}"');
 
                       // Validate inputs
                       final amount = double.tryParse(amountController.text);
-                      print('💰 Parsed amount: $amount');
+                      debugPrint('💰 Parsed amount: $amount');
 
                       if (amount == null || amount <= 0) {
-                        print('❌ Validation failed!');
+                        debugPrint('❌ Validation failed!');
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Please enter a valid amount'),
@@ -261,7 +261,7 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                         return;
                       }
 
-                      print('✅ Validation passed!');
+                      debugPrint('✅ Validation passed!');
 
                       final title = titleController.text.isEmpty
                           ? 'General Expense'
@@ -276,11 +276,11 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
                         date: selectedDate,
                       );
 
-                      print(
+                      debugPrint(
                         '💰 Adding expense: ${expense.category} - ${expense.amount} EGP',
                       );
                       context.read<ExpenseBloc>().add(AddExpense(expense));
-                      print('✅ Expense added to BLoC');
+                      debugPrint('✅ Expense added to BLoC');
 
                       Navigator.pop(context);
                       widget.onSuccess();
@@ -313,3 +313,5 @@ class _ManualEntryDialogState extends State<ManualEntryDialog> {
     );
   }
 }
+
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
 import 'login_page.dart';
@@ -104,7 +104,7 @@ class _AuthPageState extends State<AuthPage>
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00BCD4).withOpacity(0.4),
+                            color: const Color(0xFF00BCD4).withValues(alpha: 0.4),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -158,7 +158,7 @@ class _AuthPageState extends State<AuthPage>
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF01579B).withOpacity(0.4),
+                            color: const Color(0xFF01579B).withValues(alpha: 0.4),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -197,3 +197,6 @@ class _AuthPageState extends State<AuthPage>
     );
   }
 }
+
+
+

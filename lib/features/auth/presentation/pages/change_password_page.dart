@@ -1,15 +1,10 @@
-import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/navigation_helper.dart';
+﻿import 'package:flutter/material.dart';
 import 'login_page.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   final String email;
-  
-  const ChangePasswordPage({
-    super.key,
-    required this.email,
-  });
+
+  const ChangePasswordPage({super.key, required this.email});
 
   @override
   State<ChangePasswordPage> createState() => _ChangePasswordPageState();
@@ -38,6 +33,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
       // محاكاة عملية تغيير كلمة المرور
       await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
 
       setState(() {
         _isLoading = false;
@@ -91,10 +88,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 const SizedBox(height: 16),
                 Text(
                   'Create a new password for',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -106,7 +100,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -161,7 +155,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
-                              borderSide: const BorderSide(color: Colors.red, width: 1),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -176,15 +173,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _isNewPasswordVisible = !_isNewPasswordVisible;
+                                  _isNewPasswordVisible =
+                                      !_isNewPasswordVisible;
                                 });
                               },
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // Confirm Password Field
                         const Text(
                           'Confirm Password',
@@ -221,7 +219,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
-                              borderSide: const BorderSide(color: Colors.red, width: 1),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -236,15 +237,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               ),
                               onPressed: () {
                                 setState(() {
-                                  _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                  _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible;
                                 });
                               },
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 30),
-                        
+
                         // Change Password Button
                         Container(
                           width: double.infinity,
@@ -262,7 +264,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             borderRadius: BorderRadius.circular(28),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF0D47A1).withValues(alpha: 0.3),
+                                color: const Color(
+                                  0xFF0D47A1,
+                                ).withValues(alpha: 0.3),
                                 blurRadius: 15,
                                 offset: const Offset(0, 6),
                               ),
@@ -309,3 +313,5 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     );
   }
 }
+
+
