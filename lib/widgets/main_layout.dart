@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../features/home/home_page.dart';
 import '../features/categories/categories_page.dart';
 import '../features/profile/profile_page.dart';
 import '../features/offers/offers_page.dart';
-import '../features/home/bloc/expense_bloc.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -53,14 +51,31 @@ class _MainLayoutState extends State<MainLayout>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ExpenseBloc(),
+    return PopScope(
+      canPop: false, // Prevent going back to previous screens
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        // Handle back button - maybe show exit dialog or do nothing
+        _handleBackButton();
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFFF1F5F9),
         body: _getPage(_selectedIndex),
         bottomNavigationBar: _buildCustomBottomNav(),
       ),
     );
+  }
+
+  void _handleBackButton() {
+    // Option 1: Do nothing (stay in app)
+    // Option 2: Show exit confirmation dialog
+    // Option 3: Navigate to Home tab if not already there
+    if (_selectedIndex != 0) {
+      setState(() {
+        _selectedIndex = 0; // Go to Home tab
+      });
+    }
+    // If already on Home tab, do nothing (or show exit dialog)
   }
 
   Widget _getPage(int index) {
@@ -136,7 +151,7 @@ class _MainLayoutState extends State<MainLayout>
   }
 
   bool _shouldShowFAB() {
-    return _selectedIndex == 0 || _selectedIndex == 2; // Home or Categories
+    return _selectedIndex == 0; // Only Home page shows FAB
   }
 
   Widget _buildSimpleNavItem(IconData icon, String label, int index) {
@@ -257,6 +272,7 @@ class _MainLayoutState extends State<MainLayout>
   }
 
   void _onNavItemTapped(int index) {
+    print('MainLayout: Navigating to tab $index');
     setState(() {
       _selectedIndex = index;
     });
