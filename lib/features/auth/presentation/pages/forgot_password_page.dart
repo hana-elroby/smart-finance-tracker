@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import 'signup_page.dart';
-import 'new_password_page.dart';
+import 'otp_verification_page.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -22,8 +22,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   void _handleNextStep() {
     if (_formKey.currentState!.validate()) {
-      // Navigate to new password page
-      NavigationHelper.push(context, const NewPasswordPage());
+      // Navigate to OTP verification page
+      NavigationHelper.push(
+        context,
+        OTPVerificationPage(
+          email: _emailController.text.trim(),
+          fromPage: 'forgot_password',
+        ),
+      );
     }
   }
 
@@ -124,8 +130,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
-                              borderSide:
-                                  const BorderSide(color: Colors.red, width: 1),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1,
+                              ),
                             ),
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -182,8 +190,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF1877F2)
-                                          .withValues(alpha: 0.3),
+                                      color: const Color(
+                                        0xFF1877F2,
+                                      ).withValues(alpha: 0.3),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -213,8 +222,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.1),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -249,7 +259,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               TextButton(
                                 onPressed: () {
                                   NavigationHelper.push(
-                                      context, const SignUpPage());
+                                    context,
+                                    const SignUpPage(),
+                                  );
                                 },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
@@ -282,3 +294,5 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 }
+
+

@@ -1,5 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../database/database_helper.dart';
 import '../models/expense_model.dart';
@@ -17,20 +18,20 @@ class SyncService {
   // بدء مراقبة الاتصال بالإنترنت
   void startListening() {
     try {
-      _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-        (List<ConnectivityResult> results) {
-          // لو النت رجع
-          if (results.contains(ConnectivityResult.mobile) ||
-              results.contains(ConnectivityResult.wifi)) {
-            print('📶 Internet connected! Starting sync...');
-            syncExpenses();
-          } else {
-            print('📵 No internet connection');
-          }
-        },
-      );
+      _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
+        List<ConnectivityResult> results,
+      ) {
+        // لو النت رجع
+        if (results.contains(ConnectivityResult.mobile) ||
+            results.contains(ConnectivityResult.wifi)) {
+          debugPrint('📶 Internet connected! Starting sync...');
+          syncExpenses();
+        } else {
+          debugPrint('📵 No internet connection');
+        }
+      });
     } catch (e) {
-      print('⚠️ Cannot start connectivity listener: $e');
+      debugPrint('⚠️ Cannot start connectivity listener: $e');
     }
   }
 
@@ -42,28 +43,29 @@ class SyncService {
   // مزامنة المصاريف
   Future<void> syncExpenses() async {
     if (_isSyncing) {
-      print('⏳ Sync already in progress...');
+      debugPrint('⏳ Sync already in progress...');
       return;
     }
 
     _isSyncing = true;
-    print('🔄 Starting sync...');
+    debugPrint('🔄 Starting sync...');
 
     try {
       // 1. جلب المصاريف غير المتزامنة
-      List<Map<String, dynamic>> unsyncedExpensesMap =
-          await _dbHelper.getUnsyncedExpenses();
+      List<Map<String, dynamic>> unsyncedExpensesMap = await _dbHelper
+          .getUnsyncedExpenses();
 
       if (unsyncedExpensesMap.isEmpty) {
-        print('✅ No expenses to sync');
+        debugPrint('✅ No expenses to sync');
         _isSyncing = false;
         return;
       }
 
-      List<Expense> unsyncedExpenses =
-          unsyncedExpensesMap.map((e) => Expense.fromMap(e)).toList();
+      List<Expense> unsyncedExpenses = unsyncedExpensesMap
+          .map((e) => Expense.fromMap(e))
+          .toList();
 
-      print('📤 Found ${unsyncedExpenses.length} expenses to sync');
+      debugPrint('📤 Found ${unsyncedExpenses.length} expenses to sync');
 
       // 2. إرسال كل مصروف للسيرفر
       for (var expense in unsyncedExpenses) {
@@ -72,15 +74,15 @@ class SyncService {
         if (success) {
           // 3. تعليم المصروف كمتزامن
           await _dbHelper.markExpenseAsSynced(expense.id!);
-          print('✅ Synced: ${expense.title}');
+          debugPrint('✅ Synced: ${expense.title}');
         } else {
-          print('❌ Failed to sync: ${expense.title}');
+          debugPrint('❌ Failed to sync: ${expense.title}');
         }
       }
 
-      print('🎉 Sync completed!');
+      debugPrint('🎉 Sync completed!');
     } catch (e) {
-      print('❌ Sync error: $e');
+      debugPrint('❌ Sync error: $e');
     } finally {
       _isSyncing = false;
     }
@@ -103,7 +105,7 @@ class SyncService {
       // نفترض إن الإرسال نجح
       return true;
     } catch (e) {
-      print('❌ Error sending to server: $e');
+      debugPrint('❌ Error sending to server: $e');
       return false;
     }
   }
@@ -112,17 +114,18 @@ class SyncService {
   Future<bool> hasInternet() async {
     try {
       // نجرب نعمل ping لـ Google
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 3));
-      
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 3));
+
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
-        print('✅ Internet is available');
+        debugPrint('✅ Internet is available');
         return true;
       }
-      print('❌ No internet connection');
+      debugPrint('❌ No internet connection');
       return false;
     } catch (e) {
-      print('❌ No internet connection: $e');
+      debugPrint('❌ No internet connection: $e');
       return false;
     }
   }
@@ -132,10 +135,12 @@ class SyncService {
     bool hasNet = await hasInternet();
 
     if (!hasNet) {
-      print('❌ No internet connection');
+      debugPrint('❌ No internet connection');
       return;
     }
 
     await syncExpenses();
   }
 }
+
+

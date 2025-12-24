@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../auth/presentation/pages/auth_page.dart';
@@ -150,3 +150,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
   }
 }
+
+
+

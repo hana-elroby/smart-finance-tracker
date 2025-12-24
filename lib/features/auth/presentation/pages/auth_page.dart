@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
+import '../../../../core/routes/app_routes.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
 
@@ -10,7 +11,8 @@ class AuthPage extends StatefulWidget {
   State<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin {
+class _AuthPageState extends State<AuthPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -21,7 +23,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(begin: 0.98, end: 1.02).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
@@ -38,6 +40,25 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFD5D7DA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            },
+            child: const Text(
+              'Skip',
+              style: TextStyle(
+                color: Color(0xFF00BCD4),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -83,7 +104,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF00BCD4).withOpacity(0.4),
+                            color: const Color(0xFF00BCD4).withValues(alpha: 0.4),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -137,7 +158,7 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF01579B).withOpacity(0.4),
+                            color: const Color(0xFF01579B).withValues(alpha: 0.4),
                             blurRadius: 15,
                             offset: const Offset(0, 6),
                           ),
@@ -176,3 +197,6 @@ class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin
     );
   }
 }
+
+
+

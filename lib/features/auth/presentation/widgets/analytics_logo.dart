@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class AnalyticsLogo extends StatelessWidget {
@@ -109,3 +109,6 @@ class LogoPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+
+

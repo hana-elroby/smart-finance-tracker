@@ -1,4 +1,4 @@
-// ملف قديم - استخدم AuthPage من features/auth بدلاً منه
+﻿// ملف قديم - استخدم AuthPage من features/auth بدلاً منه
 // Old file - Use AuthPage from features/auth instead
 import 'package:flutter/material.dart';
 // import 'home_screen.dart'; // TODO: الصفحة الرئيسية هتتعمل في branch منفصل
@@ -50,7 +50,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF003566),
+                    color: Color(0xFF0D5DB8),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -85,7 +85,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF00BCD4).withOpacity(0.4),
+                              color: const Color(0xFF00BCD4).withValues(alpha: 0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -145,7 +145,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF01579B).withOpacity(0.4),
+                              color: const Color(0xFF01579B).withValues(alpha: 0.4),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -188,3 +188,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 }
+
+
+
