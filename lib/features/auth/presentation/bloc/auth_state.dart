@@ -1,71 +1,106 @@
-// Auth State - حالات المصادقة (Authentication States)
-// Auth State - States for authentication
+// Auth State - حالات المصادقة
+// States for authentication with backend API
 
 import 'package:equatable/equatable.dart';
 
-// Enum للحالات المختلفة - Enum for different states
 enum AuthStatus {
-  initial, // أول ما يفتح التطبيق - Initial state
-  loading, // أثناء تسجيل الدخول - During login
-  authenticated, // مسجل دخول بنجاح - Successfully authenticated
-  unauthenticated, // غير مسجل - Not authenticated
-  error, // حصل خطأ - Error occurred
+  initial,
+  loading,
+  authenticated,
+  unauthenticated,
+  otpRequired,  // New: waiting for OTP verification
+  error,
 }
 
 class AuthState extends Equatable {
-  final AuthStatus status; // الحالة الحالية - Current status
-  final String email; // الإيميل المدخل - Entered email
-  final String password; // الباسورد المدخل - Entered password
-  final bool isPasswordVisible; // هل الباسورد ظاهر؟ - Is password visible?
-  final String? emailError; // خطأ في الإيميل - Email error message
-  final String? passwordError; // خطأ في الباسورد - Password error message
-  final String? errorMessage; // رسالة الخطأ العامة - General error message
-  final bool isFormValid; // هل الفورم صحيحة؟ - Is form valid?
+  final AuthStatus status;
+  final String email;
+  final String password;
+  final String confirmPassword;
+  final String fullName;
+  final String phone;
+  final bool isPasswordVisible;
+  final bool isConfirmPasswordVisible;
+  final String? emailError;
+  final String? passwordError;
+  final String? confirmPasswordError;
+  final String? errorMessage;
+  final String? successMessage;
+  final bool isFormValid;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.email = '',
     this.password = '',
+    this.confirmPassword = '',
+    this.fullName = '',
+    this.phone = '',
     this.isPasswordVisible = false,
+    this.isConfirmPasswordVisible = false,
     this.emailError,
     this.passwordError,
+    this.confirmPasswordError,
     this.errorMessage,
+    this.successMessage,
     this.isFormValid = false,
   });
 
-  // نسخ الـ State مع تغيير بعض القيم
-  // Copy state with some values changed
   AuthState copyWith({
     AuthStatus? status,
     String? email,
     String? password,
+    String? confirmPassword,
+    String? fullName,
+    String? phone,
     bool? isPasswordVisible,
+    bool? isConfirmPasswordVisible,
     String? emailError,
     String? passwordError,
+    String? confirmPasswordError,
     String? errorMessage,
+    String? successMessage,
     bool? isFormValid,
   }) {
     return AuthState(
       status: status ?? this.status,
       email: email ?? this.email,
       password: password ?? this.password,
+      confirmPassword: confirmPassword ?? this.confirmPassword,
+      fullName: fullName ?? this.fullName,
+      phone: phone ?? this.phone,
       isPasswordVisible: isPasswordVisible ?? this.isPasswordVisible,
+      isConfirmPasswordVisible:
+          isConfirmPasswordVisible ?? this.isConfirmPasswordVisible,
       emailError: emailError,
       passwordError: passwordError,
+      confirmPasswordError: confirmPasswordError,
       errorMessage: errorMessage,
+      successMessage: successMessage,
       isFormValid: isFormValid ?? this.isFormValid,
     );
   }
 
+  // Helper getters
+  bool get isLoading => status == AuthStatus.loading;
+  bool get isAuthenticated => status == AuthStatus.authenticated;
+  bool get isOtpRequired => status == AuthStatus.otpRequired;
+  bool get hasError => status == AuthStatus.error;
+
   @override
   List<Object?> get props => [
-    status,
-    email,
-    password,
-    isPasswordVisible,
-    emailError,
-    passwordError,
-    errorMessage,
-    isFormValid,
-  ];
+        status,
+        email,
+        password,
+        confirmPassword,
+        fullName,
+        phone,
+        isPasswordVisible,
+        isConfirmPasswordVisible,
+        emailError,
+        passwordError,
+        confirmPasswordError,
+        errorMessage,
+        successMessage,
+        isFormValid,
+      ];
 }

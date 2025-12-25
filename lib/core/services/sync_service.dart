@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../database/database_helper.dart';
 import '../models/expense_model.dart';
+import 'firestore_service.dart';
 
 class SyncService {
   static final SyncService instance = SyncService._internal();
@@ -10,22 +11,27 @@ class SyncService {
   factory SyncService() => instance;
 
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final FirestoreService _firestoreService = FirestoreService();
   final Connectivity _connectivity = Connectivity();
   StreamSubscription? _connectivitySubscription;
   bool _isSyncing = false;
 
-  // بدء مراقبة الاتصال بالإنترنت
+  // Sync status stream controller
+  final _syncStatusController = StreamController<SyncStatus>.broadcast();
+  Stream<SyncStatus> get syncStatusStream => _syncStatusController.stream;
+
+  // Start listening for connectivity changes - بدء مراقبة الاتصال بالإنترنت
   void startListening() {
     try {
       _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
         (List<ConnectivityResult> results) {
-          // لو النت رجع
           if (results.contains(ConnectivityResult.mobile) ||
               results.contains(ConnectivityResult.wifi)) {
             print('📶 Internet connected! Starting sync...');
             syncExpenses();
           } else {
             print('📵 No internet connection');
+            _syncStatusController.add(SyncStatus.offline);
           }
         },
       );
@@ -34,30 +40,36 @@ class SyncService {
     }
   }
 
-  // إيقاف المراقبة
+  // Stop listening - إيقاف المراقبة
   void stopListening() {
     _connectivitySubscription?.cancel();
+    _syncStatusController.close();
   }
 
-  // مزامنة المصاريف
-  Future<void> syncExpenses() async {
+  // Sync expenses - مزامنة المصاريف
+  Future<SyncResult> syncExpenses() async {
     if (_isSyncing) {
       print('⏳ Sync already in progress...');
-      return;
+      return SyncResult(success: false, message: 'Sync already in progress');
     }
 
     _isSyncing = true;
+    _syncStatusController.add(SyncStatus.syncing);
     print('🔄 Starting sync...');
 
+    int syncedCount = 0;
+    int failedCount = 0;
+
     try {
-      // 1. جلب المصاريف غير المتزامنة
+      // Get unsynced expenses - جلب المصاريف غير المتزامنة
       List<Map<String, dynamic>> unsyncedExpensesMap =
           await _dbHelper.getUnsyncedExpenses();
 
       if (unsyncedExpensesMap.isEmpty) {
         print('✅ No expenses to sync');
+        _syncStatusController.add(SyncStatus.synced);
         _isSyncing = false;
-        return;
+        return SyncResult(success: true, message: 'All expenses are synced');
       }
 
       List<Expense> unsyncedExpenses =
@@ -65,56 +77,47 @@ class SyncService {
 
       print('📤 Found ${unsyncedExpenses.length} expenses to sync');
 
-      // 2. إرسال كل مصروف للسيرفر
+      // Sync each expense - إرسال كل مصروف للسيرفر
       for (var expense in unsyncedExpenses) {
-        bool success = await _sendToServer(expense);
+        final firestoreId = await _firestoreService.addExpense(expense);
 
-        if (success) {
-          // 3. تعليم المصروف كمتزامن
-          await _dbHelper.markExpenseAsSynced(expense.id!);
+        if (firestoreId != null) {
+          await _dbHelper.markExpenseAsSynced(
+            expense.id!,
+            firestoreId: firestoreId,
+          );
+          syncedCount++;
           print('✅ Synced: ${expense.title}');
         } else {
+          failedCount++;
           print('❌ Failed to sync: ${expense.title}');
         }
       }
 
-      print('🎉 Sync completed!');
+      _syncStatusController.add(SyncStatus.synced);
+      print('🎉 Sync completed! Synced: $syncedCount, Failed: $failedCount');
+
+      return SyncResult(
+        success: failedCount == 0,
+        syncedCount: syncedCount,
+        failedCount: failedCount,
+        message: 'Synced $syncedCount expenses',
+      );
     } catch (e) {
       print('❌ Sync error: $e');
+      _syncStatusController.add(SyncStatus.error);
+      return SyncResult(success: false, message: 'Sync error: $e');
     } finally {
       _isSyncing = false;
     }
   }
 
-  // إرسال مصروف للسيرفر (هنا تحطي API call بتاعك)
-  Future<bool> _sendToServer(Expense expense) async {
-    try {
-      // TODO: استبدلي ده بـ API call حقيقي
-      // مثال:
-      // final response = await http.post(
-      //   Uri.parse('https://your-api.com/expenses'),
-      //   body: jsonEncode(expense.toMap()),
-      // );
-      // return response.statusCode == 200;
-
-      // دلوقتي هنعمل fake delay عشان نحاكي API call
-      await Future.delayed(const Duration(seconds: 1));
-
-      // نفترض إن الإرسال نجح
-      return true;
-    } catch (e) {
-      print('❌ Error sending to server: $e');
-      return false;
-    }
-  }
-
-  // فحص حالة الاتصال بالإنترنت (طريقة أفضل)
+  // Check internet connection - فحص حالة الاتصال بالإنترنت
   Future<bool> hasInternet() async {
     try {
-      // نجرب نعمل ping لـ Google
       final result = await InternetAddress.lookup('google.com')
           .timeout(const Duration(seconds: 3));
-      
+
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         print('✅ Internet is available');
         return true;
@@ -127,15 +130,59 @@ class SyncService {
     }
   }
 
-  // مزامنة يدوية (لو المستخدم ضغط زرار Sync)
-  Future<void> manualSync() async {
+  // Manual sync - مزامنة يدوية
+  Future<SyncResult> manualSync() async {
     bool hasNet = await hasInternet();
 
     if (!hasNet) {
       print('❌ No internet connection');
-      return;
+      return SyncResult(
+        success: false,
+        message: 'No internet connection',
+      );
     }
 
-    await syncExpenses();
+    return await syncExpenses();
   }
+
+  // Get sync status
+  Future<SyncStatus> getSyncStatus() async {
+    final hasNet = await hasInternet();
+    if (!hasNet) return SyncStatus.offline;
+
+    final unsynced = await _dbHelper.getUnsyncedExpenses();
+    if (unsynced.isEmpty) return SyncStatus.synced;
+
+    return SyncStatus.pending;
+  }
+
+  // Get unsynced count
+  Future<int> getUnsyncedCount() async {
+    final unsynced = await _dbHelper.getUnsyncedExpenses();
+    return unsynced.length;
+  }
+}
+
+// Sync status enum
+enum SyncStatus {
+  synced,
+  syncing,
+  pending,
+  offline,
+  error,
+}
+
+// Sync result class
+class SyncResult {
+  final bool success;
+  final int syncedCount;
+  final int failedCount;
+  final String message;
+
+  SyncResult({
+    required this.success,
+    this.syncedCount = 0,
+    this.failedCount = 0,
+    required this.message,
+  });
 }

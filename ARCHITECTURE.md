@@ -1,4 +1,8 @@
-# Clean Architecture Structure
+# SaveIt - Clean Architecture Structure
+
+## Project Overview
+
+SaveIt is a Flutter finance tracking application built with Clean Architecture principles and BLoC pattern for state management. It features offline-first data persistence with Firebase cloud sync.
 
 ## Current Project Organization
 
@@ -10,8 +14,23 @@ lib/
 │   ├── 📁 constants/                           # App-wide constants
 │   │   └── 📄 app_constants.dart              # App name, durations, paths
 │   │
+│   ├── 📁 database/                            # Local Database
+│   │   └── 📄 database_helper.dart            # SQLite operations
+│   │
+│   ├── 📁 models/                              # Data Models
+│   │   ├── 📄 expense_model.dart              # Expense entity
+│   │   └── 📄 user_model.dart                 # User entity
+│   │
+│   ├── 📁 repositories/                        # Data Repositories
+│   │   └── 📄 expense_repository.dart         # Expense data operations
+│   │
 │   ├── 📁 routes/                              # Navigation
 │   │   └── 📄 app_routes.dart                 # Route constants
+│   │
+│   ├── 📁 services/                            # Business Services
+│   │   ├── 📄 firebase_auth_service.dart      # Authentication
+│   │   ├── 📄 firestore_service.dart          # Cloud database
+│   │   └── 📄 sync_service.dart               # Offline sync
 │   │
 │   ├── 📁 theme/                               # Styling
 │   │   ├── 📄 app_colors.dart                 # Color palette
@@ -24,45 +43,93 @@ lib/
 │   │
 │   ├── 📁 splash/                              # Splash Screen Feature
 │   │   └── 📁 presentation/
+│   │       ├── 📁 bloc/
 │   │       ├── 📁 pages/
-│   │       │   └── 📄 splash_page.dart
 │   │       └── 📁 widgets/
-│   │           └── 📄 analytics_chart_icon.dart
 │   │
 │   ├── 📁 onboarding/                          # Onboarding Feature
-│   │   ├── 📁 data/                            # Data Layer
-│   │   │   └── 📄 onboarding_data.dart
-│   │   │
-│   │   ├── 📁 domain/                          # Domain Layer
-│   │   │   └── 📁 models/
-│   │   │       └── 📄 onboarding_model.dart
-│   │   │
-│   │   └── 📁 presentation/                    # Presentation Layer
+│   │   ├── 📁 data/
+│   │   ├── 📁 domain/
+│   │   └── 📁 presentation/
+│   │
+│   ├── 📁 auth/                                # Authentication Feature
+│   │   └── 📁 presentation/
+│   │       ├── 📁 bloc/
+│   │       │   ├── 📄 auth_bloc.dart
+│   │       │   ├── 📄 auth_event.dart
+│   │       │   └── 📄 auth_state.dart
 │   │       ├── 📁 pages/
-│   │       │   └── 📄 onboarding_page.dart
+│   │       │   ├── 📄 auth_page.dart
+│   │       │   ├── 📄 login_page.dart
+│   │       │   ├── 📄 signup_page.dart
+│   │       │   └── 📄 forgot_password_page.dart
 │   │       └── 📁 widgets/
-│   │           ├── 📄 onboarding_button.dart
-│   │           ├── 📄 onboarding_page_item.dart
-│   │           └── 📄 page_indicator.dart
+│   │
+│   ├── 📁 expenses/                            # Expenses Feature
+│   │   └── 📁 presentation/
+│   │       ├── 📁 bloc/
+│   │       │   ├── 📄 expense_bloc.dart
+│   │       │   ├── 📄 expense_event.dart
+│   │       │   └── 📄 expense_state.dart
+│   │       ├── 📁 pages/
+│   │       │   ├── 📄 expenses_page.dart
+│   │       │   └── 📄 add_expense_page.dart
+│   │       └── 📁 widgets/
+│   │           ├── 📄 expense_card.dart
+│   │           ├── 📄 expense_summary_card.dart
+│   │           └── 📄 category_filter_chips.dart
 │   │
 │   └── 📁 home/                                # Home Feature
-│       └── 📁 presentation/
-│           └── 📁 pages/
-│               └── 📄 home_page.dart
+│       ├── 📄 home_page.dart                  # Main container with bottom nav
+│       └── 📁 pages/
+│           ├── 📄 dashboard_page.dart         # Dashboard overview
+│           ├── 📄 analytics_page.dart         # Expense analytics
+│           └── 📄 profile_page.dart           # User profile & settings
 │
 └── 📄 main.dart                                # App Entry Point
 ```
 
+## Key Features
+
+### 🔐 Authentication
+- Email/Password login & registration
+- Google Sign-In integration
+- Password reset via email
+- Persistent auth state
+
+### 💰 Expense Management
+- Add, edit, delete expenses
+- Category-based organization
+- Date filtering
+- Search functionality
+
+### 📊 Analytics
+- Daily/Weekly/Monthly summaries
+- Category breakdown with charts
+- Visual spending trends
+
+### 🔄 Offline-First Sync
+- Local SQLite storage
+- Automatic cloud sync when online
+- Manual sync option
+- Sync status indicators
+
+## Technology Stack
+
+- **State Management**: flutter_bloc
+- **Local Database**: sqflite
+- **Cloud Services**: Firebase (Auth, Firestore)
+- **Animations**: Lottie
+- **Network**: connectivity_plus
+
 ## Layer Responsibilities
 
 ### 🎯 Core Layer
-- **Purpose**: Shared resources used across all features
-- **Contains**:
-  - Theme configuration
-  - App constants
-  - Common utilities
-  - Navigation helpers
-  - Shared widgets (when needed)
+- Shared resources used across all features
+- Services (Auth, Firestore, Sync)
+- Repositories (data access abstraction)
+- Models (data entities)
+- Theme & constants
 
 ### 🎯 Features Layer
 Each feature follows Clean Architecture with 3 layers:
@@ -71,116 +138,59 @@ Each feature follows Clean Architecture with 3 layers:
 - Data sources (API, local DB, cache)
 - Repository implementations
 - Data models/DTOs
-- Data transformations
 
 #### 2. **Domain Layer** (`domain/`)
 - Business logic
 - Domain models (entities)
 - Repository interfaces
-- Use cases
 
 #### 3. **Presentation Layer** (`presentation/`)
 - UI pages
 - Widgets
-- State management (BLoC, Provider, etc.)
-- View models
+- BLoC (state management)
 
-## Benefits of This Structure
+## BLoC Pattern
 
-### ✅ Scalability
-- Add new features without touching existing code
-- Each feature is independent and self-contained
+```
+User Action → Event → Bloc → State → UI Update
+```
 
-### ✅ Maintainability
-- Clear organization makes code easy to find
-- Separation of concerns simplifies debugging
-- Changes are localized to specific layers
+### Example: Expense Flow
+```dart
+// Event
+class AddExpense extends ExpenseEvent {
+  final String title;
+  final double amount;
+  // ...
+}
 
-### ✅ Testability
-- Each layer can be tested independently
-- Mock dependencies easily
-- Unit test business logic without UI
+// State
+class ExpenseState {
+  final List<Expense> expenses;
+  final ExpenseStatus status;
+  // ...
+}
 
-### ✅ Reusability
-- Core utilities shared across features
-- Widgets can be reused within features
-- Clean separation prevents duplication
+// Bloc handles business logic
+class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
+  // Process events, emit states
+}
+```
 
-### ✅ Team Collaboration
-- Multiple developers can work on different features
-- Clear boundaries reduce merge conflicts
-- Consistent structure aids onboarding
+## Getting Started
+
+```bash
+# Install dependencies
+flutter pub get
+
+# Run the app
+flutter run
+```
 
 ## Adding New Features
 
-### Example: Adding a "Transactions" Feature
-
-```
-lib/features/transactions/
-├── data/
-│   ├── datasources/
-│   │   ├── transaction_local_datasource.dart
-│   │   └── transaction_remote_datasource.dart
-│   ├── models/
-│   │   └── transaction_dto.dart
-│   └── repositories/
-│       └── transaction_repository_impl.dart
-│
-├── domain/
-│   ├── models/
-│   │   └── transaction.dart
-│   ├── repositories/
-│   │   └── transaction_repository.dart
-│   └── usecases/
-│       ├── get_transactions.dart
-│       └── add_transaction.dart
-│
-└── presentation/
-    ├── pages/
-    │   ├── transactions_list_page.dart
-    │   └── add_transaction_page.dart
-    ├── widgets/
-    │   ├── transaction_card.dart
-    │   └── transaction_filter.dart
-    └── bloc/ (or provider/)
-        ├── transactions_bloc.dart
-        ├── transactions_event.dart
-        └── transactions_state.dart
-```
-
-## Import Guidelines
-
-### ✅ Good Imports (Relative within feature)
-```dart
-// Within same feature
-import '../widgets/my_widget.dart';
-import '../../domain/models/my_model.dart';
-```
-
-### ✅ Good Imports (Cross-feature via core)
-```dart
-// From core
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/constants/app_constants.dart';
-```
-
-### ❌ Bad Imports (Cross-feature direct)
-```dart
-// DON'T import directly from other features
-import '../../transactions/domain/models/transaction.dart'; // ❌
-```
-
-## File Naming Conventions
-
-- **Files**: `snake_case.dart`
-- **Classes**: `PascalCase`
-- **Variables**: `camelCase`
-- **Constants**: `camelCase` or `SCREAMING_SNAKE_CASE`
-
-## Code Organization Rules
-
-1. **One class per file** (with related helpers)
-2. **Pages** contain screen-level widgets
-3. **Widgets** are reusable components
-4. **Models** are immutable data classes
-5. **Constants** group related values
+1. Create feature folder in `lib/features/`
+2. Add `presentation/bloc/`, `presentation/pages/`, `presentation/widgets/`
+3. Create BLoC files (bloc, event, state)
+4. Implement pages and widgets
+5. Register routes in `app_routes.dart`

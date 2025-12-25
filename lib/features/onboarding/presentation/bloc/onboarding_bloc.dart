@@ -2,10 +2,13 @@
 // OnboardingBloc - The brain that controls the onboarding logic
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/local_storage_service.dart';
 import 'onboarding_event.dart';
 import 'onboarding_state.dart';
 
 class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
+  final LocalStorageService _storage = LocalStorageService();
+
   // Constructor - بنبدأ بـ initial state (صفحة 0)
   OnboardingBloc() : super(const OnboardingState()) {
     // Register event handlers
@@ -89,16 +92,20 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
 
   // معالج حدث الضغط على "Skip"
   // Handler for "Skip" button press
-  void _onSkipRequested(SkipRequested event, Emitter<OnboardingState> emit) {
+  Future<void> _onSkipRequested(SkipRequested event, Emitter<OnboardingState> emit) async {
+    // Save onboarding completion status
+    await _storage.setOnboardingComplete();
     emit(state.copyWith(shouldNavigateToAuth: true));
   }
 
   // معالج حدث إنهاء الـ Onboarding
   // Handler for completing onboarding
-  void _onCompleteOnboarding(
+  Future<void> _onCompleteOnboarding(
     CompleteOnboarding event,
     Emitter<OnboardingState> emit,
-  ) {
+  ) async {
+    // Save onboarding completion status
+    await _storage.setOnboardingComplete();
     emit(state.copyWith(shouldNavigateToAuth: true));
   }
 }
