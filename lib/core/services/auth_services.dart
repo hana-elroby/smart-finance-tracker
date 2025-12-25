@@ -1,8 +1,42 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  // Get current user
+  User? get currentUser => _auth.currentUser;
+  
+  // Check if user is logged in
+  bool get isLoggedIn => _auth.currentUser != null;
+  
+  // Sign out
+  Future<void> signOut() async {
+    await _auth.signOut();
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      // Ignore if Google Sign In not initialized
+    }
+  }
+  
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+  
+  // Resend email verification
+  Future<void> resendEmailVerification() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
 
   // Stream subscriptions for cleanup
   late final StreamSubscription<User?> _authSub;
@@ -101,36 +135,65 @@ class AuthService {
 
 Future<User?> signInWithGoogle() async {
   try {
-    // 1. Get the singleton GoogleSignIn instance
-    final googleSignIn = GoogleSignIn.instance;
-
-    // 2. Initialize (ensure configured)
-    await googleSignIn.initialize();
-
-    // 3. Authenticate (this will show the Google sign-in sheet)
-    final googleUser = await googleSignIn.authenticate();
+    print('=== Starting Google Sign In ===');
+    
+    // Initialize GoogleSignIn with serverClientId for v7.x
+    await GoogleSignIn.instance.initialize(
+      serverClientId: '16052237336-o9pt8bkl1oa0u18o7btqo3q4a0hg1cvq.apps.googleusercontent.com',
+    );
+    
+    // Sign out first to clear any cached credentials
+    await GoogleSignIn.instance.signOut();
+    print('Cleared previous session');
+    
+    // Trigger the authentication flow using authenticate() for v7.x
+    print('Triggering Google Sign In...');
+    final googleUser = await GoogleSignIn.instance.authenticate();
+    
     if (googleUser == null) {
-      throw Exception('Google sign-in aborted by user');
+      print('User cancelled sign in');
+      throw Exception('Google sign-in cancelled by user');
     }
+    
+    print('Google user: ${googleUser.email}');
 
-    // 4. Grab tokens
+    // Obtain the auth details from the request
+    print('Getting authentication tokens...');
     final googleAuth = await googleUser.authentication;
 
-    // 5. Create Firebase credential
+    // Check if we have the required tokens
+    if (googleAuth.idToken == null) {
+      print('ERROR: No ID token received');
+      throw Exception('Failed to get Google ID token');
+    }
+    
+    print('Got ID token, creating Firebase credential...');
+
+    // Create a new credential (google_sign_in 7.x only has idToken)
     final credential = GoogleAuthProvider.credential(
       idToken: googleAuth.idToken,
     );
 
-    // 6. Sign in with Firebase
-    final userCredential =
-        await FirebaseAuth.instance.signInWithCredential(credential);
-
+    // Sign in to Firebase with the Google credential
+    print('Signing in to Firebase...');
+    final userCredential = await _auth.signInWithCredential(credential);
+    
+    print('=== Google Sign In SUCCESS ===');
     return userCredential.user;
 
-  } on FirebaseAuthException catch (e) {
-    throw Exception("Firebase error: ${e.message}");
   } catch (e) {
-    throw Exception("Google sign-in failed: $e");
+    print('=== Google Sign In ERROR ===');
+    print('Error type: ${e.runtimeType}');
+    print('Error message: $e');
+    
+    // Handle specific Google Sign In errors
+    if (e.toString().contains('canceled') || e.toString().contains('cancelled')) {
+      throw Exception('Google sign-in was cancelled');
+    } else if (e.toString().contains('network')) {
+      throw Exception('Network error. Please check your connection');
+    } else {
+      throw Exception('Google sign-in failed: ${e.toString()}');
+    }
   }
 }
 

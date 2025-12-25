@@ -137,9 +137,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
               controller: _emailController,
               label: 'Email',
               icon: Icons.email_outlined,
-              hint: 'Enter your email',
+              hint: 'Your email',
               keyboardType: TextInputType.emailAddress,
-              enabled: true, // Will be connected to Firebase later
+              enabled: false, // Email cannot be changed
             ),
 
             const SizedBox(height: 40),

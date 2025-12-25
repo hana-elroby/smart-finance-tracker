@@ -2,6 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../widgets/modern_action_button.dart';
 import '../../widgets/chart_placeholder.dart';
@@ -141,6 +142,11 @@ class _HomePageContentState extends State<_HomePageContent>
   Widget _buildHeader() {
     return BlocBuilder<UserBloc, UserState>(
       builder: (context, userState) {
+        // Get name from Firebase first, fallback to userState
+        final firebaseUser = FirebaseAuth.instance.currentUser;
+        final displayName = firebaseUser?.displayName ?? userState.name;
+        final firstName = displayName.split(' ').first;
+        
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +157,7 @@ class _HomePageContentState extends State<_HomePageContent>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hi ${userState.firstName}',
+                    'Hi $firstName',
                     style: GoogleFonts.inter(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,

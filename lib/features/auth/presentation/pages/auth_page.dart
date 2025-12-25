@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
-import '../../../../core/routes/app_routes.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
 
@@ -40,25 +39,6 @@ class _AuthPageState extends State<AuthPage>
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFD5D7DA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.home);
-            },
-            child: const Text(
-              'Skip',
-              style: TextStyle(
-                color: Color(0xFF00BCD4),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),

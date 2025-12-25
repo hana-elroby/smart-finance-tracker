@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
+import '../../../../core/services/auth_services.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import 'signup_page.dart';
-import 'otp_verification_page.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -13,6 +13,9 @@ class ForgotPasswordPage extends StatefulWidget {
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _authService = AuthService();
+  bool _isLoading = false;
+  bool _emailSent = false;
 
   @override
   void dispose() {
@@ -20,16 +23,30 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  void _handleNextStep() {
+  void _handleNextStep() async {
     if (_formKey.currentState!.validate()) {
-      // Navigate to OTP verification page
-      NavigationHelper.push(
-        context,
-        OTPVerificationPage(
-          email: _emailController.text.trim(),
-          fromPage: 'forgot_password',
-        ),
-      );
+      setState(() => _isLoading = true);
+
+      try {
+        await _authService.sendPasswordResetEmail(_emailController.text.trim());
+        
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _emailSent = true;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -142,12 +159,40 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           ),
                         ),
                         const SizedBox(height: 32),
+                        if (_emailSent) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.green.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: Colors.green),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Password reset email sent! Check your inbox.',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.green[800],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         Center(
                           child: SizedBox(
                             width: 200,
                             height: 56,
                             child: ElevatedButton(
-                              onPressed: _handleNextStep,
+                              onPressed: _isLoading ? null : _handleNextStep,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF00BCD4),
                                 shape: RoundedRectangleBorder(
@@ -155,15 +200,24 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 ),
                                 elevation: 2,
                               ),
-                              child: const Text(
-                                'Next Step',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(
+                                      _emailSent ? 'Resend Email' : 'Send Reset Link',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),

@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import '../../../../core/services/auth_services.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
 import 'signup_page.dart';
@@ -15,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authService = AuthService();
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
@@ -22,12 +24,67 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      // TODO: Implement actual login logic here
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final user = await _authService.signInWithEmail(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
 
+        if (user != null && mounted) {
+          Navigator.pushReplacementNamed(context, AppRoutes.home);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceAll('Exception: ', '')),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
+  }
+
+  void _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final user = await _authService.signInWithGoogle();
+
+      if (user != null && mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } catch (e) {
+      if (mounted) {
+        // Show user-friendly error message
+        String errorMessage = 'Google Sign In failed';
+        
+        if (e.toString().contains('cancelled')) {
+          errorMessage = 'Sign in was cancelled';
+        } else if (e.toString().contains('reauth') || e.toString().contains('certificate')) {
+          errorMessage = 'Please use Email/Password sign in instead';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     }
   }
@@ -51,21 +108,6 @@ class _LoginPageState extends State<LoginPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black54),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.home);
-            },
-            child: const Text(
-              'Skip',
-              style: TextStyle(
-                color: Color(0xFF00BCD4),
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -287,7 +329,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 30),
                         const Center(
                           child: Text(
-                            'or sign up with',
+                            'or continue with',
                             style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF9E9E9E),
@@ -296,81 +338,36 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 20),
                         Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1877F2),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF1877F2,
-                                      ).withValues(alpha: 0.3),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                          child: GestureDetector(
+                            onTap: _isLoading ? null : _handleGoogleSignIn,
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFE0E0E0),
+                                  width: 1,
                                 ),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.facebook,
-                                    color: Colors.white,
-                                    size: 32,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
-                                  onPressed: () {
-                                    // TODO: Facebook Sign In
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Facebook Sign In قريباً',
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                ],
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  'assets/images/GoogleIcon.png',
+                                  width: 24,
+                                  height: 24,
                                 ),
                               ),
-                              const SizedBox(width: 20),
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(0xFFE0E0E0),
-                                    width: 1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: IconButton(
-                                  icon: Image.asset(
-                                    'assets/images/GoogleIcon.png',
-                                    width: 24,
-                                    height: 24,
-                                  ),
-                                  onPressed: () {
-                                    // TODO: Google Sign In
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Google Sign In قريباً'),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),

@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_profile_page.dart';
 import 'security_page.dart';
 import 'settings_page.dart';
@@ -8,15 +9,49 @@ import 'help_page.dart';
 import 'bloc/user_bloc.dart';
 import 'bloc/user_event.dart';
 import 'bloc/user_state.dart';
+import '../../core/services/auth_services.dart';
+import '../../core/routes/app_routes.dart';
 
 /// Profile Page - صفحة الملف الشخصي
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  User? _firebaseUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _firebaseUser = FirebaseAuth.instance.currentUser;
+  }
+
+  Future<void> _refreshUser() async {
+    await FirebaseAuth.instance.currentUser?.reload();
+    setState(() {
+      _firebaseUser = FirebaseAuth.instance.currentUser;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<UserBloc, UserState>(
       builder: (context, userState) {
+        // Use Firebase user data if available
+        final displayName = _firebaseUser?.displayName ?? userState.name;
+        final email = _firebaseUser?.email ?? userState.email;
+        final initials = (displayName.isNotEmpty)
+            ? displayName
+                .split(' ')
+                .map((e) => e.isNotEmpty ? e[0] : '')
+                .take(2)
+                .join()
+                .toUpperCase()
+            : userState.initials;
+
         return SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
@@ -66,7 +101,8 @@ class ProfilePage extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0D5DB8).withValues(alpha: 0.3),
+                              color:
+                                  const Color(0xFF0D5DB8).withValues(alpha: 0.3),
                               blurRadius: 15,
                               offset: const Offset(0, 5),
                             ),
@@ -74,7 +110,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         child: Center(
                           child: Text(
-                            userState.initials,
+                            initials,
                             style: GoogleFonts.inter(
                               fontSize: 36,
                               fontWeight: FontWeight.w700,
@@ -88,13 +124,24 @@ class ProfilePage extends StatelessWidget {
 
                       // User Name
                       Text(
-                        userState.name,
+                        displayName.isNotEmpty ? displayName : 'User',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
+
+                      if (email != null && email.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          email,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: 32),
 
@@ -104,21 +151,42 @@ class ProfilePage extends StatelessWidget {
                         icon: Icons.person_outline,
                         title: 'Edit Profile',
                         onTap: () async {
-                          final result = await Navigator.push<Map<String, String>>(
+                          final result =
+                              await Navigator.push<Map<String, String>>(
                             context,
                             MaterialPageRoute(
                               builder: (context) => EditProfilePage(
-                                currentName: userState.name,
-                                currentEmail: userState.email,
+                                currentName: displayName,
+                                currentEmail: email,
                               ),
                             ),
                           );
-                          
+
                           if (result != null && result['name'] != null) {
-                            context.read<UserBloc>().add(UpdateUserProfile(
-                              name: result['name']!,
-                              email: result['email'],
-                            ));
+                            // Update Firebase display name
+                            try {
+                              await FirebaseAuth.instance.currentUser
+                                  ?.updateDisplayName(result['name']!);
+                              // Reload user to get updated data
+                              await _refreshUser();
+                              // Also update local state
+                              if (context.mounted) {
+                                context.read<UserBloc>().add(UpdateUserProfile(
+                                      name: result['name']!,
+                                      email: result['email'],
+                                    ));
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content:
+                                        Text('Failed to update profile: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
                         },
                       ),
@@ -130,7 +198,8 @@ class ProfilePage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SecurityPage()),
+                            MaterialPageRoute(
+                                builder: (context) => const SecurityPage()),
                           );
                         },
                       ),
@@ -142,7 +211,8 @@ class ProfilePage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SettingsPage()),
+                            MaterialPageRoute(
+                                builder: (context) => const SettingsPage()),
                           );
                         },
                       ),
@@ -154,7 +224,8 @@ class ProfilePage extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const HelpPage()),
+                            MaterialPageRoute(
+                                builder: (context) => const HelpPage()),
                           );
                         },
                       ),
@@ -223,7 +294,7 @@ class ProfilePage extends StatelessWidget {
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -238,19 +309,33 @@ class ProfilePage extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // TODO: Implement logout logic
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Logged out successfully!'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+
+                try {
+                  await AuthService().signOut();
+
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.auth,
+                      (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Logout failed: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
               child: const Text('Logout', style: TextStyle(color: Colors.red)),
             ),
@@ -259,8 +344,4 @@ class ProfilePage extends StatelessWidget {
       },
     );
   }
-
 }
-
-
-
