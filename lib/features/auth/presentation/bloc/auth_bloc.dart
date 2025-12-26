@@ -4,12 +4,14 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/services/auth_api_service.dart';
 import '../../../../core/services/local_storage_service.dart';
+import '../../../../core/services/firebase_auth_service.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthApiService _authService = AuthApiService();
   final LocalStorageService _storage = LocalStorageService();
+  final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
 
   AuthBloc() : super(const AuthState()) {
     on<CheckAuthStatus>(_onCheckAuthStatus);
@@ -350,13 +352,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password.isNotEmpty;
   }
 
-  // Google Sign In - Not supported by current backend
-  void _onGoogleSignInRequested(
+  // Google Sign In - Uses Firebase Auth
+  Future<void> _onGoogleSignInRequested(
     GoogleSignInRequested event,
     Emitter<AuthState> emit,
-  ) {
-    emit(state.copyWith(
-      errorMessage: 'Google Sign In is not available. Please use email/password.',
-    ));
+  ) async {
+    emit(state.copyWith(status: AuthStatus.loading));
+
+    try {
+      final result = await _firebaseAuth.signInWithGoogle();
+
+      if (result.isSuccess && result.user != null) {
+        emit(state.copyWith(
+          status: AuthStatus.authenticated,
+          errorMessage: null,
+        ));
+      } else {
+        emit(state.copyWith(
+          status: AuthStatus.unauthenticated,
+          errorMessage: result.message ?? 'Google Sign In failed',
+        ));
+      }
+    } catch (error) {
+      emit(state.copyWith(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Google Sign In failed: ${error.toString()}',
+      ));
+    }
   }
 }
