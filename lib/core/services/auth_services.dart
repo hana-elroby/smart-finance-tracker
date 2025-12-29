@@ -15,7 +15,7 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
     try {
-      await GoogleSignIn.instance.signOut();
+      await GoogleSignIn().signOut();
     } catch (e) {
       // Ignore if Google Sign In not initialized
     }
@@ -137,18 +137,15 @@ Future<User?> signInWithGoogle() async {
   try {
     print('=== Starting Google Sign In ===');
     
-    // Initialize GoogleSignIn with serverClientId for v7.x
-    await GoogleSignIn.instance.initialize(
-      serverClientId: '16052237336-o9pt8bkl1oa0u18o7btqo3q4a0hg1cvq.apps.googleusercontent.com',
-    );
+    final GoogleSignIn googleSignIn = GoogleSignIn();
     
     // Sign out first to clear any cached credentials
-    await GoogleSignIn.instance.signOut();
+    await googleSignIn.signOut();
     print('Cleared previous session');
     
-    // Trigger the authentication flow using authenticate() for v7.x
+    // Trigger the authentication flow
     print('Triggering Google Sign In...');
-    final googleUser = await GoogleSignIn.instance.authenticate();
+    final googleUser = await googleSignIn.signIn();
     
     if (googleUser == null) {
       print('User cancelled sign in');
@@ -169,8 +166,9 @@ Future<User?> signInWithGoogle() async {
     
     print('Got ID token, creating Firebase credential...');
 
-    // Create a new credential (google_sign_in 7.x only has idToken)
+    // Create a new credential
     final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 

@@ -48,7 +48,7 @@ dependencies:
   firebase_messaging: ^16.0.4
   
   # Google & Auth
-  google_sign_in: ^7.2.0
+  google_sign_in: ^6.2.1
   google_fonts: ^6.1.0
   
   # Storage & Database
