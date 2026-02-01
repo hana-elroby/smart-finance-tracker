@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'voice_input_dialog_simple.dart';
 
 /// Voice Input Dialog - Beautiful animated voice recording UI
 class VoiceInputDialog extends StatefulWidget {
@@ -380,6 +381,6 @@ Future<String?> showVoiceInputDialog(BuildContext context) {
   return showDialog<String>(
     context: context,
     barrierDismissible: true,
-    builder: (context) => const VoiceInputDialog(),
+    builder: (context) => const SimpleVoiceInputDialog(),
   );
 }

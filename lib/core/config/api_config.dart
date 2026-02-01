@@ -5,7 +5,12 @@ class ApiConfig {
   // Change this to your actual server URL
   // For local development: 'http://localhost:3001' or 'http://10.0.2.2:3001' (Android emulator)
   // For production: 'https://your-api-domain.com'
-  static const String baseUrl = 'http://10.141.103.179:3001';
+  static const String baseUrl = 'https://graduation-project-21p3.onrender.com';
+
+  // Voice API Configuration
+  static const String voiceApiBaseUrl = 'https://voice-finance-analyzer-production.up.railway.app';
+  static const String voiceAnalyzeText = '/analyze-text';
+  static const String voiceAnalyzeAudio = '/analyze-audio';
 
   // API Endpoints
   static const String authSignup = '/auth/signup';

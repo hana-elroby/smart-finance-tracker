@@ -13,6 +13,7 @@ class Expense {
   final String title;
   final DateTime date;
   final String? notes;
+  final bool isVoiceInput; // Added for voice input indicator
 
   Expense({
     required this.id,
@@ -21,6 +22,7 @@ class Expense {
     required this.title,
     required this.date,
     this.notes,
+    this.isVoiceInput = false, // Default to false for manual entries
   });
 
   // Convert to Map for Firebase/Storage
@@ -32,6 +34,7 @@ class Expense {
       'title': title,
       'date': date.toIso8601String(),
       'notes': notes,
+      'isVoiceInput': isVoiceInput,
     };
   }
 
@@ -44,6 +47,7 @@ class Expense {
       title: map['title'] as String,
       date: DateTime.parse(map['date'] as String),
       notes: map['notes'] as String?,
+      isVoiceInput: map['isVoiceInput'] as bool? ?? false,
     );
   }
 
@@ -55,6 +59,7 @@ class Expense {
     String? title,
     DateTime? date,
     String? notes,
+    bool? isVoiceInput,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -63,6 +68,7 @@ class Expense {
       title: title ?? this.title,
       date: date ?? this.date,
       notes: notes ?? this.notes,
+      isVoiceInput: isVoiceInput ?? this.isVoiceInput,
     );
   }
 }

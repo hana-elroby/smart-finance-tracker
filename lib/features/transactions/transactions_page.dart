@@ -71,6 +71,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   expense.title,
                   expense.amount,
                   expense.date,
+                  expense.isVoiceInput, // Pass voice input flag
                 );
               },
             );
@@ -103,7 +104,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     );
   }
 
-  Widget _buildTransactionCard(String name, double amount, DateTime date) {
+  Widget _buildTransactionCard(String name, double amount, DateTime date, bool isVoiceInput) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -117,13 +118,35 @@ class _TransactionsPageState extends State<TransactionsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    // Voice indicator icon
+                    if (isVoiceInput) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.mic_rounded,
+                          size: 14,
+                          color: Color(0xFF3B82F6),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
