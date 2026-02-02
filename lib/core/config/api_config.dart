@@ -1,16 +1,14 @@
 // API Configuration - إعدادات الـ API
-// Configure your backend server URL here
+// Configure your backend server URLs here
 
 class ApiConfig {
-  // Change this to your actual server URL
-  // For local development: 'http://localhost:3001' or 'http://10.0.2.2:3001' (Android emulator)
-  // For production: 'https://your-api-domain.com'
+  // Main Backend API (your graduation project backend)
   static const String baseUrl = 'https://graduation-project-21p3.onrender.com';
 
-  // Voice API Configuration
-  static const String voiceApiBaseUrl = 'https://voice-finance-analyzer-production.up.railway.app';
-  static const String voiceAnalyzeText = '/analyze-text';
-  static const String voiceAnalyzeAudio = '/analyze-audio';
+  // Voice Analysis API (new fast API for voice/text analysis)
+  static const String voiceApiBaseUrl = 'https://gradution-project-u39v.onrender.com';
+  static const String voiceAnalyzeText = '/analyze';
+  static const String voiceAnalyzeAudio = '/voice';
 
   // API Endpoints
   static const String authSignup = '/auth/signup';

@@ -11,7 +11,7 @@ import '../features/home/bloc/expense_bloc.dart';
 import '../features/reminders/bloc/reminder_bloc.dart';
 import '../features/profile/bloc/user_bloc.dart';
 import '../features/categories/bloc/category_bloc.dart';
-import 'dialogs/voice_input_dialog.dart';
+import 'dialogs/voice_input_dialog_simple.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -477,7 +477,7 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _showVoiceInput() async {
-    final result = await showVoiceInputDialog(context);
+    final result = await showSimpleVoiceInputDialog(context);
     if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

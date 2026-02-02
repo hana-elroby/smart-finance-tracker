@@ -1,17 +1,20 @@
-// Voice API Service - خدمة الـ Voice API اللي صحبتك عملتها
+// Voice API Service - New Render API Integration
 // Service for Voice & Text Finance Analyzer API
+// API: https://gradution-project-u39v.onrender.com
 
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../core/config/api_config.dart';
 
+/// Voice API Service for financial text analysis
+/// Integrates with the new Render-based API for fast and accurate analysis
 class VoiceApiService {
   static final VoiceApiService _instance = VoiceApiService._internal();
   factory VoiceApiService() => _instance;
   VoiceApiService._internal();
 
-  // Analyze text using the Voice API
+  // Analyze text using the Voice API (original format)
   Future<VoiceApiResult> analyzeText(String text) async {
     try {
       print('🔍 Analyzing text: $text');
@@ -125,9 +128,28 @@ class VoiceApiResult {
     );
   }
 
-  // Helper methods to extract data
-  String? get extractedText => data?['text'];
-  double? get amount => data?['amount']?.toDouble();
-  String? get category => data?['category'];
-  String? get description => data?['description'];
+  // Helper methods to extract data from new API format
+  String? get extractedText => data?['data']?['original_text'];
+  double? get amount {
+    final transactions = data?['data']?['analysis']?['transactions'];
+    if (transactions != null && transactions.isNotEmpty) {
+      return (transactions[0]['amount'] as num?)?.toDouble();
+    }
+    return null;
+  }
+  String? get category {
+    final transactions = data?['data']?['analysis']?['transactions'];
+    if (transactions != null && transactions.isNotEmpty) {
+      return transactions[0]['category'] as String?;
+    }
+    return null;
+  }
+  String? get item {
+    final transactions = data?['data']?['analysis']?['transactions'];
+    if (transactions != null && transactions.isNotEmpty) {
+      return transactions[0]['item'] as String?;
+    }
+    return null;
+  }
+  String? get description => item;
 }

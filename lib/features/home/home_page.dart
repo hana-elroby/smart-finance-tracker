@@ -8,7 +8,7 @@ import '../../widgets/modern_action_button.dart';
 import '../../widgets/chart_placeholder.dart';
 import '../../services/notification_service.dart';
 
-import 'dialogs/voice_recording_dialog.dart';
+import '../../widgets/dialogs/voice_input_dialog_simple.dart';
 import 'dialogs/qr_scanner_bottom_sheet.dart';
 import 'bloc/expense_bloc.dart';
 import 'bloc/expense_state.dart';
@@ -1873,24 +1873,10 @@ class _HomePageContentState extends State<_HomePageContent>
   void _showVoiceRecording() {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (dialogContext) => BlocProvider.value(
         value: _expenseBloc,
-        child: VoiceRecordingDialog(
-          category: 'General',
-          icon: Icons.mic_rounded,
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1E5F9D), Color(0xFF0D5DB8)],
-          ),
-          onSuccess: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Expense added successfully!'),
-                backgroundColor: Color(0xFF4CAF50),
-              ),
-            );
-          },
-        ),
+        child: const SimpleVoiceInputDialog(),
       ),
     );
   }

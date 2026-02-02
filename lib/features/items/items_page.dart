@@ -8,7 +8,7 @@ import '../home/bloc/expense_state.dart';
 import '../home/bloc/expense_event.dart';
 import '../../core/models/expense.dart';
 import '../../widgets/dialogs/manual_entry_dialog.dart';
-import '../../widgets/dialogs/voice_input_dialog.dart';
+import '../../widgets/dialogs/voice_input_dialog_simple.dart';
 
 /// Items Page - عرض العناصر في كل فئة
 /// تعرض كل الـ items الموجودة في فئة معينة مع chart وقائمة
@@ -218,7 +218,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                 onTap: () async {
                   HapticFeedback.lightImpact();
                   setState(() => _showFloatingOptions = false);
-                  final result = await showVoiceInputDialog(context);
+                  final result = await showSimpleVoiceInputDialog(context);
                   if (result != null && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
