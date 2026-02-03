@@ -8,7 +8,7 @@ import '../home/bloc/expense_state.dart';
 import '../home/bloc/expense_event.dart';
 import '../../core/models/expense.dart';
 import '../../widgets/dialogs/manual_entry_dialog.dart';
-import '../../widgets/dialogs/voice_input_dialog_simple.dart';
+import '../../widgets/dialogs/voice_input_dialog_api_direct.dart';
 
 /// Items Page - عرض العناصر في كل فئة
 /// تعرض كل الـ items الموجودة في فئة معينة مع chart وقائمة
@@ -98,7 +98,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Items',
+          widget.categoryName, // Use category name instead of "Items"
           style: GoogleFonts.inter(
             color: Colors.black,
             fontSize: 20,
@@ -177,11 +177,12 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                       amount: result['amount'] as double,
                       category: result['category'] as String,
                       date: result['date'] as DateTime,
+                      quantity: result['quantity'] as int? ?? 1, // Include quantity
                     );
                     context.read<ExpenseBloc>().add(AddExpense(expense));
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Added ${result['title']}'),
+                        content: Text('Added ${result['quantity']}x ${result['title']}'),
                         backgroundColor: const Color(0xFF4CAF50),
                       ),
                     );
@@ -218,7 +219,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                 onTap: () async {
                   HapticFeedback.lightImpact();
                   setState(() => _showFloatingOptions = false);
-                  final result = await showSimpleVoiceInputDialog(context);
+                  final result = await showVoiceInputDialogApiDirect(context);
                   if (result != null && mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -381,7 +382,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Analytics will appear here',
+                    'Item frequency will appear here',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -390,7 +391,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Add items to see your spending analysis',
+                    'Add items to see how many times you buy each item',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: Colors.grey[400],
@@ -402,18 +403,21 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           );
         }
 
-        // Group by item name and calculate totals
-        final Map<String, double> itemTotals = {};
+        // Group by item name and calculate TOTAL QUANTITY (not count of entries)
+        final Map<String, int> itemQuantities = {};
         for (var expense in categoryExpenses) {
           final name = expense.title;
-          itemTotals[name] = (itemTotals[name] ?? 0) + expense.amount;
+          itemQuantities[name] = (itemQuantities[name] ?? 0) + expense.quantity; // Sum actual quantities
         }
 
-        // Convert to chart data format
-        final chartData = itemTotals.entries
+        // Convert to chart data format with total quantities
+        final chartData = itemQuantities.entries
             .take(7) // Top 7 items
-            .map((e) => {'item': e.key, 'quantity': e.value})
+            .map((e) => {'item': e.key, 'quantity': e.value.toDouble()}) // Use total quantity
             .toList();
+
+        // Sort by total quantity (highest first)
+        chartData.sort((a, b) => (b['quantity'] as double).compareTo(a['quantity'] as double));
 
         return Container(
           height: 250,
@@ -487,6 +491,19 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                       
                       if (tapX >= barStart && tapX <= barEnd) {
                         _onBarTap(chartData[i]['item'] as String);
+                        
+                        // Show a brief feedback about the quantity
+                        final quantity = (chartData[i]['quantity'] as double).toInt();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${chartData[i]['item']}: total quantity $quantity',
+                            ),
+                            duration: const Duration(seconds: 1),
+                            behavior: SnackBarBehavior.floating,
+                            margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
+                          ),
+                        );
                         break;
                       }
                     }
@@ -875,7 +892,7 @@ class BarChartPainter extends CustomPainter {
     // Draw Y-axis label
     final yAxisPainter = TextPainter(
       text: const TextSpan(
-        text: 'EGP',
+        text: 'Count',
         style: TextStyle(
           color: Color(0xFF64748B),
           fontSize: 11,
@@ -916,10 +933,10 @@ class BarChartPainter extends CustomPainter {
         paint,
       );
 
-      // Draw quantity on top of bar
+      // Draw quantity on top of bar (show count)
       final qtyPainter = TextPainter(
         text: TextSpan(
-          text: quantity.toInt().toString(),
+          text: '${quantity.toInt()}x', // Add 'x' to show it's a count
           style: TextStyle(
             color: isSelected ? const Color(0xFF059669) : const Color(0xFF2563EB),
             fontSize: 11,

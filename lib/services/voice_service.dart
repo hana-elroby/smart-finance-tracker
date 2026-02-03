@@ -90,10 +90,11 @@ class VoiceService {
     }
   }
 
-  // Start listening - try multiple approaches for Arabic support
+  // Start listening - Enhanced with better feedback and error handling
   Future<void> startListening({
     required Function(String) onResult,
     required Function(String) onError,
+    Function(double)? onSoundLevel,
   }) async {
     if (!_isInitialized) {
       final initialized = await initialize();
@@ -110,7 +111,7 @@ class VoiceService {
 
     try {
       _isListening = true;
-      print('🎤 Starting multi-language voice recognition...');
+      print('🎤 Starting enhanced voice recognition...');
       
       // Check if microphone is available
       final hasPermission = await _speechToText.hasPermission;
@@ -153,23 +154,30 @@ class VoiceService {
       await _speechToText.listen(
         onResult: (result) {
           final recognizedWords = result.recognizedWords;
-          print('🎯 Voice result: "${recognizedWords}" (confidence: ${result.confidence})');
+          final confidence = result.confidence;
+          print('🎯 Voice result: "${recognizedWords}" (confidence: $confidence)');
           
-          // Accept any non-empty result
-          if (recognizedWords.isNotEmpty && recognizedWords.trim().isNotEmpty) {
+          // Accept results with reasonable confidence or any final result
+          if (recognizedWords.isNotEmpty && 
+              recognizedWords.trim().isNotEmpty &&
+              (confidence > 0.3 || result.finalResult)) {
             print('✅ Accepted: "$recognizedWords"');
             onResult(recognizedWords);
           }
         },
-        listenFor: const Duration(seconds: 30), // Long duration
-        pauseFor: const Duration(seconds: 5), // Comfortable pause
+        listenFor: const Duration(seconds: 30), // Extended duration
+        pauseFor: const Duration(seconds: 3), // Shorter pause for better UX
         partialResults: true, // Live feedback
         localeId: bestLocale, // Use best available locale or null for auto-detect
         listenMode: ListenMode.dictation, // Best for natural speech
         cancelOnError: false,
         onSoundLevelChange: (level) {
-          if (level > -2.0) {
-            print('🔊 Sound: $level');
+          // Provide sound level feedback for UI visualization
+          if (onSoundLevel != null) {
+            onSoundLevel(level);
+          }
+          if (level > -10.0) { // Only log significant sound levels
+            print('🔊 Sound level: ${level.toStringAsFixed(1)}');
           }
         },
       );
@@ -178,20 +186,25 @@ class VoiceService {
       _isListening = false;
       print('❌ Speech recognition error: $e');
       
-      // If Arabic failed, try fallback with English
+      // Enhanced error handling with specific fallback strategies
       if (e.toString().contains('locale') || e.toString().contains('language')) {
         print('🔄 Trying fallback with English...');
-        _tryFallbackListening(onResult, onError);
+        await _tryFallbackListening(onResult, onError, onSoundLevel);
+      } else if (e.toString().contains('permission')) {
+        onError('Microphone permission denied. Please enable it in settings.');
+      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
+        onError('Network error. Check your internet connection.');
       } else {
-        onError('Failed to start listening: $e');
+        onError('Voice recognition failed. You can type manually instead.');
       }
     }
   }
 
-  // Fallback method with English only
+  // Enhanced fallback method with better error handling
   Future<void> _tryFallbackListening(
     Function(String) onResult,
     Function(String) onError,
+    Function(double)? onSoundLevel,
   ) async {
     try {
       _isListening = true;
@@ -200,24 +213,55 @@ class VoiceService {
       await _speechToText.listen(
         onResult: (result) {
           final recognizedWords = result.recognizedWords;
-          print('🎯 Fallback result: "${recognizedWords}"');
+          final confidence = result.confidence;
+          print('🎯 Fallback result: "${recognizedWords}" (confidence: $confidence)');
           
-          if (recognizedWords.isNotEmpty) {
+          if (recognizedWords.isNotEmpty && 
+              (confidence > 0.3 || result.finalResult)) {
             onResult(recognizedWords);
           }
         },
         listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 5),
+        pauseFor: const Duration(seconds: 3),
         partialResults: true,
         localeId: 'en-US', // Force English
         listenMode: ListenMode.dictation,
         cancelOnError: false,
+        onSoundLevelChange: onSoundLevel,
       );
       
     } catch (e) {
       _isListening = false;
       print('❌ Fallback also failed: $e');
-      onError('Voice recognition failed. Please try typing manually.');
+      onError('Voice recognition unavailable. Please type your expense manually.');
+    }
+  }
+
+  // Get current sound level (for UI visualization)
+  double get currentSoundLevel => _speechToText.lastRecognizedWords.isNotEmpty ? 1.0 : 0.0;
+
+  // Check if device supports speech recognition
+  Future<bool> isDeviceSupported() async {
+    try {
+      return await _speechToText.initialize();
+    } catch (e) {
+      print('❌ Device not supported: $e');
+      return false;
+    }
+  }
+
+  // Get available languages for user selection
+  Future<List<String>> getAvailableLanguages() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+    
+    try {
+      final locales = await _speechToText.locales();
+      return locales.map((locale) => '${locale.name} (${locale.localeId})').toList();
+    } catch (e) {
+      print('❌ Error getting languages: $e');
+      return [];
     }
   }
 
