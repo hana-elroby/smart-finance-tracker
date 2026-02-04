@@ -290,6 +290,8 @@ class _VoiceInputDialogApiDirectState extends State<VoiceInputDialogApiDirect>
 
   Future<void> _addTransactionsToApp(List<Map<String, dynamic>> transactions) async {
     try {
+      int successCount = 0;
+      
       for (final transaction in transactions) {
         final expense = Expense(
           id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -301,9 +303,11 @@ class _VoiceInputDialogApiDirectState extends State<VoiceInputDialogApiDirect>
           quantity: transaction['quantity'],
         );
         
+        // حفظ في ExpenseBloc (هيحفظ محلياً وفي الداتا بيز المشتركة)
         if (mounted && context.mounted) {
           try {
             context.read<ExpenseBloc>().add(AddExpense(expense));
+            successCount++;
             print('✅ تم إضافة المصروف: ${expense.title} (${expense.quantity}x)');
           } catch (e) {
             print('⚠️ لا يمكن إضافة للـ ExpenseBloc: $e');
@@ -314,7 +318,9 @@ class _VoiceInputDialogApiDirectState extends State<VoiceInputDialogApiDirect>
       if (mounted) {
         _setState(VoiceState.success);
         setState(() {
-          _statusMessage = 'تم إضافة ${transactions.length} معاملة بنجاح!';
+          _statusMessage = successCount > 0 
+              ? 'تم إضافة ${successCount} معاملة بنجاح!'
+              : 'تم تحليل النص لكن فشل في الإضافة';
         });
         
         // إغلاق الـ dialog بعد ثانيتين
@@ -323,8 +329,10 @@ class _VoiceInputDialogApiDirectState extends State<VoiceInputDialogApiDirect>
             Navigator.pop(context, _textController.text);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('✅ تم تحليل وإضافة ${transactions.length} معاملة'),
-                backgroundColor: Colors.green,
+                content: Text(successCount > 0 
+                    ? '✅ تم تحليل وإضافة ${successCount} معاملة'
+                    : '⚠️ تم التحليل لكن فشل في الإضافة'),
+                backgroundColor: successCount > 0 ? Colors.green : Colors.orange,
                 duration: const Duration(seconds: 3),
               ),
             );

@@ -1,9 +1,13 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_colors.dart';
+import 'core/services/auth_api_service.dart';
+import 'core/services/auth_gate.dart';
+import 'core/network/dio_client.dart';
 import 'core/services/sync_service.dart';
+import 'core/database/app_database.dart';
 import 'services/notification_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
@@ -13,25 +17,66 @@ import 'widgets/main_layout.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Initialize Sentry only in release mode
+  if (kReleaseMode) {
+    await SentryFlutter.init(
+      (options) {
+        options.dsn = 'https://your-sentry-dsn@sentry.io/project-id'; // Replace with actual DSN
+        options.tracesSampleRate = 0.1;
+        options.profilesSampleRate = 0.1;
+        options.attachStacktrace = true;
+        options.enableAutoSessionTracking = true;
+        options.enableAutoNativeBreadcrumbs = true;
+        options.beforeSend = (event, hint) {
+          // Filter out debug events
+          return event;
+        };
+      },
+      appRunner: () => runApp(const MyApp()),
+    );
+  } else {
+    // Skip Sentry in debug mode - run app directly
+    await _initializeApp();
+    runApp(const MyApp());
+  }
+}
 
-  // Initialize Notification Service
+Future<void> _initializeApp() async {
   try {
+    // Initialize network client
+    await DioClient().initialize();
+    
+    // Initialize database
+    AppDatabase();
+    
+    // Initialize Auth Service
+    await AuthApiService.instance.initialize();
+    
+    // Initialize sync service
+    await SyncService().initialize();
+
+    // Initialize Notification Service
     await NotificationService().initialize();
-  } catch (e) {
-    debugPrint('Notification service initialization error: $e');
+    
+  } catch (error, stackTrace) {
+    // Report initialization errors to Sentry (only in release mode)
+    if (kReleaseMode) {
+      await Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          scope.setTag('initialization', 'failed');
+          scope.level = SentryLevel.fatal;
+        },
+      );
+    }
+    
+    // Print error in debug mode
+    debugPrint('❌ App initialization failed: $error');
+    
+    // Re-throw to prevent app from starting in broken state
+    rethrow;
   }
-
-  // Initialize Sync Service
-  try {
-    final syncService = SyncService();
-    syncService.startListening();
-  } catch (e) {
-    debugPrint('Sync service initialization error: $e');
-  }
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -46,8 +91,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
       ),
-      initialRoute: AppRoutes.splash,
+      initialRoute: '/',
       routes: {
+        '/': (context) => const AuthGate(),
         AppRoutes.splash: (context) => const SplashPage(),
         AppRoutes.onboarding: (context) => const OnboardingPage(),
         AppRoutes.auth: (context) => const AuthPage(),

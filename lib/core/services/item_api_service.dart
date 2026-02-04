@@ -1,6 +1,3 @@
-// Item API Service - خدمة العناصر
-// Handles all item-related API calls
-
 import 'api_service.dart';
 import '../models/item_model.dart';
 
@@ -11,23 +8,59 @@ class ItemApiService {
 
   final ApiService _api = ApiService();
 
-  // Create Item
-  Future<ItemApiResult> createItem({
-    required String name,
-    double? price,
+  Future<ItemListResult> getItems({
+    int page = 1,
+    int limit = 10,
+    String? search,
     String? categoryId,
   }) async {
-    final body = <String, dynamic>{'name': name};
-    if (price != null) body['price'] = price;
-    if (categoryId != null) body['categoryId'] = categoryId;
+    final queryParams = {
+      'page': page.toString(),
+      'limit': limit.toString(),
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (categoryId != null) 'category': categoryId,
+    };
 
-    final response = await _api.post('/items', body: body);
+    final response = await _api.get('/item', queryParams: queryParams);
 
     if (response.isSuccess) {
-      final itemData = response.getData<Map<String, dynamic>>('item') ?? response.data;
-      if (itemData != null) {
+      final dataList = response.getData<List>('data') ?? [];
+      final meta = response.getData<Map<String, dynamic>>('meta');
+      final count = response.getData<int>('count') ?? 0;
+
+      final items = dataList
+          .map((item) => ItemModel.fromMap(item as Map<String, dynamic>))
+          .toList();
+
+      return ItemListResult.success(
+        items: items,
+        totalCount: count,
+        currentPage: meta?['page'] ?? page,
+        totalPages: meta?['totalPages'] ?? 1,
+      );
+    }
+
+    return ItemListResult.failure(message: response.message ?? 'Failed to get items');
+  }
+
+  Future<ItemApiResult> createItem({
+    required String name,
+    required String categoryId,
+    double? price,
+    String? description,
+  }) async {
+    final response = await _api.post('/item', body: {
+      'name': name,
+      'category': categoryId,
+      if (price != null) 'price': price,
+      if (description != null) 'description': description,
+    });
+
+    if (response.isSuccess) {
+      final data = response.getData<Map<String, dynamic>>('data');
+      if (data != null) {
         return ItemApiResult.success(
-          item: ItemModel.fromMap(itemData),
+          item: ItemModel.fromMap(data),
           message: 'Item created',
         );
       }
@@ -36,53 +69,26 @@ class ItemApiService {
     return ItemApiResult.failure(message: response.message ?? 'Failed to create item');
   }
 
-  // Get My Items
-  Future<ItemListResult> getItems() async {
-    final response = await _api.get('/items');
-
-    if (response.isSuccess) {
-      final itemsData = response.getData<List>('items') ?? response.data ?? [];
-      final items = itemsData
-          .map((item) => ItemModel.fromMap(item as Map<String, dynamic>))
-          .toList();
-
-      return ItemListResult.success(items: items);
-    }
-
-    return ItemListResult.failure(message: response.message ?? 'Failed to load items');
-  }
-
-  // Get Item by ID
-  Future<ItemApiResult> getItem(String id) async {
-    final response = await _api.get('/items/$id');
-
-    if (response.isSuccess) {
-      final itemData = response.getData<Map<String, dynamic>>('item') ?? response.data;
-      if (itemData != null) {
-        return ItemApiResult.success(item: ItemModel.fromMap(itemData));
-      }
-    }
-
-    return ItemApiResult.failure(message: response.message ?? 'Item not found');
-  }
-
-  // Update Item
   Future<ItemApiResult> updateItem({
     required String id,
     String? name,
+    String? categoryId,
     double? price,
+    String? description,
   }) async {
     final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
+    if (categoryId != null) body['category'] = categoryId;
     if (price != null) body['price'] = price;
+    if (description != null) body['description'] = description;
 
-    final response = await _api.put('/items/$id', body: body);
+    final response = await _api.put('/item/$id', body: body);
 
     if (response.isSuccess) {
-      final itemData = response.getData<Map<String, dynamic>>('item') ?? response.data;
-      if (itemData != null) {
+      final data = response.getData<Map<String, dynamic>>('data');
+      if (data != null) {
         return ItemApiResult.success(
-          item: ItemModel.fromMap(itemData),
+          item: ItemModel.fromMap(data),
           message: 'Item updated',
         );
       }
@@ -91,9 +97,8 @@ class ItemApiService {
     return ItemApiResult.failure(message: response.message ?? 'Failed to update item');
   }
 
-  // Delete Item
   Future<ItemApiResult> deleteItem(String id) async {
-    final response = await _api.delete('/items/$id');
+    final response = await _api.delete('/item/$id');
 
     if (response.isSuccess) {
       return ItemApiResult.success(message: 'Item deleted');
@@ -102,42 +107,20 @@ class ItemApiService {
     return ItemApiResult.failure(message: response.message ?? 'Failed to delete item');
   }
 
-  // Add Item to Category
-  Future<ItemApiResult> addToCategory({
-    required String itemId,
-    required String categoryId,
-  }) async {
-    final response = await _api.post('/items/add-to-category', body: {
-      'itemId': itemId,
-      'categoryId': categoryId,
-    });
+  Future<ItemApiResult> getItem(String id) async {
+    final response = await _api.get('/item/$id');
 
     if (response.isSuccess) {
-      return ItemApiResult.success(message: 'Item added to category');
+      final data = response.getData<Map<String, dynamic>>('data') ?? response.data;
+      if (data != null) {
+        return ItemApiResult.success(item: ItemModel.fromMap(data));
+      }
     }
 
-    return ItemApiResult.failure(message: response.message ?? 'Failed to add item to category');
-  }
-
-  // Remove Item from Category
-  Future<ItemApiResult> removeFromCategory({
-    required String itemId,
-    required String categoryId,
-  }) async {
-    final response = await _api.post('/items/remove-from-category', body: {
-      'itemId': itemId,
-      'categoryId': categoryId,
-    });
-
-    if (response.isSuccess) {
-      return ItemApiResult.success(message: 'Item removed from category');
-    }
-
-    return ItemApiResult.failure(message: response.message ?? 'Failed to remove item from category');
+    return ItemApiResult.failure(message: response.message ?? 'Item not found');
   }
 }
 
-// Item API Result
 class ItemApiResult {
   final bool isSuccess;
   final ItemModel? item;
@@ -149,32 +132,61 @@ class ItemApiResult {
     this.message,
   });
 
-  factory ItemApiResult.success({ItemModel? item, String? message}) {
-    return ItemApiResult._(isSuccess: true, item: item, message: message);
+  factory ItemApiResult.success({
+    ItemModel? item,
+    String? message,
+  }) {
+    return ItemApiResult._(
+      isSuccess: true,
+      item: item,
+      message: message,
+    );
   }
 
   factory ItemApiResult.failure({required String message}) {
-    return ItemApiResult._(isSuccess: false, message: message);
+    return ItemApiResult._(
+      isSuccess: false,
+      message: message,
+    );
   }
 }
 
-// Item List Result
 class ItemListResult {
   final bool isSuccess;
   final List<ItemModel> items;
+  final int totalCount;
+  final int currentPage;
+  final int totalPages;
   final String? message;
 
   ItemListResult._({
     required this.isSuccess,
     this.items = const [],
+    this.totalCount = 0,
+    this.currentPage = 1,
+    this.totalPages = 1,
     this.message,
   });
 
-  factory ItemListResult.success({required List<ItemModel> items}) {
-    return ItemListResult._(isSuccess: true, items: items);
+  factory ItemListResult.success({
+    required List<ItemModel> items,
+    required int totalCount,
+    required int currentPage,
+    required int totalPages,
+  }) {
+    return ItemListResult._(
+      isSuccess: true,
+      items: items,
+      totalCount: totalCount,
+      currentPage: currentPage,
+      totalPages: totalPages,
+    );
   }
 
   factory ItemListResult.failure({required String message}) {
-    return ItemListResult._(isSuccess: false, message: message);
+    return ItemListResult._(
+      isSuccess: false,
+      message: message,
+    );
   }
 }

@@ -85,16 +85,36 @@ class VoiceApiService {
     try {
       print('🔍 Testing Voice API connection...');
       
-      final response = await http.get(
-        Uri.parse('${ApiConfig.voiceApiBaseUrl}/'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
-
-      print('📊 Connection Test Status: ${response.statusCode}');
+      // Try multiple endpoints to find working one
+      final endpoints = [
+        '${ApiConfig.voiceApiBaseUrl}/',
+        '${ApiConfig.voiceApiBaseUrl}/health',
+        '${ApiConfig.voiceApiBaseUrl}/api',
+      ];
       
-      return response.statusCode == 200;
+      for (String endpoint in endpoints) {
+        try {
+          final response = await http.get(
+            Uri.parse(endpoint),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          ).timeout(const Duration(seconds: 10));
+
+          print('📊 Testing $endpoint: ${response.statusCode}');
+          
+          if (response.statusCode == 200) {
+            print('✅ Voice API available at: $endpoint');
+            return true;
+          }
+        } catch (e) {
+          print('❌ Failed $endpoint: $e');
+          continue;
+        }
+      }
+      
+      print('❌ All voice API endpoints failed');
+      return false;
     } catch (e) {
       print('❌ Connection test error: $e');
       return false;

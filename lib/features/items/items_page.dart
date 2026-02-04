@@ -179,13 +179,20 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                       date: result['date'] as DateTime,
                       quantity: result['quantity'] as int? ?? 1, // Include quantity
                     );
-                    context.read<ExpenseBloc>().add(AddExpense(expense));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Added ${result['quantity']}x ${result['title']}'),
-                        backgroundColor: const Color(0xFF4CAF50),
-                      ),
-                    );
+                    
+                    if (mounted && context.mounted) {
+                      try {
+                        context.read<ExpenseBloc>().add(AddExpense(expense));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Added ${result['quantity']}x ${result['title']}'),
+                            backgroundColor: const Color(0xFF4CAF50),
+                          ),
+                        );
+                      } catch (e) {
+                        print('⚠️ Error adding expense in ItemsPage: $e');
+                      }
+                    }
                   }
                 },
                 child: Container(
@@ -677,13 +684,19 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
         );
       },
       onDismissed: (direction) {
-        context.read<ExpenseBloc>().add(DeleteExpense(expense.id));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${expense.title} deleted'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted && context.mounted) {
+          try {
+            context.read<ExpenseBloc>().add(DeleteExpense(expense.id));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${expense.title} deleted'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          } catch (e) {
+            print('⚠️ Error deleting expense in ItemsPage: $e');
+          }
+        }
       },
       child: _buildItemCard(
         expense.title,

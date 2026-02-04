@@ -1,11 +1,10 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/services/auth_services.dart';
+import '../../../../core/services/auth_api_service.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
 import 'login_page.dart';
-import 'email_verification_page.dart';
+import 'otp_verification_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -16,76 +15,45 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
-  final _dateOfBirthController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _authService = AuthService();
+  final _authService = AuthApiService.instance;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
-
-  void _handleGoogleSignUp() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final user = await _authService.signInWithGoogle();
-
-      if (user != null && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
-      }
-    } catch (e) {
-      if (mounted) {
-        String errorMessage = 'Google Sign Up failed';
-        
-        if (e.toString().contains('cancelled')) {
-          errorMessage = 'Sign up was cancelled';
-        } else if (e.toString().contains('reauth') || e.toString().contains('certificate')) {
-          errorMessage = 'Please use Email/Password sign up instead';
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.orange,
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
 
   void _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
       try {
-        final user = await _authService.signupWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
+        final result = await _authService.signup(
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          phone: _mobileController.text.trim(),
         );
 
-        if (user != null && mounted) {
-          // Update display name
-          await user.updateDisplayName(_fullNameController.text.trim());
-          
-          // Navigate to email verification page
+        if (result.isSuccess && mounted) {
+          // Navigate to OTP verification page
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => EmailVerificationPage(
+              builder: (context) => OtpVerificationPage(
                 email: _emailController.text.trim(),
               ),
+            ),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message ?? 'Signup failed'),
+              backgroundColor: result.isEmailTaken ? Colors.orange : Colors.red,
             ),
           );
         }
@@ -93,7 +61,7 @@ class _SignUpPageState extends State<SignUpPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e.toString().replaceAll('Exception: ', '')),
+              content: Text('Signup error: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -106,39 +74,12 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(2000),
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _dateOfBirthController.text =
-            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-      });
-    }
-  }
-
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
-    _dateOfBirthController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -192,9 +133,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildTextField(
-                          label: 'Full Name',
-                          controller: _fullNameController,
-                          hint: 'John Doe',
+                          label: 'First Name',
+                          controller: _firstNameController,
+                          hint: 'John',
+                          keyboardType: TextInputType.name,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          label: 'Last Name',
+                          controller: _lastNameController,
+                          hint: 'Doe',
                           keyboardType: TextInputType.name,
                         ),
                         const SizedBox(height: 16),
@@ -210,15 +158,6 @@ class _SignUpPageState extends State<SignUpPage> {
                           controller: _mobileController,
                           hint: '+20 123 456 7890',
                           keyboardType: TextInputType.phone,
-                        ),
-                        const SizedBox(height: 20),
-                        _buildTextField(
-                          label: 'Date Of Birth',
-                          controller: _dateOfBirthController,
-                          hint: 'DD/MM/YYYY',
-                          keyboardType: TextInputType.datetime,
-                          readOnly: true,
-                          onTap: () => _selectDate(context),
                         ),
                         const SizedBox(height: 20),
                         _buildPasswordField(

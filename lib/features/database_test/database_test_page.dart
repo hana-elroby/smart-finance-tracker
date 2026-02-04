@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../core/database/database_helper.dart';
-import '../../core/models/expense_model.dart';
+import '../../core/models/expense.dart';
 import '../../core/services/sync_service.dart';
 
 class DatabaseTestPage extends StatefulWidget {
@@ -24,24 +24,33 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
   Future<void> _loadExpenses() async {
     List<Map<String, dynamic>> expensesMap = await _dbHelper.getExpenses();
     setState(() {
-      _expenses = expensesMap.map((e) => Expense.fromMap(e)).toList();
+      _expenses = expensesMap.map((e) {
+        return Expense(
+          id: e['id']?.toString() ?? '',
+          title: e['title'] ?? '',
+          amount: (e['amount'] as num?)?.toDouble() ?? 0.0,
+          category: e['category'] ?? '',
+          date: DateTime.tryParse(e['date'] ?? '') ?? DateTime.now(),
+        );
+      }).toList();
     });
 
-    // عرض إحصائيات
-    int synced = _expenses.where((e) => e.isSynced == 1).length;
-    int notSynced = _expenses.where((e) => e.isSynced == 0).length;
+    // عرض إحصائيات من قاعدة البيانات مباشرة
+    int synced = expensesMap.where((e) => (e['isSynced'] ?? 0) == 1).length;
+    int notSynced = expensesMap.where((e) => (e['isSynced'] ?? 0) == 0).length;
     debugPrint('📊 Stats: $synced synced, $notSynced waiting to sync');
   }
 
   Future<void> _addTestExpense() async {
-    Expense expense = Expense(
-      title: "Test ${DateTime.now().millisecond}",
-      amount: 50.0 + (DateTime.now().millisecond % 100),
-      category: "Food",
-      date: DateTime.now().toString(),
-      createdAt: DateTime.now().toString(),
-    );
-    int id = await _dbHelper.addExpense(expense.toMap());
+    Map<String, dynamic> expenseMap = {
+      'title': "Test ${DateTime.now().millisecond}",
+      'amount': 50.0 + (DateTime.now().millisecond % 100),
+      'category': "Food",
+      'date': DateTime.now().toString(),
+      'createdAt': DateTime.now().toString(),
+      'isSynced': 0,
+    };
+    int id = await _dbHelper.addExpense(expenseMap);
     debugPrint('➕ Added expense #$id');
 
     // فحص النت وعمل sync
@@ -86,20 +95,16 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                       final expense = _expenses[index];
                       return ListTile(
                         leading: Icon(
-                          expense.isSynced == 1
-                              ? Icons.cloud_done
-                              : Icons.cloud_off,
-                          color: expense.isSynced == 1
-                              ? Colors.green
-                              : Colors.orange,
+                          Icons.receipt,
+                          color: Colors.blue,
                         ),
                         title: Text(expense.title),
                         subtitle: Text(
-                          '${expense.amount} EGP - ${expense.isSynced == 1 ? "Synced ✅" : "Not synced ⏳"}',
+                          '${expense.amount} EGP - ${expense.category}',
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _deleteExpense(expense.id!),
+                          onPressed: () => _deleteExpense(int.parse(expense.id)),
                         ),
                       );
                     },

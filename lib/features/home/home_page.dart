@@ -2,7 +2,10 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/services/auth_api_service.dart';
+import '../../core/services/performance_service.dart';
+import '../../widgets/skeleton_loader.dart';
+import '../../widgets/empty_state.dart';
 
 import '../../widgets/modern_action_button.dart';
 import '../../widgets/chart_placeholder.dart';
@@ -44,10 +47,12 @@ class _HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<_HomePageContent>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, PerformanceMonitorMixin {
   late ExpenseBloc _expenseBloc;
   DateTime? _fromDate;
   DateTime? _toDate;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   // Animation controllers
   late AnimationController _fabAnimationController;
@@ -58,9 +63,24 @@ class _HomePageContentState extends State<_HomePageContent>
   @override
   void initState() {
     super.initState();
-    _expenseBloc = context.read<ExpenseBloc>();
+    startPerformanceTracking('home_page_init');
+    
+    try {
+      _expenseBloc = context.read<ExpenseBloc>();
+    } catch (e) {
+      print('⚠️ Error accessing ExpenseBloc in HomePage: $e');
+      setState(() {
+        _errorMessage = 'Failed to initialize expense tracking';
+        _isLoading = false;
+      });
+      return;
+    }
+    
     _initializeAnimations();
     _setDefaultDates();
+    _loadInitialData();
+    
+    endPerformanceTracking('home_page_init');
   }
 
   void _initializeAnimations() {
@@ -98,6 +118,36 @@ class _HomePageContentState extends State<_HomePageContent>
     });
   }
 
+  Future<void> _loadInitialData() async {
+    await trackAsyncOperation('load_home_data', () async {
+      try {
+        // Simulate loading time for demonstration
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Failed to load data';
+            _isLoading = false;
+          });
+        }
+      }
+    });
+  }
+
+  void _retryLoading() {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    _loadInitialData();
+  }
+
   @override
   void dispose() {
     _fabAnimationController.dispose();
@@ -107,6 +157,86 @@ class _HomePageContentState extends State<_HomePageContent>
 
   @override
   Widget build(BuildContext context) {
+    // Show error state
+    if (_errorMessage != null) {
+      return EmptyStates.error(
+        message: _errorMessage,
+        onRetry: _retryLoading,
+      );
+    }
+
+    // Show loading state
+    if (_isLoading) {
+      return SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 24),
+                // Header skeleton
+                Row(
+                  children: [
+                    const SkeletonLoader(
+                      width: 40,
+                      height: 40,
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SkeletonLoader(width: 100, height: 16),
+                          const SizedBox(height: 4),
+                          const SkeletonLoader(width: 150, height: 20),
+                        ],
+                      ),
+                    ),
+                    const SkeletonLoader(width: 24, height: 24),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Offers skeleton
+                const SkeletonLoader(
+                  width: double.infinity,
+                  height: 120,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
+                ),
+                const SizedBox(height: 28),
+                // Action buttons skeleton
+                Row(
+                  children: [
+                    Expanded(
+                      child: SkeletonLoader(
+                        width: double.infinity,
+                        height: 80,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SkeletonLoader(
+                        width: double.infinity,
+                        height: 80,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 28),
+                // Chart skeleton
+                SkeletonLoaders.chart(),
+                const SizedBox(height: 100),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -142,9 +272,9 @@ class _HomePageContentState extends State<_HomePageContent>
   Widget _buildHeader() {
     return BlocBuilder<UserBloc, UserState>(
       builder: (context, userState) {
-        // Get name from Firebase first, fallback to userState
-        final firebaseUser = FirebaseAuth.instance.currentUser;
-        final displayName = firebaseUser?.displayName ?? userState.name;
+        // Get name from auth service
+        final authService = AuthApiService.instance;
+        final displayName = authService.currentUser?.displayName ?? userState.name ?? 'User';
         final firstName = displayName.split(' ').first;
         
         return Row(
@@ -609,19 +739,25 @@ class _HomePageContentState extends State<_HomePageContent>
             onTap: () {
               HapticFeedback.lightImpact();
               // Navigate directly to Categories page with required providers
-              final expenseBloc = context.read<ExpenseBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MultiBlocProvider(
-                    providers: [
-                      BlocProvider.value(value: expenseBloc),
-                      BlocProvider(create: (_) => CategoryBloc()),
-                    ],
-                    child: const CategoriesPage(),
-                  ),
-                ),
-              );
+              if (mounted && context.mounted) {
+                try {
+                  final expenseBloc = context.read<ExpenseBloc>();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: expenseBloc),
+                          BlocProvider(create: (_) => CategoryBloc()),
+                        ],
+                        child: const CategoriesPage(),
+                      ),
+                    ),
+                  );
+                } catch (e) {
+                  print('⚠️ Error navigating to Categories: $e');
+                }
+              }
             },
           ),
         ),
@@ -841,19 +977,25 @@ class _HomePageContentState extends State<_HomePageContent>
           onTap: () {
             HapticFeedback.lightImpact();
             _animateCardTap(() {
-              final expenseBloc = context.read<ExpenseBloc>();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MultiBlocProvider(
-                    providers: [
-                      BlocProvider.value(value: expenseBloc),
-                      BlocProvider(create: (_) => CategoryBloc()),
-                    ],
-                    child: const CategoriesPage(),
-                  ),
-                ),
-              );
+              if (mounted && context.mounted) {
+                try {
+                  final expenseBloc = context.read<ExpenseBloc>();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider.value(value: expenseBloc),
+                          BlocProvider(create: (_) => CategoryBloc()),
+                        ],
+                        child: const CategoriesPage(),
+                      ),
+                    ),
+                  );
+                } catch (e) {
+                  print('⚠️ Error navigating to Categories: $e');
+                }
+              }
             });
           },
         ),

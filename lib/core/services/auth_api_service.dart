@@ -17,6 +17,12 @@ class AuthApiService {
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _api.isAuthenticated && _currentUser != null;
 
+  // Check if user is authenticated
+  Future<bool> isAuthenticated() async {
+    final token = await _storage.getToken();
+    return token != null && token.isNotEmpty;
+  }
+
   // Initialize - load saved token and user
   Future<void> initialize() async {
     final token = await _storage.getToken();
@@ -39,8 +45,7 @@ class AuthApiService {
     String country = 'Egypt',
   }) async {
     final response = await _api.post('/auth/signup', body: {
-      'firstName': firstName,
-      'lastName': lastName,
+      'name': '$firstName $lastName',
       'email': email,
       'password': password,
       'phone': phone ?? '',
@@ -233,6 +238,11 @@ class AuthApiService {
     }
 
     return AuthApiResult.failure(message: response.message ?? 'Failed to delete account');
+  }
+
+  // Get Token - للاستخدام في الصفحات الأخرى
+  Future<String?> getToken() async {
+    return await _storage.getToken();
   }
 
   // Logout

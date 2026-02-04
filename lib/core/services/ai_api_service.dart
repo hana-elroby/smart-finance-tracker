@@ -1,6 +1,3 @@
-// AI API Service - خدمة الذكاء الاصطناعي
-// Handles AI analysis API calls (text, voice, OCR)
-
 import 'dart:io';
 import 'api_service.dart';
 
@@ -11,146 +8,105 @@ class AiApiService {
 
   final ApiService _api = ApiService();
 
-  // Analyze text for financial data extraction
   Future<AiAnalysisResult> analyzeText(String text) async {
-    final response = await _api.postMultipart(
-      '/ai/analyze',
-      fields: {'text': text},
-    );
+    final response = await _api.post('/ai/analyze', body: {
+      'text': text,
+    });
 
     if (response.isSuccess) {
-      final analysisData = response.getData<List>('analysis') ?? [];
-      final extractedText = response.getData<String>('text');
-
-      final analyses = analysisData
-          .map((item) => AiAnalysis.fromMap(item as Map<String, dynamic>))
-          .toList();
-
-      return AiAnalysisResult.success(
-        analyses: analyses,
-        extractedText: extractedText,
-        message: response.message,
-      );
+      return AiAnalysisResult.success(data: response.data);
     }
 
     return AiAnalysisResult.failure(message: response.message ?? 'Failed to analyze text');
   }
 
-  // Analyze image (OCR) for financial data extraction
-  Future<AiAnalysisResult> analyzeImage(File imageFile) async {
+  Future<AiAnalysisResult> analyzeVoice(File voiceFile) async {
     final response = await _api.postMultipart(
-      '/ai/analyze',
-      files: {'OCR_path': imageFile},
+      '/ai/voice',
+      files: {'voice': voiceFile},
     );
 
     if (response.isSuccess) {
-      final analysisData = response.getData<List>('analysis') ?? [];
-      final extractedText = response.getData<String>('text');
+      return AiAnalysisResult.success(data: response.data);
+    }
 
-      final analyses = analysisData
-          .map((item) => AiAnalysis.fromMap(item as Map<String, dynamic>))
-          .toList();
+    return AiAnalysisResult.failure(message: response.message ?? 'Failed to analyze voice');
+  }
 
-      return AiAnalysisResult.success(
-        analyses: analyses,
-        extractedText: extractedText,
-        message: response.message,
-      );
+  Future<AiAnalysisResult> analyzeImage(File imageFile) async {
+    final response = await _api.postMultipart(
+      '/ai/image',
+      files: {'image': imageFile},
+    );
+
+    if (response.isSuccess) {
+      return AiAnalysisResult.success(data: response.data);
     }
 
     return AiAnalysisResult.failure(message: response.message ?? 'Failed to analyze image');
   }
 
-  // Analyze voice for financial data extraction
-  Future<AiAnalysisResult> analyzeVoice(File voiceFile) async {
-    final response = await _api.postMultipart(
-      '/ai/voice',
-      files: {'voice_path': voiceFile},
-    );
-
-    if (response.isSuccess) {
-      final analysisData = response.getData<List>('analysis') ?? [];
-      final extractedText = response.getData<String>('text');
-
-      final analyses = analysisData
-          .map((item) => AiAnalysis.fromMap(item as Map<String, dynamic>))
-          .toList();
-
-      return AiAnalysisResult.success(
-        analyses: analyses,
-        extractedText: extractedText,
-        message: response.message,
-      );
+  Future<AiAnalysisResult> getSpendingInsights({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final queryParams = <String, String>{};
+    if (startDate != null) {
+      queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
+    }
+    if (endDate != null) {
+      queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
     }
 
-    return AiAnalysisResult.failure(message: response.message ?? 'Failed to analyze voice');
+    final response = await _api.get('/ai/insights', queryParams: queryParams);
+
+    if (response.isSuccess) {
+      return AiAnalysisResult.success(data: response.data);
+    }
+
+    return AiAnalysisResult.failure(message: response.message ?? 'Failed to get insights');
+  }
+
+  Future<AiAnalysisResult> getBudgetRecommendations() async {
+    final response = await _api.get('/ai/budget-recommendations');
+
+    if (response.isSuccess) {
+      return AiAnalysisResult.success(data: response.data);
+    }
+
+    return AiAnalysisResult.failure(message: response.message ?? 'Failed to get recommendations');
+  }
+
+  Future<AiAnalysisResult> predictSpending({
+    int months = 3,
+  }) async {
+    final response = await _api.get('/ai/predict-spending', queryParams: {
+      'months': months.toString(),
+    });
+
+    if (response.isSuccess) {
+      return AiAnalysisResult.success(data: response.data);
+    }
+
+    return AiAnalysisResult.failure(message: response.message ?? 'Failed to predict spending');
   }
 }
 
-// AI Analysis model
-class AiAnalysis {
-  final double amount;
-  final String category;
-  final String? place;
-  final String type; // 'expense' or 'income'
-
-  AiAnalysis({
-    required this.amount,
-    required this.category,
-    this.place,
-    required this.type,
-  });
-
-  factory AiAnalysis.fromMap(Map<String, dynamic> map) {
-    return AiAnalysis(
-      amount: (map['amount'] as num?)?.toDouble() ?? 0,
-      category: map['category'] ?? 'other',
-      place: map['place'],
-      type: map['type'] ?? 'expense',
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'amount': amount,
-      'category': category,
-      'place': place,
-      'type': type,
-    };
-  }
-
-  // Aliases for UI compatibility
-  double get price => amount;
-  String get item => place ?? category;
-
-  bool get isExpense => type == 'expense';
-  bool get isIncome => type == 'income';
-}
-
-// AI Analysis Result
 class AiAnalysisResult {
   final bool isSuccess;
-  final List<AiAnalysis> analyses;
-  final String? extractedText;
+  final dynamic data;
   final String? message;
 
   AiAnalysisResult._({
     required this.isSuccess,
-    this.analyses = const [],
-    this.extractedText,
+    this.data,
     this.message,
   });
 
-  factory AiAnalysisResult.success({
-    required List<AiAnalysis> analyses,
-    String? extractedText,
-    String? message,
-  }) {
+  factory AiAnalysisResult.success({dynamic data}) {
     return AiAnalysisResult._(
       isSuccess: true,
-      analyses: analyses,
-      extractedText: extractedText,
-      message: message,
+      data: data,
     );
   }
 
@@ -161,9 +117,25 @@ class AiAnalysisResult {
     );
   }
 
-  // Get first analysis (most common use case)
-  AiAnalysis? get firstAnalysis => analyses.isNotEmpty ? analyses.first : null;
+  T? getData<T>(String key) {
+    if (data is Map) {
+      return data[key] as T?;
+    }
+    return null;
+  }
 
-  // Get total amount from all analyses
-  double get totalAmount => analyses.fold(0, (sum, a) => sum + a.amount);
+  List<Map<String, dynamic>> getTransactions() {
+    final transactions = getData<List>('transactions') ?? [];
+    return transactions.cast<Map<String, dynamic>>();
+  }
+
+  List<Map<String, dynamic>> getItems() {
+    final items = getData<List>('items') ?? [];
+    return items.cast<Map<String, dynamic>>();
+  }
+
+  List<Map<String, dynamic>> getCategories() {
+    final categories = getData<List>('categories') ?? [];
+    return categories.cast<Map<String, dynamic>>();
+  }
 }

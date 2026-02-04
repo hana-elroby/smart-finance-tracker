@@ -32,7 +32,7 @@ void main() async {
 Future<bool> testConnection() async {
   try {
     final response = await http.get(
-      Uri.parse('https://gradution-project-u39v.onrender.com/'),
+      Uri.parse('https://graduation-project-21p3.onrender.com/'),
       headers: {'Content-Type': 'application/json'},
     ).timeout(const Duration(seconds: 30));
     
@@ -93,7 +93,7 @@ Future<void> testSingleText(String text, String type, Map<String, dynamic> expec
     print('   🔍 اختبار $type: "$text"');
     
     final response = await http.post(
-      Uri.parse('https://gradution-project-u39v.onrender.com/analyze'),
+      Uri.parse('https://graduation-project-21p3.onrender.com/analyze'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'text': text}),
     ).timeout(const Duration(seconds: 30));

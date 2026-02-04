@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/services/auth_api_service.dart';
 import 'edit_profile_page.dart';
 import 'security_page.dart';
 import 'settings_page.dart';
@@ -9,7 +9,6 @@ import 'help_page.dart';
 import 'bloc/user_bloc.dart';
 import 'bloc/user_event.dart';
 import 'bloc/user_state.dart';
-import '../../core/services/auth_services.dart';
 import '../../core/routes/app_routes.dart';
 
 /// Profile Page - صفحة الملف الشخصي
@@ -21,28 +20,56 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  User? _firebaseUser;
+  final _authService = AuthApiService.instance;
 
   @override
   void initState() {
     super.initState();
-    _firebaseUser = FirebaseAuth.instance.currentUser;
   }
 
   Future<void> _refreshUser() async {
-    await FirebaseAuth.instance.currentUser?.reload();
-    setState(() {
-      _firebaseUser = FirebaseAuth.instance.currentUser;
-    });
+    await _authService.getProfile();
+    setState(() {});
+  }
+
+  Future<void> _logout() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.logout();
+              if (mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.auth,
+                  (route) => false,
+                );
+              }
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<UserBloc, UserState>(
       builder: (context, userState) {
-        // Use Firebase user data if available
-        final displayName = _firebaseUser?.displayName ?? userState.name;
-        final email = _firebaseUser?.email ?? userState.email;
+        // Use auth service user data
+        final currentUser = _authService.currentUser;
+        final displayName = currentUser?.displayName ?? userState.name ?? 'User';
+        final email = currentUser?.email ?? userState.email ?? '';
         final initials = (displayName.isNotEmpty)
             ? displayName
                 .split(' ')
@@ -163,10 +190,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
 
                           if (result != null && result['name'] != null) {
-                            // Update Firebase display name
+                            // Update profile via API
                             try {
-                              await FirebaseAuth.instance.currentUser
-                                  ?.updateDisplayName(result['name']!);
+                              await _authService.updateProfile(
+                                firstName: result['name']!,
+                              );
                               // Reload user to get updated data
                               await _refreshUser();
                               // Also update local state
@@ -235,7 +263,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.logout,
                         title: 'Logout',
                         onTap: () {
-                          _showLogoutDialog(context);
+                          _logout();
                         },
                       ),
                     ],
@@ -317,7 +345,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Navigator.pop(dialogContext);
 
                 try {
-                  await AuthService().signOut();
+                  await _authService.logout();
 
                   if (context.mounted) {
                     Navigator.pushNamedAndRemoveUntil(

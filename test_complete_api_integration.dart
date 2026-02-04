@@ -25,7 +25,7 @@ Future<void> testApiHealth() async {
   
   try {
     final response = await http.get(
-      Uri.parse('https://gradution-project-u39v.onrender.com/'),
+      Uri.parse('https://graduation-project-21p3.onrender.com/'),
       headers: {'Content-Type': 'application/json'},
     ).timeout(const Duration(seconds: 60));
     
@@ -116,7 +116,7 @@ Future<void> _testSingleText(String text, String type) async {
     print('🔍 اختبار ($type): "${text.length > 50 ? text.substring(0, 50) + '...' : text}"');
     
     final response = await http.post(
-      Uri.parse('https://gradution-project-u39v.onrender.com/analyze'),
+      Uri.parse('https://graduation-project-21p3.onrender.com/analyze'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'text': text}),
     ).timeout(const Duration(seconds: 60));

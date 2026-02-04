@@ -31,58 +31,59 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # Core
   cupertino_icons: ^1.0.8
-  lottie: ^3.1.0
   
-  # State Management - BLoC
+  # State Management
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
   
-  # Firebase
-  firebase_core: ^4.2.1
-  firebase_auth: ^6.1.2
-  firebase_storage: ^13.0.4
-  cloud_firestore: ^6.1.0
-  firebase_messaging: ^16.0.4
-  
-  # Google & Auth
-  google_sign_in: ^6.2.1
-  google_fonts: ^6.1.0
-  
-  # Storage & Database
-  sqflite: ^2.3.0
-  path_provider: ^2.1.1
-  path: ^1.8.3
-  shared_preferences: ^2.5.4
-  
-  # Network
+  # Network & HTTP
+  dio: ^5.7.0
   connectivity_plus: ^6.0.5
-  http: ^1.2.0
+  pretty_dio_logger: ^1.4.0
   
-  # Voice Recognition - Latest compatible versions
+  # Database & Storage
+  drift: ^2.20.3
+  sqlite3_flutter_libs: ^0.5.24
+  sqflite: ^2.3.3
+  path_provider: ^2.1.4
+  path: ^1.9.1
+  flutter_secure_storage: ^9.2.2
+  
+  # UI & Design
+  google_fonts: ^6.2.1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  lottie: ^3.1.2
+  
+  # Voice & Speech
   speech_to_text: ^7.0.0
-  permission_handler: ^11.0.0
+  permission_handler: ^11.3.1
   
-  # Curved Bottom Navigation Bar
-  curved_navigation_bar: ^1.0.6
+  # Utilities
   intl: ^0.20.2
+  uuid: ^4.5.1
   
-  # Local Notifications
+  # Navigation
+  curved_navigation_bar: ^1.0.6
+  
+  # Notifications
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.0
+  
+  # Crash Reporting
+  sentry_flutter: ^8.9.0
+  
+  # Security
+  crypto: ^3.0.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  drift_dev: ^2.20.1
+  build_runner: ^2.4.13
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

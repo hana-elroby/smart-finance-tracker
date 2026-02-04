@@ -1,9 +1,6 @@
 // Language Detection and Conversion Service
 // Handles Arabic/English detection and Franco-Arabic conversion
 
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
 /// Language Service for detecting and converting between Arabic and English
 /// Handles Franco-Arabic (Arabic written in English letters) conversion
 class LanguageService {

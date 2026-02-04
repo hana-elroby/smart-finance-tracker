@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:graduation_project/features/auth/presentation/pages/login_page.dart';
-import 'package:graduation_project/features/home/home_page.dart';
+import 'auth_api_service.dart';
+import '../../features/auth/presentation/pages/auth_page.dart';
+import '../../widgets/main_layout.dart';
+
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return FutureBuilder<void>(
+      future: AuthApiService.instance.initialize(),
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        // User signed in → Home
-        if (snapshot.hasData) {
-          return const HomePage();
+        // Check if user is logged in
+        if (AuthApiService.instance.isLoggedIn) {
+          return const MainLayout();
         }
 
-        // User signed out → Login
-        return const LoginPage();
+        // User not logged in → Auth
+        return const AuthPage();
       },
     );
   }

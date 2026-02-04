@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 
 /// Voice API Direct Service - يستخدم API المستخدم مباشرة
 /// يرسل النص مباشرة للسيرفر بدون أي معالجة لغوية
@@ -100,14 +99,21 @@ class VoiceApiDirectService {
     try {
       print('🔍 اختبار الاتصال بالسيرفر...');
       
+      // Test the main page first (should work)
       final response = await http.get(
         Uri.parse(_baseUrl),
-        headers: {'Accept': 'application/json'},
+        headers: {'Accept': 'text/html,application/json'},
       ).timeout(const Duration(seconds: 10));
 
       print('📡 حالة الاتصال: ${response.statusCode}');
       
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        print('✅ سيرفر الفويس متاح');
+        return true;
+      } else {
+        print('❌ سيرفر الفويس غير متاح: ${response.statusCode}');
+        return false;
+      }
     } catch (e) {
       print('❌ فشل في الاتصال بالسيرفر: $e');
       return false;

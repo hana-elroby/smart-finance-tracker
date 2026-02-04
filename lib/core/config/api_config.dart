@@ -5,7 +5,7 @@ class ApiConfig {
   // Main Backend API (your graduation project backend)
   static const String baseUrl = 'https://graduation-project-21p3.onrender.com';
 
-  // Voice Analysis API (new fast API for voice/text analysis)
+  // Voice Analysis API (separate voice server)
   static const String voiceApiBaseUrl = 'https://gradution-project-u39v.onrender.com';
   static const String voiceAnalyzeText = '/analyze';
   static const String voiceAnalyzeAudio = '/voice';

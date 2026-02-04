@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/storage/simple_storage.dart';
 
 // Events
 abstract class CategoryEvent {}
@@ -35,6 +35,7 @@ class CategoryState {
 // BLoC
 class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   static const String _storageKey = 'custom_categories';
+  final SimpleStorage _storage = SimpleStorage();
   
   CategoryBloc() : super(CategoryState()) {
     on<AddCategory>(_onAddCategory);
@@ -70,18 +71,16 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   };
   
   Future<void> _saveCategories(List<Map<String, dynamic>> categories) async {
-    final prefs = await SharedPreferences.getInstance();
     final jsonList = categories.map((cat) => {
       'name': cat['name'],
       'iconCode': (cat['icon'] as IconData).codePoint,
       'isDefault': cat['isDefault'] ?? false,
     }).toList();
-    await prefs.setString(_storageKey, jsonEncode(jsonList));
+    await _storage.write(_storageKey, jsonEncode(jsonList));
   }
   
   Future<List<Map<String, dynamic>>> _loadCategoriesFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_storageKey);
+    final jsonString = await _storage.read(_storageKey);
     if (jsonString == null || jsonString.isEmpty) {
       return [];
     }
@@ -111,7 +110,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     final updatedList = [...state.customCategories, newCategory];
     emit(state.copyWith(customCategories: updatedList));
     
-    // Save to SharedPreferences
+    // Save to secure storage
     await _saveCategories(updatedList);
   }
   
@@ -121,7 +120,7 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
         .toList();
     emit(state.copyWith(customCategories: updatedList));
     
-    // Save to SharedPreferences
+    // Save to secure storage
     await _saveCategories(updatedList);
   }
 }

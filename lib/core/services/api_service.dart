@@ -29,14 +29,16 @@ class ApiService {
     _token = null;
   }
 
-  // Headers
+  // Headers with automatic token management
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
+        'Accept': 'application/json',
+        if (_token != null) 'token': _token!,
       };
 
   Map<String, String> get _authHeaders => {
-        'Authorization': 'Bearer $_token',
+        'Accept': 'application/json',
+        if (_token != null) 'token': _token!,
       };
 
   // Generic GET request
@@ -125,9 +127,9 @@ class ApiService {
       final uri = Uri.parse('${ApiConfig.baseUrl}$endpoint');
       final request = http.MultipartRequest('POST', uri);
 
-      // Add auth header
+      // Add auth header with correct format
       if (_token != null) {
-        request.headers['Authorization'] = 'Bearer $_token';
+        request.headers['token'] = _token!;
       }
 
       // Add fields

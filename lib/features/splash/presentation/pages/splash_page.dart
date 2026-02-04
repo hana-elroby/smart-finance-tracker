@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/auth_api_service.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -20,15 +20,16 @@ class _SplashPageState extends State<SplashPage> {
   }
 
   void _checkAuthAndNavigate() {
-    Timer(AppConstants.splashDuration, () {
+    Timer(AppConstants.splashDuration, () async {
       if (mounted) {
-        final user = FirebaseAuth.instance.currentUser;
+        final authService = AuthApiService.instance;
+        final isAuthenticated = await authService.isAuthenticated();
         
-        if (user != null && user.emailVerified) {
-          // User is logged in and verified -> go to Home
+        if (isAuthenticated) {
+          // User is logged in -> go to Home
           Navigator.pushReplacementNamed(context, AppRoutes.home);
         } else {
-          // No user or not verified -> go to Onboarding
+          // No user -> go to Onboarding
           Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
         }
       }

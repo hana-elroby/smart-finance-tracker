@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import '../../../../core/services/auth_services.dart';
+import '../../../../core/services/auth_api_service.dart';
 import '../../../../core/utils/navigation_helper.dart';
 import '../../../../core/routes/app_routes.dart';
 import 'signup_page.dart';
@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
+  final _authService = AuthApiService.instance;
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
@@ -25,19 +25,26 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoading = true);
 
       try {
-        final user = await _authService.signInWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text,
+        final result = await _authService.signin(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
         );
 
-        if (user != null && mounted) {
+        if (result.isSuccess && mounted) {
           Navigator.pushReplacementNamed(context, AppRoutes.home);
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message ?? 'Login failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(e.toString().replaceAll('Exception: ', '')),
+              content: Text('Login error: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -46,45 +53,6 @@ class _LoginPageState extends State<LoginPage> {
         if (mounted) {
           setState(() => _isLoading = false);
         }
-      }
-    }
-  }
-
-  void _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final user = await _authService.signInWithGoogle();
-
-      if (user != null && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
-      }
-    } catch (e) {
-      if (mounted) {
-        // Show user-friendly error message
-        String errorMessage = 'Google Sign In failed';
-        
-        if (e.toString().contains('cancelled')) {
-          errorMessage = 'Sign in was cancelled';
-        } else if (e.toString().contains('reauth') || e.toString().contains('certificate')) {
-          errorMessage = 'Please use Email/Password sign in instead';
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.orange,
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
       }
     }
   }
@@ -329,7 +297,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 30),
                         const Center(
                           child: Text(
-                            'or continue with',
+                            'New to the app?',
                             style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF9E9E9E),
@@ -337,40 +305,6 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        Center(
-                          child: GestureDetector(
-                            onTap: _isLoading ? null : _handleGoogleSignIn,
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFE0E0E0),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Image.asset(
-                                  'assets/images/GoogleIcon.png',
-                                  width: 24,
-                                  height: 24,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../widgets/skeleton_loader.dart';
+import '../../widgets/empty_state.dart';
+import '../../core/services/performance_service.dart';
 import '../home/bloc/expense_bloc.dart';
 import '../home/bloc/expense_state.dart';
 import '../home/bloc/expense_event.dart';
@@ -12,14 +15,38 @@ class TransactionsPage extends StatefulWidget {
   State<TransactionsPage> createState() => _TransactionsPageState();
 }
 
-class _TransactionsPageState extends State<TransactionsPage> {
+class _TransactionsPageState extends State<TransactionsPage> 
+    with PerformanceMonitorMixin {
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
+    startPerformanceTracking('transactions_page_init');
+    
     // Reload expenses when page opens to get latest data
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ExpenseBloc>().add(const LoadExpenses());
+      if (mounted && context.mounted) {
+        try {
+          context.read<ExpenseBloc>().add(const LoadExpenses());
+          // Simulate loading time
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+              });
+            }
+          });
+        } catch (e) {
+          print('⚠️ Error loading expenses in TransactionsPage: $e');
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     });
+    
+    endPerformanceTracking('transactions_page_init');
   }
 
   String _formatDate(DateTime date) {
@@ -48,29 +75,31 @@ class _TransactionsPageState extends State<TransactionsPage> {
         ),
         centerTitle: true,
       ),
-      body: BlocBuilder<ExpenseBloc, ExpenseState>(
-        builder: (context, state) {
-          if (state is ExpenseLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          
-          if (state is ExpenseLoaded) {
-            final expenses = List.from(state.expenses)
-              ..sort((a, b) => b.date.compareTo(a.date));
-            
-            if (expenses.isEmpty) {
-              return _buildEmptyState();
-            }
-            
-            return ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: expenses.length,
-              itemBuilder: (context, index) {
-                final expense = expenses[index];
-                return _buildTransactionCard(
-                  expense.title,
-                  expense.amount,
-                  expense.date,
+      body: _isLoading 
+        ? _buildLoadingState()
+        : BlocBuilder<ExpenseBloc, ExpenseState>(
+            builder: (context, state) {
+              if (state is ExpenseLoading) {
+                return _buildLoadingState();
+              }
+              
+              if (state is ExpenseLoaded) {
+                final expenses = List.from(state.expenses)
+                  ..sort((a, b) => b.date.compareTo(a.date));
+                
+                if (expenses.isEmpty) {
+                  return _buildEmptyState();
+                }
+                
+                return ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: expenses.length,
+                  itemBuilder: (context, index) {
+                    final expense = expenses[index];
+                    return _buildTransactionCard(
+                      expense.title,
+                      expense.amount,
+                      expense.date,
                   expense.isVoiceInput, // Pass voice input flag
                 );
               },
@@ -84,23 +113,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            'No transactions yet',
-            style: GoogleFonts.inter(fontSize: 18, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add items to categories to see them here',
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[400]),
-          ),
-        ],
-      ),
+    return EmptyStates.noTransactions(
+      onAddTransaction: () {
+        Navigator.pop(context);
+        // Navigate to add transaction
+      },
     );
   }
 
@@ -169,6 +186,13 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: SkeletonLoaders.transactionList(itemCount: 8),
     );
   }
 }

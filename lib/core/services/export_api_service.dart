@@ -1,8 +1,3 @@
-// Export API Service - خدمة التصدير
-// Handles exporting transactions to PDF, CSV, JSON
-
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'api_service.dart';
 
 class ExportApiService {
@@ -12,104 +7,136 @@ class ExportApiService {
 
   final ApiService _api = ApiService();
 
-  // Export to PDF
   Future<ExportResult> exportToPdf({
     DateTime? startDate,
     DateTime? endDate,
     String? categoryId,
   }) async {
-    return _export('pdf', startDate: startDate, endDate: endDate, categoryId: categoryId);
+    final queryParams = <String, String>{};
+    if (startDate != null) {
+      queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
+    }
+    if (endDate != null) {
+      queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
+    }
+    if (categoryId != null) {
+      queryParams['category'] = categoryId;
+    }
+
+    final response = await _api.getFile('/export/pdf');
+
+    if (response.isSuccess && response.fileBytes != null) {
+      return ExportResult.success(
+        fileBytes: response.fileBytes!,
+        fileName: 'expense_report.pdf',
+        mimeType: 'application/pdf',
+      );
+    }
+
+    return ExportResult.failure(message: response.message ?? 'Failed to export PDF');
   }
 
-  // Export to CSV
+  Future<ExportResult> exportToExcel({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? categoryId,
+  }) async {
+    final queryParams = <String, String>{};
+    if (startDate != null) {
+      queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
+    }
+    if (endDate != null) {
+      queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
+    }
+    if (categoryId != null) {
+      queryParams['category'] = categoryId;
+    }
+
+    final response = await _api.getFile('/export/excel');
+
+    if (response.isSuccess && response.fileBytes != null) {
+      return ExportResult.success(
+        fileBytes: response.fileBytes!,
+        fileName: 'expense_report.xlsx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+    }
+
+    return ExportResult.failure(message: response.message ?? 'Failed to export Excel');
+  }
+
   Future<ExportResult> exportToCsv({
     DateTime? startDate,
     DateTime? endDate,
     String? categoryId,
   }) async {
-    return _export('csv', startDate: startDate, endDate: endDate, categoryId: categoryId);
-  }
-
-  // Export to JSON
-  Future<ExportResult> exportToJson({
-    DateTime? startDate,
-    DateTime? endDate,
-    String? categoryId,
-  }) async {
-    return _export('json', startDate: startDate, endDate: endDate, categoryId: categoryId);
-  }
-
-  // Generic export method
-  Future<ExportResult> _export(
-    String format, {
-    DateTime? startDate,
-    DateTime? endDate,
-    String? categoryId,
-  }) async {
-    try {
-      final queryParams = <String, String>{};
-      if (startDate != null) queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
-      if (endDate != null) queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
-      if (categoryId != null) queryParams['categoryId'] = categoryId;
-
-      final query = queryParams.isNotEmpty 
-          ? '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}'
-          : '';
-
-      final response = await _api.getFile('/export/$format$query');
-
-      if (response.isSuccess && response.fileBytes != null) {
-        // Save file to downloads directory
-        final directory = await getApplicationDocumentsDirectory();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final fileName = 'transactions_$timestamp.$format';
-        final filePath = '${directory.path}/$fileName';
-        
-        final file = File(filePath);
-        await file.writeAsBytes(response.fileBytes!);
-
-        return ExportResult.success(
-          filePath: filePath,
-          fileName: fileName,
-          message: 'Exported successfully',
-        );
-      }
-
-      return ExportResult.failure(message: response.message ?? 'Export failed');
-    } catch (e) {
-      return ExportResult.failure(message: 'Export failed: $e');
+    final queryParams = <String, String>{};
+    if (startDate != null) {
+      queryParams['startDate'] = startDate.toIso8601String().split('T')[0];
     }
+    if (endDate != null) {
+      queryParams['endDate'] = endDate.toIso8601String().split('T')[0];
+    }
+    if (categoryId != null) {
+      queryParams['category'] = categoryId;
+    }
+
+    final response = await _api.getFile('/export/csv');
+
+    if (response.isSuccess && response.fileBytes != null) {
+      return ExportResult.success(
+        fileBytes: response.fileBytes!,
+        fileName: 'expense_report.csv',
+        mimeType: 'text/csv',
+      );
+    }
+
+    return ExportResult.failure(message: response.message ?? 'Failed to export CSV');
+  }
+
+  Future<ApiResponse> getExportHistory() async {
+    final response = await _api.get('/export/history');
+    return response;
+  }
+
+  Future<ApiResponse> deleteExport(String exportId) async {
+    final response = await _api.delete('/export/$exportId');
+    return response;
   }
 }
 
-// Export Result
 class ExportResult {
   final bool isSuccess;
-  final String? filePath;
+  final List<int>? fileBytes;
   final String? fileName;
+  final String? mimeType;
   final String? message;
 
   ExportResult._({
     required this.isSuccess,
-    this.filePath,
+    this.fileBytes,
     this.fileName,
+    this.mimeType,
     this.message,
   });
 
   factory ExportResult.success({
-    required String filePath,
+    required List<int> fileBytes,
     required String fileName,
-    String? message,
+    required String mimeType,
   }) {
     return ExportResult._(
       isSuccess: true,
-      filePath: filePath,
+      fileBytes: fileBytes,
       fileName: fileName,
-      message: message,
+      mimeType: mimeType,
     );
   }
 
   factory ExportResult.failure({required String message}) {
-    return ExportResult._(isSuccess: false, message: message);
+    return ExportResult._(
+      isSuccess: false,
+      message: message,
+    );
   }
 }

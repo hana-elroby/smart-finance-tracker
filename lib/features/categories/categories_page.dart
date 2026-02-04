@@ -694,20 +694,26 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
     return GestureDetector(
       onTap: () {
         // Pass the existing ExpenseBloc to ItemsPage
-        final expenseBloc = context.read<ExpenseBloc>();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => BlocProvider.value(
-              value: expenseBloc,
-              child: ItemsPage(
-                categoryName: name,
-                categoryIcon: icon,
-                categoryColor: color,
+        if (mounted && context.mounted) {
+          try {
+            final expenseBloc = context.read<ExpenseBloc>();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: expenseBloc,
+                  child: ItemsPage(
+                    categoryName: name,
+                    categoryIcon: icon,
+                    categoryColor: color,
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
+            );
+          } catch (e) {
+            print('⚠️ Error navigating to ItemsPage: $e');
+          }
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

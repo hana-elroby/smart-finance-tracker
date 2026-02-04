@@ -1,12 +1,15 @@
 ﻿import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/expense.dart';
+import '../../../services/shared_database_service.dart';
+import '../../../core/storage/simple_storage.dart';
 import 'expense_event.dart';
 import 'expense_state.dart';
 
 class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   static const String _storageKey = 'expenses_data';
+  final SharedDatabaseService _sharedDB = SharedDatabaseService();
+  final SimpleStorage _storage = SimpleStorage();
   
   ExpenseBloc() : super(const ExpenseLoaded([])) {
     on<AddExpense>(_onAddExpense);
@@ -20,14 +23,12 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   }
 
   Future<void> _saveExpenses(List<Expense> expenses) async {
-    final prefs = await SharedPreferences.getInstance();
     final jsonList = expenses.map((e) => e.toMap()).toList();
-    await prefs.setString(_storageKey, jsonEncode(jsonList));
+    await _storage.write(_storageKey, jsonEncode(jsonList));
   }
 
   Future<List<Expense>> _loadExpensesFromStorage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_storageKey);
+    final jsonString = await _storage.read(_storageKey);
     if (jsonString == null || jsonString.isEmpty) {
       return [];
     }
@@ -40,9 +41,24 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
       final currentState = state as ExpenseLoaded;
       final updatedExpenses = List<Expense>.from(currentState.expenses)
         ..add(event.expense);
+      
+      // Update UI immediately (optimistic update)
       emit(ExpenseLoaded(updatedExpenses));
       
-      // Save to SharedPreferences
+      // Save to backend database FIRST (for backend team to see)
+      try {
+        final success = await _sharedDB.addExpenseToSharedDB(event.expense);
+        if (success) {
+          print('✅ تم حفظ المصروف في سيرفر الباك اند: ${event.expense.title}');
+          print('📊 الباك اند team يقدروا يشوفوا البيانات دلوقتي في الداتا بيز');
+        } else {
+          print('❌ فشل في حفظ المصروف في سيرفر الباك اند: ${event.expense.title}');
+        }
+      } catch (e) {
+        print('❌ خطأ في حفظ المصروف في سيرفر الباك اند: $e');
+      }
+      
+      // Save locally as backup
       await _saveExpenses(updatedExpenses);
     }
   }
@@ -55,7 +71,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
           .toList();
       emit(ExpenseLoaded(updatedExpenses));
       
-      // Save to SharedPreferences
+      // Save to secure storage
       await _saveExpenses(updatedExpenses);
     }
   }
@@ -68,7 +84,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
       }).toList();
       emit(ExpenseLoaded(updatedExpenses));
       
-      // Save to SharedPreferences
+      // Save to secure storage
       await _saveExpenses(updatedExpenses);
     }
   }
@@ -76,8 +92,26 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   Future<void> _onLoadExpenses(LoadExpenses event, Emitter<ExpenseState> emit) async {
     emit(const ExpenseLoading());
     try {
-      // Load from SharedPreferences
-      final expenses = await _loadExpensesFromStorage();
+      // Load from shared database first (to get latest data from all users)
+      List<Expense> expenses = [];
+      
+      try {
+        expenses = await _sharedDB.getAllExpensesFromSharedDB();
+        if (expenses.isNotEmpty) {
+          print('✅ تم جلب ${expenses.length} مصروف من الداتا بيز المشتركة');
+          // Save to local storage as backup
+          await _saveExpenses(expenses);
+        } else {
+          print('📭 لا توجد مصاريف في الداتا بيز المشتركة، جاري الجلب محلياً');
+          // Fallback to local storage if no data in shared database
+          expenses = await _loadExpensesFromStorage();
+        }
+      } catch (e) {
+        print('⚠️ فشل في جلب البيانات من الداتا بيز المشتركة، جاري الجلب محلياً: $e');
+        // Fallback to local storage if shared database fails
+        expenses = await _loadExpensesFromStorage();
+      }
+      
       emit(ExpenseLoaded(expenses));
     } catch (e) {
       emit(ExpenseError(e.toString()));
@@ -86,9 +120,13 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
   Future<void> _onClearAllExpenses(ClearAllExpenses event, Emitter<ExpenseState> emit) async {
     emit(const ExpenseLoaded([]));
-    // Clear from SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_storageKey);
+    // Clear from secure storage
+    await _storage.delete(_storageKey);
+  }
+
+  // Helper method to refresh expenses from shared database
+  void refreshExpenses() {
+    add(const LoadExpenses());
   }
 
   // Helper method to call from UI
