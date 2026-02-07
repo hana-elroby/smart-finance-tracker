@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'lib/services/voice_service.dart';
-import 'lib/services/voice_api_service.dart';
+import 'package:graduation_project/services/voice_service.dart';
+import 'package:graduation_project/services/voice_api_service.dart';
 
 /// Simple test to verify voice functionality
 void main() async {

@@ -91,9 +91,8 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
         useMaterial3: true,
       ),
-      initialRoute: '/',
+      initialRoute: AppRoutes.splash, // Start with Splash Screen
       routes: {
-        '/': (context) => const AuthGate(),
         AppRoutes.splash: (context) => const SplashPage(),
         AppRoutes.onboarding: (context) => const OnboardingPage(),
         AppRoutes.auth: (context) => const AuthPage(),

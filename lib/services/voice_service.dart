@@ -1,6 +1,7 @@
 // Voice Service - Optimized Speech Recognition
 // Handles real-time speech recognition with emulator support
 
+import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -15,6 +16,7 @@ class VoiceService {
   final SpeechToText _speechToText = SpeechToText();
   bool _isInitialized = false;
   bool _isListening = false;
+  bool _hasReceivedResult = false; // Track if we got any result
 
   // Getters
   bool get isInitialized => _isInitialized;
@@ -90,7 +92,7 @@ class VoiceService {
     }
   }
 
-  // Start listening - Enhanced with better feedback and error handling
+  // Start listening - Enhanced with immediate response and continuous recording
   Future<void> startListening({
     required Function(String) onResult,
     required Function(String) onError,
@@ -111,129 +113,83 @@ class VoiceService {
 
     try {
       _isListening = true;
-      print('🎤 Starting enhanced voice recognition...');
+      _hasReceivedResult = false;
+      print('🎤 Starting voice recognition...');
       
-      // Check if microphone is available
-      final hasPermission = await _speechToText.hasPermission;
-      if (!hasPermission) {
-        print('❌ No microphone permission');
-        onError('Microphone permission required');
+      // Request microphone permission
+      final hasPermission = await Permission.microphone.request();
+      if (hasPermission != PermissionStatus.granted) {
+        print('❌ Microphone permission DENIED');
+        onError('يجب السماح بإذن الميكروفون');
         _isListening = false;
         return;
       }
 
-      // Get available locales and find the best one
+      print('✅ Microphone permission GRANTED');
+
+      // Get available locales
       final locales = await _speechToText.locales();
-      String? bestLocale;
+      String? localeId;
       
-      // Strategy 1: Look for Arabic locales first
+      // Find Arabic locales
       final arabicLocales = locales.where((locale) => 
         locale.localeId.startsWith('ar') || 
-        locale.name.toLowerCase().contains('arabic')
+        locale.localeId.contains('ar_')
       ).toList();
       
       if (arabicLocales.isNotEmpty) {
-        bestLocale = arabicLocales.first.localeId;
-        print('🇪🇬 Using Arabic locale: $bestLocale');
+        // Prefer ar_EG (Egyptian Arabic), then ar_SA (Saudi), then any Arabic
+        final egyptianArabic = arabicLocales.firstWhere(
+          (locale) => locale.localeId.contains('EG') || locale.localeId.contains('eg'),
+          orElse: () => arabicLocales.firstWhere(
+            (locale) => locale.localeId.contains('SA') || locale.localeId.contains('sa'),
+            orElse: () => arabicLocales.first,
+          ),
+        );
+        localeId = egyptianArabic.localeId;
+        print('✅ Found Arabic locale: $localeId');
       } else {
-        // Strategy 2: Look for English locales
-        final englishLocales = locales.where((locale) => 
-          locale.localeId.startsWith('en')
-        ).toList();
-        
-        if (englishLocales.isNotEmpty) {
-          bestLocale = englishLocales.first.localeId;
-          print('🇺🇸 Using English locale: $bestLocale (Arabic not available)');
-        } else {
-          // Strategy 3: Use system default (no locale specified)
-          bestLocale = null;
-          print('🌍 Using system default (no specific locale)');
-        }
+        // No Arabic available, use English as fallback
+        final englishLocale = locales.firstWhere(
+          (locale) => locale.localeId.startsWith('en'),
+          orElse: () => locales.first,
+        );
+        localeId = englishLocale.localeId;
+        print('⚠️ No Arabic locale found! Using: $localeId');
+        print('⚠️ يرجى تحميل اللغة العربية من إعدادات الجهاز');
       }
       
+      print('🌍 Using locale: $localeId');
+      
+      // Start listening with simple settings
       await _speechToText.listen(
         onResult: (result) {
           final recognizedWords = result.recognizedWords;
-          final confidence = result.confidence;
-          print('🎯 Voice result: "${recognizedWords}" (confidence: $confidence)');
+          print('🎯 Voice result: "$recognizedWords"');
           
-          // Accept results with reasonable confidence or any final result
-          if (recognizedWords.isNotEmpty && 
-              recognizedWords.trim().isNotEmpty &&
-              (confidence > 0.3 || result.finalResult)) {
-            print('✅ Accepted: "$recognizedWords"');
-            onResult(recognizedWords);
-          }
-        },
-        listenFor: const Duration(seconds: 30), // Extended duration
-        pauseFor: const Duration(seconds: 3), // Shorter pause for better UX
-        partialResults: true, // Live feedback
-        localeId: bestLocale, // Use best available locale or null for auto-detect
-        listenMode: ListenMode.dictation, // Best for natural speech
-        cancelOnError: false,
-        onSoundLevelChange: (level) {
-          // Provide sound level feedback for UI visualization
-          if (onSoundLevel != null) {
-            onSoundLevel(level);
-          }
-          if (level > -10.0) { // Only log significant sound levels
-            print('🔊 Sound level: ${level.toStringAsFixed(1)}');
-          }
-        },
-      );
-      
-    } catch (e) {
-      _isListening = false;
-      print('❌ Speech recognition error: $e');
-      
-      // Enhanced error handling with specific fallback strategies
-      if (e.toString().contains('locale') || e.toString().contains('language')) {
-        print('🔄 Trying fallback with English...');
-        await _tryFallbackListening(onResult, onError, onSoundLevel);
-      } else if (e.toString().contains('permission')) {
-        onError('Microphone permission denied. Please enable it in settings.');
-      } else if (e.toString().contains('network') || e.toString().contains('connection')) {
-        onError('Network error. Check your internet connection.');
-      } else {
-        onError('Voice recognition failed. You can type manually instead.');
-      }
-    }
-  }
-
-  // Enhanced fallback method with better error handling
-  Future<void> _tryFallbackListening(
-    Function(String) onResult,
-    Function(String) onError,
-    Function(double)? onSoundLevel,
-  ) async {
-    try {
-      _isListening = true;
-      print('🔄 Fallback: Using English-only recognition...');
-      
-      await _speechToText.listen(
-        onResult: (result) {
-          final recognizedWords = result.recognizedWords;
-          final confidence = result.confidence;
-          print('🎯 Fallback result: "${recognizedWords}" (confidence: $confidence)');
-          
-          if (recognizedWords.isNotEmpty && 
-              (confidence > 0.3 || result.finalResult)) {
+          if (recognizedWords.isNotEmpty) {
+            _hasReceivedResult = true;
             onResult(recognizedWords);
           }
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 3),
         partialResults: true,
-        localeId: 'en-US', // Force English
-        listenMode: ListenMode.dictation,
+        localeId: localeId,
         cancelOnError: false,
-        onSoundLevelChange: onSoundLevel,
+        onSoundLevelChange: (level) {
+          if (onSoundLevel != null) {
+            onSoundLevel(level);
+          }
+        },
       );
+      
+      print('✅ Voice recognition STARTED');
       
     } catch (e) {
       _isListening = false;
-      print('❌ Fallback also failed: $e');
-      onError('Voice recognition unavailable. Please type your expense manually.');
+      print('❌ Speech recognition error: $e');
+      onError('خطأ في تشغيل المايك: $e');
     }
   }
 
@@ -275,6 +231,7 @@ class VoiceService {
       print('🛑 Stopped voice listening');
     } catch (e) {
       print('❌ Error stopping speech recognition: $e');
+      _isListening = false;
     }
   }
 

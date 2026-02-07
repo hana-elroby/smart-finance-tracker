@@ -114,13 +114,11 @@ class EmptyState extends StatelessWidget {
 // Predefined empty states
 class EmptyStates {
   static Widget noTransactions({VoidCallback? onAddTransaction}) {
-    return EmptyState(
+    return const EmptyState(
       title: 'No Transactions Yet',
       subtitle: 'Start tracking your expenses by adding your first transaction.',
       icon: Icons.receipt_long_outlined,
       iconColor: AppColors.primary,
-      actionText: 'Add Transaction',
-      onAction: onAddTransaction,
     );
   }
 

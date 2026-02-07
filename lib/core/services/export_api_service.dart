@@ -23,7 +23,7 @@ class ExportApiService {
       queryParams['category'] = categoryId;
     }
 
-    final response = await _api.getFile('/export/pdf');
+    final response = await _api.getFile('/export/pdf', queryParams: queryParams);
 
     if (response.isSuccess && response.fileBytes != null) {
       return ExportResult.success(
@@ -52,7 +52,7 @@ class ExportApiService {
       queryParams['category'] = categoryId;
     }
 
-    final response = await _api.getFile('/export/excel');
+    final response = await _api.getFile('/export/excel', queryParams: queryParams);
 
     if (response.isSuccess && response.fileBytes != null) {
       return ExportResult.success(
@@ -81,7 +81,7 @@ class ExportApiService {
       queryParams['category'] = categoryId;
     }
 
-    final response = await _api.getFile('/export/csv');
+    final response = await _api.getFile('/export/csv', queryParams: queryParams);
 
     if (response.isSuccess && response.fileBytes != null) {
       return ExportResult.success(

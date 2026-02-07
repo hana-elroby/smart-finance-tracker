@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../../../core/utils/navigation_helper.dart';
+import '../../../../widgets/main_layout.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
 
@@ -168,6 +169,55 @@ class _AuthPageState extends State<AuthPage>
                     ),
                   );
                 },
+              ),
+              const SizedBox(height: 20),
+              // Skip Login Button (Temporary)
+              Container(
+                width: double.infinity,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: Colors.grey.shade400,
+                    width: 1,
+                  ),
+                ),
+                child: TextButton(
+                  onPressed: () {
+                    // Navigate directly to MainLayout
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MainLayout(initialIndex: 0),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.skip_next_rounded,
+                        color: Colors.grey.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Skip Login (Testing)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const Spacer(flex: 2),
             ],

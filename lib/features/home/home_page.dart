@@ -11,7 +11,7 @@ import '../../widgets/modern_action_button.dart';
 import '../../widgets/chart_placeholder.dart';
 import '../../services/notification_service.dart';
 
-import '../../widgets/dialogs/voice_input_dialog_simple.dart';
+import '../../widgets/dialogs/enhanced_voice_dialog.dart';
 import 'dialogs/qr_scanner_bottom_sheet.dart';
 import 'bloc/expense_bloc.dart';
 import 'bloc/expense_state.dart';
@@ -2018,7 +2018,7 @@ class _HomePageContentState extends State<_HomePageContent>
       barrierDismissible: true,
       builder: (dialogContext) => BlocProvider.value(
         value: _expenseBloc,
-        child: const SimpleVoiceInputDialog(),
+        child: const EnhancedVoiceDialog(),
       ),
     );
   }

@@ -1,72 +1,49 @@
-// Local Storage Service - خدمة التخزين المحلي
-// Handles secure local storage for tokens and user data
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import '../storage/secure_storage.dart';
 
 class LocalStorageService {
-  static final LocalStorageService instance = LocalStorageService._internal();
-  LocalStorageService._internal();
-  factory LocalStorageService() => instance;
-
-  final SecureStorage _storage = SecureStorage();
-
   static const String _tokenKey = 'auth_token';
   static const String _userKey = 'user_data';
   static const String _pendingEmailKey = 'pending_email';
-  static const String _onboardingKey = 'onboarding_complete';
 
-  // Token operations
   Future<void> saveToken(String token) async {
-    await _storage.saveTokens(accessToken: token, refreshToken: '');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
   }
 
   Future<String?> getToken() async {
-    return await _storage.getAccessToken();
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_tokenKey);
   }
 
-  Future<void> clearToken() async {
-    await _storage.clearTokens();
-  }
-
-  // User data operations
   Future<void> saveUser(Map<String, dynamic> userData) async {
-    await _storage.saveUser(userData);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(userData));
   }
 
   Future<Map<String, dynamic>?> getUser() async {
-    return await _storage.getUser();
+    final prefs = await SharedPreferences.getInstance();
+    final userString = prefs.getString(_userKey);
+    if (userString != null) {
+      return jsonDecode(userString) as Map<String, dynamic>;
+    }
+    return null;
   }
 
-  Future<void> clearUser() async {
-    await _storage.clearUser();
-  }
-
-  // Pending email for OTP verification
   Future<void> savePendingEmail(String email) async {
-    await _storage.savePendingEmail(email);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_pendingEmailKey, email);
   }
 
   Future<String?> getPendingEmail() async {
-    return await _storage.getPendingEmail();
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_pendingEmailKey);
   }
 
-  Future<void> clearPendingEmail() async {
-    await _storage.clearPendingEmail();
-  }
-
-  // Onboarding status - using simple key-value storage
-  Future<void> setOnboardingComplete() async {
-    await _storage.saveUser({'onboarding_complete': true});
-  }
-
-  Future<bool> isOnboardingComplete() async {
-    final userData = await _storage.getUser();
-    return userData?['onboarding_complete'] == true;
-  }
-
-  // Clear all data
   Future<void> clearAll() async {
-    await _storage.clearAll();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+    await prefs.remove(_pendingEmailKey);
   }
 }

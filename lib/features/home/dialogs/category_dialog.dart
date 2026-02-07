@@ -26,7 +26,7 @@ class CategoryDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -98,7 +98,7 @@ class CategoryDialog extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    color: Colors.grey.withOpacity(0.3),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -134,7 +134,7 @@ class CategoryDialog extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    color: Colors.grey.withOpacity(0.3),
                     width: 1.5,
                   ),
                   borderRadius: BorderRadius.circular(12),

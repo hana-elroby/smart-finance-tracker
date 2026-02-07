@@ -1,30 +1,65 @@
 import 'package:flutter/material.dart';
 import 'auth_api_service.dart';
-import '../../features/auth/presentation/pages/auth_page.dart';
-import '../../widgets/main_layout.dart';
+import '../routes/app_routes.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _isLoading = true;
+  bool _isAuthenticated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      final isAuth = await AuthApiService.instance.isAuthenticated();
+      setState(() {
+        _isAuthenticated = isAuth;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isAuthenticated = false;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: AuthApiService.instance.initialize(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-        // Check if user is logged in
-        if (AuthApiService.instance.isLoggedIn) {
-          return const MainLayout();
-        }
-
-        // User not logged in → Auth
-        return const AuthPage();
-      },
-    );
+    if (_isAuthenticated) {
+      // Navigate to home
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    } else {
+      // Navigate to auth
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacementNamed(AppRoutes.auth);
+      });
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
   }
 }

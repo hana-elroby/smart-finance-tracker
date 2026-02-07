@@ -18,7 +18,7 @@ class HomeSpendingChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -71,13 +71,13 @@ class HomeSpendingChart extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildVerticalBar(0.68, AppColors.chartBar2),
+                            _buildVerticalBar(0.68, Colors.blue),
                             const SizedBox(width: 12),
-                            _buildVerticalBar(1.0, AppColors.chartBar1),
+                            _buildVerticalBar(1.0, Colors.green),
                             const SizedBox(width: 12),
-                            _buildVerticalBar(0.83, AppColors.chartBar2),
+                            _buildVerticalBar(0.83, Colors.orange),
                             const SizedBox(width: 12),
-                            _buildVerticalBar(0.58, AppColors.chartBar1),
+                            _buildVerticalBar(0.58, Colors.red),
                           ],
                         ),
                         const SizedBox(height: 16),

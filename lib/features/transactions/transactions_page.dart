@@ -17,7 +17,6 @@ class TransactionsPage extends StatefulWidget {
 
 class _TransactionsPageState extends State<TransactionsPage> 
     with PerformanceMonitorMixin {
-  bool _isLoading = true;
 
   @override
   void initState() {
@@ -29,19 +28,8 @@ class _TransactionsPageState extends State<TransactionsPage>
       if (mounted && context.mounted) {
         try {
           context.read<ExpenseBloc>().add(const LoadExpenses());
-          // Simulate loading time
-          Future.delayed(const Duration(milliseconds: 800), () {
-            if (mounted) {
-              setState(() {
-                _isLoading = false;
-              });
-            }
-          });
         } catch (e) {
           print('⚠️ Error loading expenses in TransactionsPage: $e');
-          setState(() {
-            _isLoading = false;
-          });
         }
       }
     });
@@ -61,10 +49,7 @@ class _TransactionsPageState extends State<TransactionsPage>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false, // Remove back button
         title: Text(
           'Transaction',
           style: GoogleFonts.inter(
@@ -75,9 +60,7 @@ class _TransactionsPageState extends State<TransactionsPage>
         ),
         centerTitle: true,
       ),
-      body: _isLoading 
-        ? _buildLoadingState()
-        : BlocBuilder<ExpenseBloc, ExpenseState>(
+      body: BlocBuilder<ExpenseBloc, ExpenseState>(
             builder: (context, state) {
               if (state is ExpenseLoading) {
                 return _buildLoadingState();
@@ -124,64 +107,91 @@ class _TransactionsPageState extends State<TransactionsPage>
   Widget _buildTransactionCard(String name, double amount, DateTime date, bool isVoiceInput) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
+          // Left: Name with voice indicator
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            flex: 3,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        name,
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
+                Flexible(
+                  child: Text(
+                    name,
+                    style: GoogleFonts.inter(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
-                    // Voice indicator icon
-                    if (isVoiceInput) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          Icons.mic_rounded,
-                          size: 14,
-                          color: Color(0xFF3B82F6),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _formatDate(date),
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: Colors.grey[500],
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                // Voice indicator icon
+                if (isVoiceInput) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.mic_rounded,
+                      size: 12,
+                      color: Color(0xFF3B82F6),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-          Text(
-            'EGP${amount.toStringAsFixed(2)}',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
+          
+          const SizedBox(width: 8),
+          
+          // Center: Date
+          Expanded(
+            flex: 3,
+            child: Text(
+              _formatDate(date),
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          
+          const SizedBox(width: 8),
+          
+          // Right: Amount then Currency
+          Expanded(
+            flex: 3,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  amount.toStringAsFixed(2),
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  'EGP',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
           ),
         ],

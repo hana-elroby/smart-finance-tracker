@@ -11,7 +11,7 @@ import '../features/home/bloc/expense_bloc.dart';
 import '../features/reminders/bloc/reminder_bloc.dart';
 import '../features/profile/bloc/user_bloc.dart';
 import '../features/categories/bloc/category_bloc.dart';
-import 'dialogs/voice_input_dialog_api_direct.dart';
+import 'dialogs/simple_voice_dialog.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -44,7 +44,10 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
+    _pageController = PageController(
+      initialPage: widget.initialIndex,
+      keepPage: true, // Keep pages in memory
+    );
   }
 
   @override
@@ -68,10 +71,11 @@ class _MainLayoutState extends State<MainLayout> {
         backgroundColor: const Color(0xFFF1F5F9),
         body: Stack(
           children: [
-            PageView(
+            PageView.builder(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
-              children: _pages,
+              itemCount: _pages.length,
+              itemBuilder: (context, index) => _pages[index],
             ),
             // Floating options overlay
             if (_showFloatingOptions && _isHomePage) _buildFloatingOptions(),
@@ -288,11 +292,7 @@ class _MainLayoutState extends State<MainLayout> {
       _selectedIndex = pageIndex;
     });
 
-    _pageController.animateToPage(
-      pageIndex,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _pageController.jumpToPage(pageIndex); // Use jumpToPage instead of animateToPage for faster navigation
   }
 
   /// Navigation handler for other pages (4 items without Plus)
@@ -303,11 +303,7 @@ class _MainLayoutState extends State<MainLayout> {
       _selectedIndex = index;
     });
 
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    _pageController.jumpToPage(index); // Use jumpToPage for instant navigation
   }
 
   Widget _buildNavIcon(
@@ -477,11 +473,14 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _showVoiceInput() async {
-    final result = await showVoiceInputDialogApiDirect(context);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => const SimpleVoiceDialog(),
+    );
     if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Added: $result'),
+          content: Text('تم الإضافة: $result'),
           backgroundColor: const Color(0xFF10B981),
         ),
       );

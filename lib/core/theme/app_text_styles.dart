@@ -87,19 +87,19 @@ class AppTextStyles {
   static TextStyle get buttonLarge => GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w700,
-    color: AppColors.white,
+    color: Colors.white,
   );
 
   static TextStyle get buttonMedium => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w600,
-    color: AppColors.white,
+    color: Colors.white,
   );
 
   static TextStyle get buttonSmall => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w600,
-    color: AppColors.white,
+    color: Colors.white,
   );
 
   // Caption

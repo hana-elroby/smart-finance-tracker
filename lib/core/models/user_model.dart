@@ -1,129 +1,51 @@
-// User Model - نموذج المستخدم
-// Represents user data in the app
-
-import 'package:equatable/equatable.dart';
-
-class UserModel extends Equatable {
+class UserModel {
   final String uid;
   final String email;
-  final String? displayName;
-  final String? photoUrl;
+  final String displayName;
   final String? phoneNumber;
-  final DateTime? dateOfBirth;
-  final DateTime createdAt;
-  final DateTime? lastLoginAt;
-  final double? monthlyBudget;
-  final String? currency;
+  final String createdAt;
 
-  const UserModel({
+  UserModel({
     required this.uid,
     required this.email,
-    this.displayName,
-    this.photoUrl,
+    required this.displayName,
     this.phoneNumber,
-    this.dateOfBirth,
     required this.createdAt,
-    this.lastLoginAt,
-    this.monthlyBudget,
-    this.currency = 'EGP',
   });
 
-  // Copy with method
-  UserModel copyWith({
-    String? uid,
-    String? email,
-    String? displayName,
-    String? photoUrl,
-    String? phoneNumber,
-    DateTime? dateOfBirth,
-    DateTime? createdAt,
-    DateTime? lastLoginAt,
-    double? monthlyBudget,
-    String? currency,
-  }) {
+  factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      uid: uid ?? this.uid,
-      email: email ?? this.email,
-      displayName: displayName ?? this.displayName,
-      photoUrl: photoUrl ?? this.photoUrl,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      createdAt: createdAt ?? this.createdAt,
-      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
-      monthlyBudget: monthlyBudget ?? this.monthlyBudget,
-      currency: currency ?? this.currency,
+      uid: map['uid'] ?? '',
+      email: map['email'] ?? '',
+      displayName: map['displayName'] ?? '',
+      phoneNumber: map['phoneNumber'],
+      createdAt: map['createdAt'] ?? DateTime.now().toIso8601String(),
     );
   }
 
-  // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
       'email': email,
       'displayName': displayName,
-      'photoUrl': photoUrl,
       'phoneNumber': phoneNumber,
-      'dateOfBirth': dateOfBirth?.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-      'lastLoginAt': lastLoginAt?.toIso8601String(),
-      'monthlyBudget': monthlyBudget,
-      'currency': currency,
+      'createdAt': createdAt,
     };
   }
 
-  // Create from Map
-  factory UserModel.fromMap(Map<String, dynamic> map) {
+  UserModel copyWith({
+    String? uid,
+    String? email,
+    String? displayName,
+    String? phoneNumber,
+    String? createdAt,
+  }) {
     return UserModel(
-      uid: map['uid'] ?? '',
-      email: map['email'] ?? '',
-      displayName: map['displayName'],
-      photoUrl: map['photoUrl'],
-      phoneNumber: map['phoneNumber'],
-      dateOfBirth: map['dateOfBirth'] != null
-          ? DateTime.tryParse(map['dateOfBirth'])
-          : null,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : DateTime.now(),
-      lastLoginAt: map['lastLoginAt'] != null
-          ? DateTime.tryParse(map['lastLoginAt'])
-          : null,
-      monthlyBudget: (map['monthlyBudget'] as num?)?.toDouble(),
-      currency: map['currency'] ?? 'EGP',
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      displayName: displayName ?? this.displayName,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
-
-  // Get initials for avatar
-  String get initials {
-    if (displayName == null || displayName!.isEmpty) {
-      return email.substring(0, 1).toUpperCase();
-    }
-    final names = displayName!.split(' ');
-    if (names.length >= 2) {
-      return '${names[0][0]}${names[1][0]}'.toUpperCase();
-    }
-    return displayName!.substring(0, 1).toUpperCase();
-  }
-
-  // Get first name
-  String get firstName {
-    if (displayName == null || displayName!.isEmpty) {
-      return email.split('@')[0];
-    }
-    return displayName!.split(' ')[0];
-  }
-
-  @override
-  List<Object?> get props => [
-        uid,
-        email,
-        displayName,
-        photoUrl,
-        phoneNumber,
-        dateOfBirth,
-        createdAt,
-        lastLoginAt,
-        monthlyBudget,
-        currency,
-      ];
 }

@@ -11,7 +11,7 @@ class SuccessDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -21,7 +21,7 @@ class SuccessDialog extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.2),
+                color: AppColors.success.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

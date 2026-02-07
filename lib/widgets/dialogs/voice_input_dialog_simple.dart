@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import '../../services/voice_service_improved.dart';
+import '../../services/voice_service.dart';
 import '../../services/voice_api_service.dart';
 import '../../features/home/bloc/expense_bloc.dart';
 import '../../features/home/bloc/expense_event.dart';
@@ -46,7 +46,7 @@ class _SimpleVoiceInputDialogState extends State<SimpleVoiceInputDialog>
   String _statusMessage = '';
   double _soundLevel = 0.0;
   
-  final ImprovedVoiceService _voiceService = ImprovedVoiceService();
+  final VoiceService _voiceService = VoiceService();
   final VoiceApiService _voiceApiService = VoiceApiService();
   final TextEditingController _textController = TextEditingController();
   
