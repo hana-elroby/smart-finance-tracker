@@ -9,6 +9,7 @@ import '../items/items_page.dart';
 import '../../widgets/chart_placeholder.dart';
 import '../../widgets/dialogs/add_category_dialog.dart';
 import 'bloc/category_bloc.dart';
+import 'category_data_store.dart';
 
 /// Categories Page - عرض الفئات مع Pie Chart
 /// يعرض pie chart ديناميك وقائمة الفئات
@@ -405,6 +406,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
+                  flex: 3,
                   child: Text(
                     entry.key,
                     style: GoogleFonts.inter(
@@ -413,8 +415,10 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                       color: const Color(0xFF374151),
                     ),
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
+                const SizedBox(width: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -430,7 +434,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Text(
                   '$percentage%',
                   style: GoogleFonts.inter(
@@ -439,7 +443,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                     color: const Color(0xFF64748B),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
                 Text(
                   '${entry.value.toInt()} EGP',
                   style: GoogleFonts.inter(
@@ -536,16 +540,45 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                       );
                     }),
 
-                    // Custom Categories (can be deleted)
+                    // Custom Categories (can be deleted with swipe)
                     ...customCategories.map((category) {
                       final amount = categoryTotals[category['name']] ?? 0;
-                      return _buildCategoryItem(
-                        category['name'] as String,
-                        category['icon'] as IconData,
-                        const Color(0xFF1976D2),
-                        amount,
-                        isDefault: false,
-                        onDelete: () => _deleteCategory(category['name'] as String),
+                      return Dismissible(
+                        key: Key(category['name'] as String),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(25),
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                        onDismissed: (direction) {
+                          final categoryName = category['name'] as String;
+                          _deleteCategory(categoryName);
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('$categoryName deleted'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: _buildCategoryItem(
+                          category['name'] as String,
+                          category['icon'] as IconData,
+                          const Color(0xFF1976D2),
+                          amount,
+                          isDefault: false,
+                          onDelete: () => _deleteCategory(category['name'] as String),
+                        ),
                       );
                     }),
                   ],

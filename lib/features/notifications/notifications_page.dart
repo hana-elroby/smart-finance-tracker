@@ -41,21 +41,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
               onSelected: (value) {
                 if (value == 'clear') {
                   _showClearDialog();
-                } else if (value == 'test') {
-                  _sendTestNotification();
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'test',
-                  child: Row(
-                    children: [
-                      Icon(Icons.notifications_active, size: 20),
-                      SizedBox(width: 8),
-                      Text('Test Notification'),
-                    ],
-                  ),
-                ),
                 const PopupMenuItem(
                   value: 'clear',
                   child: Row(
@@ -67,12 +55,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   ),
                 ),
               ],
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.notifications_active, color: Color(0xFF64748B)),
-              onPressed: _sendTestNotification,
-              tooltip: 'Send Test Notification',
             ),
         ],
       ),
@@ -116,19 +98,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: _sendTestNotification,
-            icon: const Icon(Icons.notifications_active, size: 20),
-            label: const Text('Send Test Notification'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0D5DB8),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
         ],
       ),
     );

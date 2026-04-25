@@ -9,6 +9,16 @@ class ResponsiveUtils {
   static const double tabletBreakpoint = 900;
   static const double desktopBreakpoint = 1200;
 
+  // Get screen width
+  static double screenWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width;
+  }
+
+  // Get screen height
+  static double screenHeight(BuildContext context) {
+    return MediaQuery.of(context).size.height;
+  }
+
   // Get screen type
   static ScreenType getScreenType(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -37,46 +47,49 @@ class ResponsiveUtils {
     return getScreenType(context) == ScreenType.desktop;
   }
 
+  // Get responsive value based on screen width percentage
+  static double wp(BuildContext context, double percentage) {
+    return screenWidth(context) * (percentage / 100);
+  }
+
+  // Get responsive value based on screen height percentage
+  static double hp(BuildContext context, double percentage) {
+    return screenHeight(context) * (percentage / 100);
+  }
+
   // Get responsive padding
-  static EdgeInsets getResponsivePadding(BuildContext context) {
-    final screenType = getScreenType(context);
+  static EdgeInsets getResponsivePadding(BuildContext context, {
+    double? all,
+    double? horizontal,
+    double? vertical,
+    double? top,
+    double? bottom,
+    double? left,
+    double? right,
+  }) {
+    final width = screenWidth(context);
+    final scale = (width / 375).clamp(0.8, 1.5); // Base width 375 (iPhone)
     
-    switch (screenType) {
-      case ScreenType.mobile:
-        return const EdgeInsets.all(16);
-      case ScreenType.tablet:
-        return const EdgeInsets.all(24);
-      case ScreenType.desktop:
-        return const EdgeInsets.all(32);
-    }
+    return EdgeInsets.only(
+      top: (top ?? vertical ?? all ?? 0) * scale,
+      bottom: (bottom ?? vertical ?? all ?? 0) * scale,
+      left: (left ?? horizontal ?? all ?? 0) * scale,
+      right: (right ?? horizontal ?? all ?? 0) * scale,
+    );
   }
 
   // Get responsive font size
   static double getResponsiveFontSize(BuildContext context, double baseFontSize) {
-    final screenType = getScreenType(context);
-    
-    switch (screenType) {
-      case ScreenType.mobile:
-        return baseFontSize * 0.9;
-      case ScreenType.tablet:
-        return baseFontSize;
-      case ScreenType.desktop:
-        return baseFontSize * 1.1;
-    }
+    final width = screenWidth(context);
+    final scale = (width / 375).clamp(0.85, 1.3); // Prevent too small or too large text
+    return baseFontSize * scale;
   }
 
   // Get responsive spacing
   static double getResponsiveSpacing(BuildContext context, double baseSpacing) {
-    final screenType = getScreenType(context);
-    
-    switch (screenType) {
-      case ScreenType.mobile:
-        return baseSpacing * 0.8;
-      case ScreenType.tablet:
-        return baseSpacing;
-      case ScreenType.desktop:
-        return baseSpacing * 1.2;
-    }
+    final width = screenWidth(context);
+    final scale = (width / 375).clamp(0.8, 1.5);
+    return baseSpacing * scale;
   }
 
   // Get responsive width
@@ -93,44 +106,21 @@ class ResponsiveUtils {
 
   // Get responsive icon size
   static double getResponsiveIconSize(BuildContext context, double baseSize) {
-    final screenType = getScreenType(context);
-    
-    switch (screenType) {
-      case ScreenType.mobile:
-        return baseSize;
-      case ScreenType.tablet:
-        return baseSize * 1.2;
-      case ScreenType.desktop:
-        return baseSize * 1.4;
-    }
+    final width = screenWidth(context);
+    final scale = (width / 375).clamp(0.85, 1.4);
+    return baseSize * scale;
   }
 
   // Get responsive border radius
   static double getResponsiveBorderRadius(BuildContext context, double baseRadius) {
-    final screenType = getScreenType(context);
-    
-    switch (screenType) {
-      case ScreenType.mobile:
-        return baseRadius;
-      case ScreenType.tablet:
-        return baseRadius * 1.1;
-      case ScreenType.desktop:
-        return baseRadius * 1.2;
-    }
+    final width = screenWidth(context);
+    final scale = (width / 375).clamp(0.9, 1.3);
+    return baseRadius * scale;
   }
 
   // Get responsive card elevation
   static double getResponsiveElevation(BuildContext context, double baseElevation) {
-    final screenType = getScreenType(context);
-    
-    switch (screenType) {
-      case ScreenType.mobile:
-        return baseElevation;
-      case ScreenType.tablet:
-        return baseElevation * 1.2;
-      case ScreenType.desktop:
-        return baseElevation * 1.5;
-    }
+    return baseElevation; // Keep elevation consistent
   }
 
   // Get responsive grid count
@@ -172,6 +162,30 @@ class ResponsiveUtils {
       height: size.height,
       devicePixelRatio: devicePixelRatio,
       screenType: getScreenType(context),
+    );
+  }
+
+  // Responsive Container - prevents overflow
+  static Widget responsiveContainer({
+    required BuildContext context,
+    required Widget child,
+    double? width,
+    double? height,
+    EdgeInsets? padding,
+    EdgeInsets? margin,
+    Decoration? decoration,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      padding: padding,
+      margin: margin,
+      decoration: decoration,
+      constraints: BoxConstraints(
+        maxWidth: screenWidth(context),
+        maxHeight: screenHeight(context),
+      ),
+      child: child,
     );
   }
 }

@@ -776,16 +776,23 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           ),
           const SizedBox(width: 12),
           // Name on left
-          Text(
-            name,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF1E293B),
+          Expanded(
+            flex: 3,
+            child: Text(
+              name,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1E293B),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 8),
           // Date in center
           Expanded(
+            flex: 3,
             child: Center(
               child: Text(
                 dateOnly,
@@ -794,9 +801,12 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                   fontWeight: FontWeight.w500,
                   color: const Color(0xFF64748B),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
+          const SizedBox(width: 8),
           // Amount on the right with currency
           Text(
             '${amount.toStringAsFixed(0)} EGP',

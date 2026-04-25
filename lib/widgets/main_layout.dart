@@ -60,32 +60,24 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => ExpenseBloc()),
-        BlocProvider(create: (context) => ReminderBloc()),
-        BlocProvider(create: (context) => UserBloc()),
-        BlocProvider(create: (context) => CategoryBloc()),
-      ],
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF1F5F9),
-        body: Stack(
-          children: [
-            PageView.builder(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _pages.length,
-              itemBuilder: (context, index) => _pages[index],
-            ),
-            // Floating options overlay
-            if (_showFloatingOptions && _isHomePage) _buildFloatingOptions(),
-          ],
-        ),
-        extendBody: true,
-        bottomNavigationBar: _isHomePage
-            ? _buildCurvedNavWithPlus()
-            : _buildCurvedNavWithoutPlus(),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF1F5F9),
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _pages.length,
+            itemBuilder: (context, index) => _pages[index],
+          ),
+          // Floating options overlay
+          if (_showFloatingOptions && _isHomePage) _buildFloatingOptions(),
+        ],
       ),
+      extendBody: true,
+      bottomNavigationBar: _isHomePage
+          ? _buildCurvedNavWithPlus()
+          : _buildCurvedNavWithoutPlus(),
     );
   }
 
@@ -473,9 +465,15 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _showVoiceInput() async {
+    final expenseBloc = context.read<ExpenseBloc>();
+    final categoryBloc = context.read<CategoryBloc>();
+    
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => const SimpleVoiceDialog(),
+      builder: (context) => SimpleVoiceDialog(
+        expenseBloc: expenseBloc,
+        categoryBloc: categoryBloc,
+      ),
     );
     if (result != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

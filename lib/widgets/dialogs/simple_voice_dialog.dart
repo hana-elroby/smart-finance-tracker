@@ -9,9 +9,18 @@ import '../../services/voice_api_service.dart';
 import '../../features/home/bloc/expense_bloc.dart';
 import '../../features/home/bloc/expense_event.dart';
 import '../../core/models/expense.dart';
+import '../../features/categories/bloc/category_bloc.dart';
+import '../../features/categories/category_data_store.dart';
 
 class SimpleVoiceDialog extends StatefulWidget {
-  const SimpleVoiceDialog({super.key});
+  final ExpenseBloc expenseBloc;
+  final CategoryBloc categoryBloc;
+  
+  const SimpleVoiceDialog({
+    super.key,
+    required this.expenseBloc,
+    required this.categoryBloc,
+  });
 
   @override
   State<SimpleVoiceDialog> createState() => _SimpleVoiceDialogState();
@@ -136,7 +145,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
         if (transactionsList != null && transactionsList.isNotEmpty) {
           _transactions = transactionsList.map((t) {
             final amount = (t['amount'] as num?)?.toDouble() ?? 0.0;
-            final category = _mapCategoryToArabic(t['category'] as String? ?? 'other');
+            // Keep category as-is from server (don't translate)
+            final category = t['category'] as String? ?? 'Other';
             final item = t['item'] as String? ?? '';
             final merchant = t['merchant'] as String? ?? '';
             final description = item.isNotEmpty ? item : merchant;
@@ -145,7 +155,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
             
             return {
               'amount': amount,
-              'category': category,
+              'category': category, // Keep original from server
               'description': description,
               'original': t,
             };
@@ -190,7 +200,93 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
     return map[category.toLowerCase()] ?? 'أخرى';
   }
 
-  void _saveAllTransactions() {
+  IconData _getCategoryIconData(String category) {
+    switch (category) {
+      case 'طعام':
+        return Icons.restaurant;
+      case 'مواصلات':
+        return Icons.directions_car;
+      case 'تسوق':
+        return Icons.shopping_bag;
+      case 'صحة':
+        return Icons.medical_services;
+      case 'تعليم':
+        return Icons.school;
+      case 'ترفيه':
+        return Icons.movie;
+      case 'فواتير':
+        return Icons.receipt;
+      default:
+        return Icons.category;
+    }
+  }
+
+  String _normalizeCategoryName(String categoryName) {
+    // Remove special characters and extra spaces
+    return categoryName
+        .toLowerCase()
+        .replaceAll(RegExp(r'[&\-_\s]+'), ' ')
+        .trim();
+  }
+
+  String? _findMatchingCategory(String serverCategory) {
+    final dataStore = CategoryDataStore();
+    final normalizedServer = _normalizeCategoryName(serverCategory);
+    
+    // Check exact match first
+    for (var cat in dataStore.allCategories) {
+      if (_normalizeCategoryName(cat.name) == normalizedServer) {
+        return cat.name;
+      }
+    }
+    
+    // Check if server category contains existing category name
+    for (var cat in dataStore.allCategories) {
+      final normalizedExisting = _normalizeCategoryName(cat.name);
+      if (normalizedServer.contains(normalizedExisting) || 
+          normalizedExisting.contains(normalizedServer)) {
+        return cat.name; // Use existing category
+      }
+    }
+    
+    // No match found, return original
+    return null;
+  }
+
+  Future<void> _ensureCategoryExists(String categoryName) async {
+    final dataStore = CategoryDataStore();
+    
+    // Try to find matching category first
+    final matchingCategory = _findMatchingCategory(categoryName);
+    if (matchingCategory != null) {
+      print('✅ Found matching category: $matchingCategory for $categoryName');
+      return; // Use existing category
+    }
+    
+    // Check if exact category exists
+    final existingCategory = dataStore.findCategory(categoryName);
+    
+    if (existingCategory == null) {
+      print('📝 Creating new category: $categoryName');
+      
+      final icon = _getCategoryIconData(categoryName);
+      widget.categoryBloc.add(AddCategory(name: categoryName, icon: icon));
+      
+      final newCategory = CategoryData(
+        name: categoryName,
+        icon: icon,
+        color: const Color(0xFF667eea),
+        isMain: false,
+      );
+      dataStore.addCustomCategory(newCategory);
+      
+      print('✅ Category created: $categoryName');
+    } else {
+      print('✅ Category already exists: $categoryName');
+    }
+  }
+
+  void _saveAllTransactions() async {
     if (_transactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('لا توجد معاملات للحفظ')),
@@ -198,19 +294,47 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
       return;
     }
     
-    final expenseBloc = context.read<ExpenseBloc>();
+    final dataStore = CategoryDataStore();
     
-    for (final transaction in _transactions) {
+    // First, ensure all categories exist and get final category names
+    final Map<int, String> finalCategoryNames = {};
+    for (int i = 0; i < _transactions.length; i++) {
+      final serverCategory = _transactions[i]['category'] as String;
+      final matchingCategory = _findMatchingCategory(serverCategory);
+      final finalCategory = matchingCategory ?? serverCategory;
+      
+      finalCategoryNames[i] = finalCategory;
+      await _ensureCategoryExists(finalCategory);
+    }
+    
+    // Then add all transactions and items to categories
+    for (int i = 0; i < _transactions.length; i++) {
+      final transaction = _transactions[i];
+      final finalCategory = finalCategoryNames[i]!;
+      
+      // Add expense
       final expense = Expense(
-        id: DateTime.now().millisecondsSinceEpoch.toString() + '_${_transactions.indexOf(transaction)}',
+        id: DateTime.now().millisecondsSinceEpoch.toString() + '_$i',
         amount: transaction['amount'] as double,
-        category: transaction['category'] as String,
+        category: finalCategory,
         title: transaction['description'] as String,
         date: DateTime.now(),
         isVoiceInput: true,
       );
       
-      expenseBloc.add(AddExpense(expense));
+      widget.expenseBloc.add(AddExpense(expense));
+      
+      // Add item to category
+      final categoryItem = CategoryItem(
+        name: transaction['description'] as String,
+        quantity: 1,
+        unitPrice: transaction['amount'] as double,
+        date: DateTime.now(),
+        source: 'voice',
+      );
+      
+      dataStore.addItemToCategory(finalCategory, categoryItem);
+      print('✅ Added item "${categoryItem.name}" to category "$finalCategory"');
     }
     
     Navigator.of(context).pop();
@@ -306,7 +430,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                   ),
                 ),
             ] else ...[
-              // Show transcription
+              // Show transcription - EDITABLE
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -326,13 +450,41 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                         color: Colors.blue[900],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _recognizedText,
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: TextEditingController(text: _recognizedText),
+                      maxLines: 3,
                       style: GoogleFonts.cairo(
                         fontSize: 14,
                         color: Colors.black87,
                       ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                        hintText: 'عدّل النص هنا...',
+                        hintStyle: GoogleFonts.cairo(
+                          fontSize: 14,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _recognizedText = value;
+                        });
+                      },
                     ),
                   ],
                 ),
@@ -363,56 +515,138 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey[300]!),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Icon based on category
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF667eea).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              _getCategoryIcon(transaction['category'] as String),
-                              color: const Color(0xFF667eea),
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          
-                          // Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  transaction['description'] as String,
+                          Row(
+                            children: [
+                              // Icon based on category
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF667eea).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  _getCategoryIcon(transaction['category'] as String),
+                                  color: const Color(0xFF667eea),
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              
+                              // Editable category field
+                              Expanded(
+                                child: TextField(
+                                  controller: TextEditingController(
+                                    text: transaction['category'] as String,
+                                  ),
+                                  maxLines: 1,
                                   style: GoogleFonts.cairo(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF667eea),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  transaction['category'] as String,
-                                  style: GoogleFonts.cairo(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFF667eea).withValues(alpha: 0.05),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: const Color(0xFF667eea).withValues(alpha: 0.2)),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: const Color(0xFF667eea).withValues(alpha: 0.2)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF667eea),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    hintText: 'الفئة...',
+                                    hintStyle: GoogleFonts.cairo(
+                                      fontSize: 14,
+                                      color: Colors.grey[400],
+                                    ),
+                                    isDense: true,
                                   ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _transactions[index]['category'] = value;
+                                    });
+                                  },
                                 ),
-                              ],
-                            ),
+                              ),
+                              
+                              const SizedBox(width: 12),
+                              
+                              // Amount
+                              Text(
+                                '${transaction['amount']} جنيه',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFFFF6B6B),
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 10),
                           
-                          // Amount
-                          Text(
-                            '${transaction['amount']} جنيه',
-                            style: GoogleFonts.cairo(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFFFF6B6B),
+                          // Editable description field
+                          TextField(
+                            controller: TextEditingController(
+                              text: transaction['description'] as String,
                             ),
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              color: Colors.black87,
+                            ),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: Color(0xFF667eea),
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              hintText: 'وصف المعاملة...',
+                              hintStyle: GoogleFonts.cairo(
+                                fontSize: 14,
+                                color: Colors.grey[400],
+                              ),
+                              prefixIcon: Icon(
+                                Icons.edit,
+                                size: 18,
+                                color: Colors.grey[400],
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _transactions[index]['description'] = value;
+                              });
+                            },
                           ),
                         ],
                       ),
@@ -468,23 +702,25 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
   }
 
   IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'طعام':
-        return Icons.restaurant;
-      case 'مواصلات':
-        return Icons.directions_car;
-      case 'تسوق':
-        return Icons.shopping_bag;
-      case 'صحة':
-        return Icons.medical_services;
-      case 'تعليم':
-        return Icons.school;
-      case 'ترفيه':
-        return Icons.movie;
-      case 'فواتير':
-        return Icons.receipt;
-      default:
-        return Icons.category;
+    final lowerCategory = category.toLowerCase();
+    
+    // Support both English and Arabic
+    if (lowerCategory.contains('food') || lowerCategory.contains('طعام')) {
+      return Icons.restaurant;
+    } else if (lowerCategory.contains('transport') || lowerCategory.contains('مواصلات')) {
+      return Icons.directions_car;
+    } else if (lowerCategory.contains('shopping') || lowerCategory.contains('تسوق')) {
+      return Icons.shopping_bag;
+    } else if (lowerCategory.contains('health') || lowerCategory.contains('صحة')) {
+      return Icons.medical_services;
+    } else if (lowerCategory.contains('education') || lowerCategory.contains('تعليم')) {
+      return Icons.school;
+    } else if (lowerCategory.contains('entertainment') || lowerCategory.contains('ترفيه')) {
+      return Icons.movie;
+    } else if (lowerCategory.contains('bill') || lowerCategory.contains('فواتير')) {
+      return Icons.receipt;
+    } else {
+      return Icons.category;
     }
   }
 }

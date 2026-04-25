@@ -121,16 +121,19 @@ class _ModernActionButtonState extends State<ModernActionButton>
                             ),
                           ),
                           const SizedBox(width: 10),
-                          // النص بجانب الأيقونة
-                          Text(
-                            widget.text,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.2,
+                          // النص بجانب الأيقونة - Flexible to prevent overflow
+                          Flexible(
+                            child: Text(
+                              widget.text,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),

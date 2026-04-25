@@ -76,17 +76,55 @@ class _TransactionsPageState extends State<TransactionsPage>
                 
                 return ListView.builder(
                   padding: const EdgeInsets.all(20),
+                  physics: const AlwaysScrollableScrollPhysics(), // Always scrollable
                   itemCount: expenses.length,
                   itemBuilder: (context, index) {
                     final expense = expenses[index];
-                    return _buildTransactionCard(
-                      expense.title,
-                      expense.amount,
-                      expense.date,
-                  expense.isVoiceInput, // Pass voice input flag
+                    return Dismissible(
+                      key: Key(expense.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.centerRight,
+                        child: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                      onDismissed: (direction) {
+                        // Delete the expense
+                        context.read<ExpenseBloc>().add(DeleteExpense(expense.id));
+                        
+                        // Show snackbar
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${expense.title} deleted'),
+                            duration: const Duration(seconds: 2),
+                            action: SnackBarAction(
+                              label: 'Undo',
+                              onPressed: () {
+                                // Add back the expense
+                                context.read<ExpenseBloc>().add(AddExpense(expense));
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: _buildTransactionCard(
+                        expense.title,
+                        expense.amount,
+                        expense.date,
+                        expense.isVoiceInput,
+                      ),
+                    );
+                  },
                 );
-              },
-            );
           }
           
           return _buildEmptyState();
@@ -173,20 +211,23 @@ class _TransactionsPageState extends State<TransactionsPage>
             flex: 3,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  amount.toStringAsFixed(2),
-                  style: GoogleFonts.inter(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
+                Flexible(
+                  child: Text(
+                    amount.toStringAsFixed(2),
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                const SizedBox(width: 3),
                 Text(
                   'EGP',
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[600],
                   ),

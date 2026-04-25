@@ -87,6 +87,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   drift_dev: ^2.20.1
   build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.10
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -104,7 +106,12 @@ flutter:
     - assets/Money.json
     - assets/microphone.json
     - assets/Scan a receipt.json
-    - assets/images/saveletlogo.png
+    - assets/images/image.png
+    - assets/images/anal_.png
+    - assets/images/analysis_icon.jpg
+    - assets/images/analysis_photo.png
+    - assets/images/2x/savlet_logo.png
+    - assets/images/2x/savlet_logo@2x.png
     - assets/images/bluelogosavelet.png
     - assets/images/GoogleIcon.png
     - assets/images/shoppingicon.png
@@ -139,3 +146,23 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+
+# Launcher Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/analysis_photo.png"
+  adaptive_icon_background: "#D5D7DA"
+  adaptive_icon_foreground: "assets/images/analysis_photo.png"
+
+
+# Native Splash Screen Configuration
+flutter_native_splash:
+  color: "#D5D7DA"
+  image: "assets/images/analysis_photo.png"
+  android: true
+  ios: true
+  android_12:
+    color: "#D5D7DA"
+    image: "assets/images/analysis_photo.png"
