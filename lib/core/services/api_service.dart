@@ -21,11 +21,12 @@ class ApiService {
 
   void setToken(String token) {
     _token = token;
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+    _dio.options.headers['token'] = token;
   }
 
   void clearToken() {
     _token = null;
+    _dio.options.headers.remove('token');
     _dio.options.headers.remove('Authorization');
   }
 

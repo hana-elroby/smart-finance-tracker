@@ -60,8 +60,19 @@ class CategoryData {
 class CategoryDataStore {
   static final CategoryDataStore _instance = CategoryDataStore._internal();
   factory CategoryDataStore() => _instance;
+  
+  bool _initialized = false;
+  bool get isInitialized => _initialized;
+  
   CategoryDataStore._internal() {
-    _loadData();
+    _loadData().then((_) => _initialized = true);
+  }
+
+  Future<void> ensureInitialized() async {
+    if (!_initialized) {
+      await _loadData();
+      _initialized = true;
+    }
   }
 
   final List<CategoryData> _mainCategories = [];

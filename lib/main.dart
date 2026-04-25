@@ -18,6 +18,7 @@ import 'features/home/bloc/expense_bloc.dart';
 import 'features/reminders/bloc/reminder_bloc.dart';
 import 'features/profile/bloc/user_bloc.dart';
 import 'features/categories/bloc/category_bloc.dart';
+import 'features/transactions/bloc/transaction_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -95,6 +96,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (context) => ReminderBloc()),
         BlocProvider(create: (context) => UserBloc()),
         BlocProvider(create: (context) => CategoryBloc()),
+        BlocProvider(create: (context) => TransactionBloc()),
       ],
       child: MaterialApp(
         title: 'Smart Finance Tracker',

@@ -1,47 +1,79 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import '../../core/config/api_config.dart';
+import '../../core/services/auth_api_service.dart';
 
-class OffersPage extends StatelessWidget {
+class OffersPage extends StatefulWidget {
   const OffersPage({super.key});
 
   @override
+  State<OffersPage> createState() => _OffersPageState();
+}
+
+class _OffersPageState extends State<OffersPage> {
+  List<Map<String, dynamic>> _products = [];
+  bool _isLoading = true;
+  List<bool> _saved = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOffers();
+  }
+
+  Future<void> _loadOffers() async {
+    try {
+      final userId = AuthApiService.instance.currentUser?.uid;
+      if (userId == null || userId.isEmpty) { _loadDummy(); return; }
+      final dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
+      final token = await AuthApiService.instance.getToken();
+      if (token != null) dio.options.headers['token'] = token;
+      final response = await dio.get('/api/offers', queryParameters: {'userId': userId});
+      if (response.data['success'] == true) {
+        final products = List<Map<String, dynamic>>.from(response.data['products'] ?? []);
+        setState(() { _products = products; _saved = List.filled(products.length, false); _isLoading = false; });
+        return;
+      }
+    } catch (_) {}
+    _loadDummy();
+  }
+
+  void _loadDummy() {
+    final dummy = [
+      {'name': 'Amazfit Bip 5 Smart Watch', 'price': 'EGP 3,499', 'oldPrice': 'EGP 6,399', 'discount': '-35%', 'rating': '4.5', 'reviews': '2,489', 'image': Icons.watch, 'url': 'https://www.amazon.eg'},
+      {'name': 'Apple AirPods Pro', 'price': 'EGP 6,799', 'oldPrice': 'EGP 8,499', 'discount': '-30%', 'rating': '4.7', 'reviews': '18,903', 'image': Icons.headphones, 'url': 'https://www.amazon.eg'},
+      {'name': 'Samsonite Laptop Backpack', 'price': 'EGP 1,259', 'oldPrice': 'EGP 1,299', 'discount': '-30%', 'rating': '4.4', 'reviews': '1,203', 'image': Icons.backpack, 'url': 'https://www.amazon.eg'},
+      {'name': 'Samsung Galaxy Tab A9', 'price': 'EGP 8,999', 'oldPrice': 'EGP 12,999', 'discount': '-31%', 'rating': '4.6', 'reviews': '5,120', 'image': Icons.tablet, 'url': 'https://www.amazon.eg'},
+      {'name': 'Wireless Keyboard & Mouse', 'price': 'EGP 599', 'oldPrice': 'EGP 899', 'discount': '-33%', 'rating': '4.3', 'reviews': '3,400', 'image': Icons.keyboard, 'url': 'https://www.amazon.eg'},
+      {'name': 'Portable Power Bank 20000mAh', 'price': 'EGP 449', 'oldPrice': 'EGP 699', 'discount': '-36%', 'rating': '4.5', 'reviews': '8,210', 'image': Icons.battery_charging_full, 'url': 'https://www.amazon.eg'},
+      {'name': 'Bluetooth Speaker JBL', 'price': 'EGP 1,899', 'oldPrice': 'EGP 2,799', 'discount': '-32%', 'rating': '4.8', 'reviews': '12,500', 'image': Icons.speaker, 'url': 'https://www.amazon.eg'},
+      {'name': 'Running Shoes Nike', 'price': 'EGP 2,199', 'oldPrice': 'EGP 3,499', 'discount': '-37%', 'rating': '4.6', 'reviews': '6,780', 'image': Icons.directions_run, 'url': 'https://www.amazon.eg'},
+    ];
+    setState(() { _products = dummy; _saved = List.filled(dummy.length, false); _isLoading = false; });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF0F4FF),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4FF),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Text(
-                'Special Offers',
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0D5DB8),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Exclusive deals just for you',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF6B7280),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Offers List
-              ...List.generate(6, (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildOfferCard(context, index),
-              )),
-              
-              const SizedBox(height: 80), // Space for bottom nav
+              _buildHeader(),
+              _buildBanner(),
+              _buildRecommendedSection(),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -49,392 +81,322 @@ class OffersPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOfferCard(BuildContext context, int index) {
-    final offers = [
-      {
-        'title': 'Carrefour',
-        'subtitle': 'Up to 50% off on groceries',
-        'discount': '50%',
-        'validUntil': 'Valid until Dec 25',
-        'image': 'https://images.unsplash.com/photo-1604719312566-8908a0b3e7e0?w=400',
-        'gradient': [const Color(0xFF1478E0), const Color(0xFF0D5DB8)],
-        'tag': 'HOT DEAL',
-      },
-      {
-        'title': 'Amazon',
-        'subtitle': 'Electronics & gadgets sale',
-        'discount': '30%',
-        'validUntil': 'Valid until Dec 31',
-        'image': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
-        'gradient': [const Color(0xFFFF9900), const Color(0xFFFF6600)],
-        'tag': 'LIMITED',
-      },
-      {
-        'title': 'Noon',
-        'subtitle': 'Fashion & lifestyle deals',
-        'discount': '40%',
-        'validUntil': 'Valid until Jan 5',
-        'image': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
-        'gradient': [const Color(0xFFFFC61C), const Color(0xFFFFAA00)],
-        'tag': 'TRENDING',
-      },
-      {
-        'title': 'Talabat',
-        'subtitle': 'Free delivery on orders +100 EGP',
-        'discount': 'FREE',
-        'validUntil': 'Valid this week',
-        'image': 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400',
-        'gradient': [const Color(0xFFFF5A00), const Color(0xFFFF3D00)],
-        'tag': 'DELIVERY',
-      },
-      {
-        'title': 'IKEA',
-        'subtitle': 'Home & furniture clearance',
-        'discount': '35%',
-        'validUntil': 'Valid until Jan 10',
-        'image': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
-        'gradient': [const Color(0xFF0058A3), const Color(0xFF003E6B)],
-        'tag': 'CLEARANCE',
-      },
-      {
-        'title': 'Vodafone',
-        'subtitle': 'Extra GB on recharge',
-        'discount': '2X',
-        'validUntil': 'Valid until Dec 28',
-        'image': 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400',
-        'gradient': [const Color(0xFFE60000), const Color(0xFFB30000)],
-        'tag': 'BONUS',
-      },
-    ];
-
-    final offer = offers[index % offers.length];
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _showOfferDetails(context, offer);
-      },
-      child: Container(
-        height: 140,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: (offer['gradient'] as List<Color>)[0].withValues(alpha: 0.25),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Offers',
+                style: GoogleFonts.inter(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
+              ),
+              Row(
+                children: [
+                  Text(
+                    'Personalized offers from ',
+                    style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600),
+                  ),
+                  // Amazon logo text
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'amazon',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF232F3E),
+                        ),
+                      ),
+                      CustomPaint(
+                        size: const Size(52, 6),
+                        painter: _AmazonSmilePainter(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Bell icon - same as home page
+          GestureDetector(
+            onTap: () {},
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF0814F9),
+                    Color(0xFF8B5CF6),
+                    Color(0xFFEC4899),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Container(
+                margin: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [Color(0xFFFFE994), Color(0xFFFF8C00)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ).createShader(bounds),
+                        child: const Icon(Icons.notifications, color: Colors.white, size: 22),
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF4444),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEEEBFF),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('✦', style: TextStyle(fontSize: 16, color: Color(0xFF6C47FF))),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Offers just for you!',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4F46E5),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'We found these deals based on your\ninterests and spending habits.',
+                    style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF6B7280)),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('🎁', style: TextStyle(fontSize: 52)),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            children: [
-              // Background gradient
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: offer['gradient'] as List<Color>,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-              
-              // Background pattern
-              Positioned(
-                right: -30,
-                top: -30,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 20,
-                bottom: -40,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-              ),
+      ),
+    );
+  }
 
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
+  Widget _buildRecommendedSection() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('✨', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text(
+                'Recommended for you',
+                style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.52,
+            ),
+            itemCount: _products.length,
+            itemBuilder: (context, index) {
+              return _buildProductCard(
+                _products[index],
+                index < _saved.length ? _saved[index] : false,
+                () => setState(() { if (index < _saved.length) _saved[index] = !_saved[index]; }),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(Map<String, dynamic> offer, bool saved, VoidCallback onSave) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Stack(
+            children: [
+              Container(
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: Center(child: Icon(offer['image'] as IconData, size: 56, color: Colors.grey.shade400)),
+              ),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(8)),
+                  child: Text(offer['discount'], style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: GestureDetector(
+                  onTap: onSave,
+                  child: Icon(saved ? Icons.favorite : Icons.favorite_border, size: 20, color: saved ? Colors.red : Colors.grey),
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(offer['name'], style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(offer['price'], style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF0D5DB8))),
+                Text(offer['oldPrice'], style: GoogleFonts.inter(fontSize: 12, color: Colors.grey, decoration: TextDecoration.lineThrough)),
+                const SizedBox(height: 4),
+                Row(
                   children: [
-                    // Left side - Text content
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const Icon(Icons.star, size: 13, color: Color(0xFFFFB800)),
+                    Text(' ${offer['rating']}(${offer['reviews']})', style: GoogleFonts.inter(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => launchUrl(Uri.parse(offer['url'])),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1A237E), Color(0xFF00B0D7)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Tag
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              offer['tag'] as String,
-                              style: GoogleFonts.inter(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          // Title
-                          Text(
-                            offer['title'] as String,
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          // Subtitle
-                          Text(
-                            offer['subtitle'] as String,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          // Valid until
-                          Row(
+                          Text('View on Amazon', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+                          const SizedBox(width: 6),
+                          Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 12,
-                                color: Colors.white.withValues(alpha: 0.8),
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  offer['validUntil'] as String,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Text('a', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.black87)),
+                              CustomPaint(
+                                size: const Size(10, 4),
+                                painter: _AmazonSmilePainter(),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // Right side - Discount badge
-                    Container(
-                      width: 65,
-                      height: 65,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            offer['discount'] as String,
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: (offer['gradient'] as List<Color>)[0],
-                            ),
-                          ),
-                          if ((offer['discount'] as String).contains('%'))
-                            Text(
-                              'OFF',
-                              style: GoogleFonts.inter(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: (offer['gradient'] as List<Color>)[0],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  void _showOfferDetails(BuildContext context, Map<String, dynamic> offer) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: const BoxDecoration(
+  Widget _buildWhySection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Column(
+        child: Row(
           children: [
-            // Handle
             Container(
-              margin: const EdgeInsets.only(top: 12),
               width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+              height: 40,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFDEEAFF)),
+              child: const Icon(Icons.lightbulb_outline, color: Color(0xFF0D5DB8), size: 20),
             ),
-            const SizedBox(height: 24),
-            
-            // Offer header
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: offer['gradient'] as List<Color>,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          offer['title'] as String,
-                          style: GoogleFonts.inter(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          offer['subtitle'] as String,
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        offer['discount'] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: (offer['gradient'] as List<Color>)[0],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Details
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDetailRow(Icons.access_time_rounded, 'Validity', offer['validUntil'] as String),
-                  const SizedBox(height: 12),
-                  _buildDetailRow(Icons.local_offer_rounded, 'Discount', '${offer['discount']} on selected items'),
-                  const SizedBox(height: 12),
-                  _buildDetailRow(Icons.info_outline_rounded, 'Terms', 'Terms & conditions apply'),
+                  Text('Why you\'re seeing these offers?', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text('Based on your recent activity in Electronics and your purchases in the last 30 days', style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade600)),
                 ],
-              ),
-            ),
-            
-            const Spacer(),
-            
-            // CTA Button
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Opening ${offer['title']}...'),
-                        backgroundColor: (offer['gradient'] as List<Color>)[0],
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: (offer['gradient'] as List<Color>)[0],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Get This Offer',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
               ),
             ),
           ],
@@ -443,43 +405,23 @@ class OffersPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, size: 20, color: const Color(0xFF6B7280)),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF9CA3AF),
-                ),
-              ),
-              Text(
-                value,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF374151),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+}
+
+class _AmazonSmilePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFFF9900)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    path.moveTo(0, size.height * 0.2);
+    path.quadraticBezierTo(size.width * 0.5, size.height, size.width, size.height * 0.2);
+    canvas.drawPath(path, paint);
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

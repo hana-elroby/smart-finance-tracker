@@ -93,6 +93,33 @@ class TransactionApiService {
     return TransactionApiResult.failure(message: response.message ?? 'Failed to create transaction');
   }
 
+  // Get my transactions (authenticated)
+  Future<TransactionListResult> getMyTransactions({int page = 1, int limit = 50}) async {
+    final response = await _api.get('/transactions/my', queryParams: {
+      'page': page.toString(),
+      'limit': limit.toString(),
+      'sort': '-createdAt',
+    });
+
+    if (response.isSuccess) {
+      final dataList = response.getData<List>('data') ?? [];
+      final count = response.getData<int>('count') ?? 0;
+
+      final transactions = dataList
+          .map((item) => TransactionModel.fromMap(item as Map<String, dynamic>))
+          .toList();
+
+      return TransactionListResult.success(
+        transactions: transactions,
+        totalCount: count,
+        currentPage: page,
+        totalPages: (count / limit).ceil().clamp(1, 9999),
+      );
+    }
+
+    return TransactionListResult.failure(message: response.message ?? 'Failed to get transactions');
+  }
+
   // Get all transactions with pagination
   Future<TransactionListResult> getTransactions({
     int page = 1,

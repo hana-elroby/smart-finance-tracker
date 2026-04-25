@@ -11,6 +11,8 @@ import '../../features/home/bloc/expense_event.dart';
 import '../../core/models/expense.dart';
 import '../../features/categories/bloc/category_bloc.dart';
 import '../../features/categories/category_data_store.dart';
+import '../../features/transactions/bloc/transaction_bloc.dart';
+import '../../features/transactions/bloc/transaction_event.dart';
 
 class SimpleVoiceDialog extends StatefulWidget {
   final ExpenseBloc expenseBloc;
@@ -323,6 +325,18 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
       );
       
       widget.expenseBloc.add(AddExpense(expense));
+      
+      // Also save to TransactionBloc for persistence
+      try {
+        context.read<TransactionBloc>().add(AddTransaction(
+          title: transaction['description'] as String,
+          description: finalCategory,
+          amount: transaction['amount'] as double,
+          category: finalCategory,
+          type: 'expense',
+          date: DateTime.now(),
+        ));
+      } catch (_) {}
       
       // Add item to category
       final categoryItem = CategoryItem(
