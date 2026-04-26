@@ -27,12 +27,30 @@ class _OffersPageState extends State<OffersPage> {
     try {
       final userId = AuthApiService.instance.currentUser?.uid;
       if (userId == null || userId.isEmpty) { _loadDummy(); return; }
-      final dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
+      final dio = Dio(BaseOptions(
+        baseUrl: ApiConfig.baseUrl,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
       final token = await AuthApiService.instance.getToken();
       if (token != null) dio.options.headers['token'] = token;
       final response = await dio.get('/api/offers', queryParameters: {'userId': userId});
       if (response.data['success'] == true) {
-        final products = List<Map<String, dynamic>>.from(response.data['products'] ?? []);
+        final rawProducts = List<Map<String, dynamic>>.from(response.data['products'] ?? []);
+        // Normalize backend products — ensure 'image' field is always present
+        final products = rawProducts.map((p) {
+          return {
+            'name': p['name'] ?? p['title'] ?? 'Product',
+            'price': p['price']?.toString() ?? 'EGP 0',
+            'oldPrice': p['oldPrice']?.toString() ?? p['originalPrice']?.toString() ?? '',
+            'discount': p['discount']?.toString() ?? '',
+            'rating': p['rating']?.toString() ?? '4.0',
+            'reviews': p['reviews']?.toString() ?? p['reviewCount']?.toString() ?? '0',
+            'image': p['image'] ?? p['icon'] ?? p['category'] ?? 'shopping_bag',
+            'imageUrl': p['imageUrl'] ?? p['image_url'] ?? p['thumbnail'],
+            'url': p['url'] ?? p['link'] ?? p['productUrl'] ?? 'https://www.amazon.eg',
+          };
+        }).toList();
         setState(() { _products = products; _saved = List.filled(products.length, false); _isLoading = false; });
         return;
       }
@@ -40,8 +58,34 @@ class _OffersPageState extends State<OffersPage> {
     _loadDummy();
   }
 
-  void _loadDummy() {
-    final dummy = [
+  /// Convert backend String or existing IconData to IconData safely
+  IconData _resolveIcon(dynamic value) {
+    if (value is IconData) return value;
+    if (value is String) {
+      switch (value.toLowerCase()) {
+        case 'watch': return Icons.watch;
+        case 'headphones': return Icons.headphones;
+        case 'backpack': return Icons.backpack;
+        case 'tablet': return Icons.tablet;
+        case 'keyboard': return Icons.keyboard;
+        case 'battery': return Icons.battery_charging_full;
+        case 'speaker': return Icons.speaker;
+        case 'shoes': return Icons.directions_run;
+        case 'phone': return Icons.phone_android;
+        case 'laptop': return Icons.laptop;
+        case 'camera': return Icons.camera_alt;
+        case 'tv': return Icons.tv;
+        case 'gaming': return Icons.sports_esports;
+        case 'clothes': return Icons.checkroom;
+        case 'food': return Icons.restaurant;
+        case 'book': return Icons.book;
+        default: return Icons.shopping_bag;
+      }
+    }
+    return Icons.shopping_bag;
+  }
+
+  void _loadDummy() {    final dummy = [
       {'name': 'Amazfit Bip 5 Smart Watch', 'price': 'EGP 3,499', 'oldPrice': 'EGP 6,399', 'discount': '-35%', 'rating': '4.5', 'reviews': '2,489', 'image': Icons.watch, 'url': 'https://www.amazon.eg'},
       {'name': 'Apple AirPods Pro', 'price': 'EGP 6,799', 'oldPrice': 'EGP 8,499', 'discount': '-30%', 'rating': '4.7', 'reviews': '18,903', 'image': Icons.headphones, 'url': 'https://www.amazon.eg'},
       {'name': 'Samsonite Laptop Backpack', 'price': 'EGP 1,259', 'oldPrice': 'EGP 1,299', 'discount': '-30%', 'rating': '4.4', 'reviews': '1,203', 'image': Icons.backpack, 'url': 'https://www.amazon.eg'},
@@ -270,6 +314,10 @@ class _OffersPageState extends State<OffersPage> {
   }
 
   Widget _buildProductCard(Map<String, dynamic> offer, bool saved, VoidCallback onSave) {
+    // Safely get icon — backend may return String, dummy data returns IconData
+    final IconData iconData = _resolveIcon(offer['image']);
+    // Safely get image URL if available
+    final String? imageUrl = offer['imageUrl'] as String?;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -287,7 +335,18 @@ class _OffersPageState extends State<OffersPage> {
                   color: Colors.grey.shade100,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 ),
-                child: Center(child: Icon(offer['image'] as IconData, size: 56, color: Colors.grey.shade400)),
+                child: imageUrl != null
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (_, __, ___) =>
+                              Center(child: Icon(iconData, size: 56, color: Colors.grey.shade400)),
+                        ),
+                      )
+                    : Center(child: Icon(iconData, size: 56, color: Colors.grey.shade400)),
               ),
               Positioned(
                 top: 8,

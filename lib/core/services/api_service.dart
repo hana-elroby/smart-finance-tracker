@@ -1,36 +1,54 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../config/api_config.dart';
+import 'local_storage_service.dart';
 
 class ApiService {
-  late Dio _dio;
-  String? _token;
-
-  ApiService() {
+  // Singleton — all services share one instance and one token
+  static final ApiService _instance = ApiService._internal();
+  factory ApiService() => _instance;
+  ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConfig.baseUrl,
       connectTimeout: ApiConfig.connectionTimeout,
       receiveTimeout: ApiConfig.receiveTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: {'Content-Type': 'application/json'},
     ));
   }
+
+  late Dio _dio;
+  String? _token;
+  final LocalStorageService _localStorage = LocalStorageService();
 
   bool get isAuthenticated => _token != null;
 
   void setToken(String token) {
     _token = token;
     _dio.options.headers['token'] = token;
+    print('🔑 [ApiService] Token set in memory');
   }
 
   void clearToken() {
     _token = null;
     _dio.options.headers.remove('token');
-    _dio.options.headers.remove('Authorization');
+    print('🔑 [ApiService] Token cleared');
+  }
+
+  /// Always load token from storage before each request
+  Future<void> _ensureToken() async {
+    if (_token != null) return;
+    final saved = await _localStorage.getToken();
+    if (saved != null && saved.isNotEmpty) {
+      _token = saved;
+      _dio.options.headers['token'] = saved;
+      print('🔑 [ApiService] Token loaded from storage');
+    } else {
+      print('⚠️ [ApiService] No token found in storage');
+    }
   }
 
   Future<ApiResponse> get(String path, {Map<String, String>? queryParams}) async {
+    await _ensureToken();
     try {
       final response = await _dio.get(path, queryParameters: queryParams);
       return ApiResponse.success(response.data, response.statusMessage);
@@ -40,6 +58,7 @@ class ApiService {
   }
 
   Future<ApiResponse> post(String path, {Map<String, dynamic>? body}) async {
+    await _ensureToken();
     try {
       final response = await _dio.post(path, data: body);
       return ApiResponse.success(response.data, response.statusMessage);
@@ -53,10 +72,9 @@ class ApiService {
     Map<String, File>? files,
     Map<String, String>? fields,
   }) async {
+    await _ensureToken();
     try {
       final formData = FormData();
-
-      // Add files
       if (files != null) {
         for (var entry in files.entries) {
           formData.files.add(MapEntry(
@@ -68,14 +86,11 @@ class ApiService {
           ));
         }
       }
-
-      // Add fields
       if (fields != null) {
         for (var entry in fields.entries) {
           formData.fields.add(MapEntry(entry.key, entry.value));
         }
       }
-
       final response = await _dio.post(path, data: formData);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
@@ -84,6 +99,7 @@ class ApiService {
   }
 
   Future<ApiResponse> put(String path, {Map<String, dynamic>? body}) async {
+    await _ensureToken();
     try {
       final response = await _dio.put(path, data: body);
       return ApiResponse.success(response.data, response.statusMessage);
@@ -93,6 +109,7 @@ class ApiService {
   }
 
   Future<ApiResponse> delete(String path, {Map<String, dynamic>? body}) async {
+    await _ensureToken();
     try {
       final response = await _dio.delete(path, data: body);
       return ApiResponse.success(response.data, response.statusMessage);
@@ -102,6 +119,7 @@ class ApiService {
   }
 
   Future<FileApiResponse> getFile(String path, {Map<String, String>? queryParams}) async {
+    await _ensureToken();
     try {
       final response = await _dio.get(
         path,

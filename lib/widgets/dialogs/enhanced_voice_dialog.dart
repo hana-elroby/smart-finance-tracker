@@ -9,6 +9,8 @@ import '../../services/voice_api_service.dart';
 import '../../features/home/bloc/expense_bloc.dart';
 import '../../features/home/bloc/expense_event.dart';
 import '../../core/models/expense.dart';
+import '../../core/services/transaction_api_service.dart';
+import '../../core/services/auth_api_service.dart';
 
 /// Enhanced Voice Input Dialog with Manual Editing
 /// Features: Real server integration, Manual editing, Beautiful UI/UX
@@ -414,22 +416,20 @@ class _EnhancedVoiceDialogState extends State<EnhancedVoiceDialog>
       final amount = double.tryParse(_amountController.text) ?? 0.0;
       final category = _categoryController.text.trim();
       final description = _descriptionController.text.trim();
-      
+
       if (amount <= 0) {
         _handleError('يرجى إدخال مبلغ صحيح');
         return;
       }
-      
       if (category.isEmpty) {
         _handleError('يرجى اختيار فئة');
         return;
       }
-      
       if (description.isEmpty) {
         _handleError('يرجى إدخال وصف');
         return;
       }
-      
+
       final expense = Expense(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         amount: amount,
@@ -438,14 +438,40 @@ class _EnhancedVoiceDialogState extends State<EnhancedVoiceDialog>
         date: DateTime.now(),
         isVoiceInput: true,
       );
-      
-      context.read<ExpenseBloc>().add(AddExpense(expense));
-      
-      // Show success and close
+
+      // 1. Send to backend directly (fire-and-forget)
+      _syncToBackend(description, amount);
+
+      // 2. Update local state via ExpenseBloc (for immediate UI update)
+      try {
+        context.read<ExpenseBloc>().add(AddExpense(expense));
+      } catch (_) {
+        // ExpenseBloc not in context — backend sync already handled it
+      }
+
       HapticFeedback.lightImpact();
       Navigator.of(context).pop('تم إضافة المصروف بنجاح');
     } catch (e) {
       _handleError('خطأ في حفظ المصروف: $e');
+    }
+  }
+
+  Future<void> _syncToBackend(String text, double amount) async {
+    try {
+      final isLoggedIn = await AuthApiService.instance.isAuthenticated();
+      if (!isLoggedIn) return;
+
+      final result = await TransactionApiService.instance.createWithText(
+        text: text,
+        price: amount,
+      );
+      if (result.isSuccess) {
+        print('✅ Voice expense synced to backend: $text ($amount EGP)');
+      } else {
+        print('⚠️ Voice backend sync failed: ${result.message}');
+      }
+    } catch (e) {
+      print('⚠️ Voice backend sync error: $e');
     }
   }
 

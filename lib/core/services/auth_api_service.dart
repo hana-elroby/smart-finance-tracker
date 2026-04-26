@@ -4,6 +4,7 @@
 import 'api_service.dart';
 import '../models/user_model.dart';
 import 'local_storage_service.dart';
+import '../storage/simple_storage.dart';
 
 class AuthApiService {
   static final AuthApiService instance = AuthApiService._internal();
@@ -250,6 +251,13 @@ class AuthApiService {
     _api.clearToken();
     _currentUser = null;
     await _storage.clearAll();
+    // Clear all user-specific local data
+    final prefs = await _storage.getPrefs();
+    await prefs.remove('expenses_data');
+    await prefs.remove('local_transactions');
+    // Clear secure storage (expenses_data stored there)
+    final SimpleStorage secureStorage = SimpleStorage();
+    await secureStorage.delete('expenses_data');
   }
 
   // Convert API user data to our model format

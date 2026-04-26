@@ -1,7 +1,8 @@
 // API Configuration
 class ApiConfig {
   // Main Backend - Local Server
-  static const String baseUrl = 'http://192.168.1.15:3001';
+  // 10.0.2.2 = localhost from Android emulator
+  static const String baseUrl = 'http://10.0.2.2:3001';
 
   // Voice Analysis Server
   static const String voiceApiBaseUrl = 'https://gradution-project-u39v.onrender.com';
@@ -52,6 +53,6 @@ class ApiConfig {
   static const String healthCheck = '/api';
 
   // Timeouts
-  static const Duration connectionTimeout = Duration(seconds: 30);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+  static const Duration connectionTimeout = Duration(seconds: 5);
+  static const Duration receiveTimeout = Duration(seconds: 10);
 }

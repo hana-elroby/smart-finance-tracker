@@ -46,4 +46,8 @@ class LocalStorageService {
     await prefs.remove(_userKey);
     await prefs.remove(_pendingEmailKey);
   }
+
+  Future<SharedPreferences> getPrefs() async {
+    return await SharedPreferences.getInstance();
+  }
 }

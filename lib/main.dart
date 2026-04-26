@@ -49,23 +49,27 @@ void main() async {
 
 Future<void> _initializeApp() async {
   try {
-    // Initialize network client
-    await DioClient().initialize();
-    
-    // Initialize database
-    AppDatabase();
-    
-    // Initialize Auth Service
+    // 1. Initialize Auth first — loads token into memory
     await AuthApiService.instance.initialize();
-    
-    // Initialize sync service
-    await SyncService().initialize();
+    print('✅ Auth initialized');
 
-    // Initialize Notification Service
+    // 2. Initialize network client
+    await DioClient().initialize();
+    print('✅ Network initialized');
+
+    // 3. Database singleton — just access it to ensure it's created once
+    AppDatabase.instance;
+    print('✅ Database initialized');
+
+    // 4. Sync service — runs after auth is ready
+    await SyncService().initialize();
+    print('✅ Sync service initialized');
+
+    // 5. Notifications
     await NotificationService().initialize();
-    
+    print('✅ Notifications initialized');
+
   } catch (error, stackTrace) {
-    // Report initialization errors to Sentry (only in release mode)
     if (kReleaseMode) {
       await Sentry.captureException(
         error,
@@ -76,11 +80,7 @@ Future<void> _initializeApp() async {
         },
       );
     }
-    
-    // Print error in debug mode
     debugPrint('❌ App initialization failed: $error');
-    
-    // Re-throw to prevent app from starting in broken state
     rethrow;
   }
 }

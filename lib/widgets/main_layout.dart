@@ -12,6 +12,9 @@ import '../features/reminders/bloc/reminder_bloc.dart';
 import '../features/profile/bloc/user_bloc.dart';
 import '../features/categories/bloc/category_bloc.dart';
 import 'dialogs/simple_voice_dialog.dart';
+import '../core/services/ocr_scanner_service.dart';
+import '../core/models/expense.dart';
+import '../features/home/bloc/expense_event.dart';
 
 class MainLayout extends StatefulWidget {
   final int initialIndex;
@@ -333,7 +336,7 @@ class _MainLayoutState extends State<MainLayout> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (ctx) => Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -364,8 +367,6 @@ class _MainLayoutState extends State<MainLayout> {
               ),
             ),
             const SizedBox(height: 24),
-            
-            // Camera and Gallery options - same style as Items page
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -373,13 +374,8 @@ class _MainLayoutState extends State<MainLayout> {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Opening Camera...'),
-                        backgroundColor: Color(0xFF4CAF50),
-                      ),
-                    );
+                    Navigator.pop(ctx);
+                    _runOcrScan(fromCamera: true);
                   },
                   child: Column(
                     children: [
@@ -416,13 +412,8 @@ class _MainLayoutState extends State<MainLayout> {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Opening Gallery...'),
-                        backgroundColor: Color(0xFF4CAF50),
-                      ),
-                    );
+                    Navigator.pop(ctx);
+                    _runOcrScan(fromCamera: false);
                   },
                   child: Column(
                     children: [
@@ -462,6 +453,75 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
     );
+  }
+
+  Future<void> _runOcrScan({required bool fromCamera}) async {
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              fromCamera ? 'Opening camera...' : 'Opening gallery...',
+              style: GoogleFonts.inter(fontSize: 14),
+            ),
+          ],
+        ),
+        backgroundColor: _navyBlue,
+        duration: const Duration(seconds: 30),
+      ),
+    );
+
+    final result = fromCamera
+        ? await OcrScannerService.instance.scanFromCamera()
+        : await OcrScannerService.instance.scanFromGallery();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result.isCancelled) return;
+
+    if (result.isSuccess) {
+      // Add to ExpenseBloc for immediate UI update
+      try {
+        final expense = Expense(
+          id: result.transactionId!,
+          title: result.text ?? 'Receipt scan',
+          amount: result.amount ?? 0,
+          category: result.category ?? 'Shopping',
+          date: DateTime.now(),
+        );
+        context.read<ExpenseBloc>().add(AddExpense(expense));
+      } catch (_) {}
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✅ Receipt scanned: ${result.text} — ${result.amount?.toStringAsFixed(2)} EGP',
+            style: GoogleFonts.inter(fontSize: 14),
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.message ?? 'Failed to scan receipt',
+            style: GoogleFonts.inter(fontSize: 14),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _showVoiceInput() async {

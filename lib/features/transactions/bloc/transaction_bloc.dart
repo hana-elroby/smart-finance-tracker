@@ -33,48 +33,69 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   }
 
   Future<List<TransactionModel>> _loadLocal() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_localKey);
-    if (json == null) return [];
-    final list = jsonDecode(json) as List;
-    return list.map((e) => TransactionModel.fromMap(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<void> _saveLocal(List<TransactionModel> transactions) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_localKey, jsonEncode(transactions.map((t) => t.toMap()).toList()));
-  }
-
-  Future<void> _onLoad(LoadTransactions event, Emitter<TransactionState> emit) async {
-    emit(state.copyWith(status: TransactionStatus.loading));
     try {
-      // Try API first if logged in
-      final isLoggedIn = AuthApiService.instance.isLoggedIn;
-      if (isLoggedIn) {
-        final result = await _service.getMyTransactions();
-        if (result.isSuccess) {
-          final transactions = result.transactions.map(_convertCore).toList();
-          await _saveLocal(transactions);
-          emit(state.copyWith(status: TransactionStatus.loaded, transactions: transactions));
-          return;
-        }
-      }
-      // Fallback to local
-      final local = await _loadLocal();
-      emit(state.copyWith(status: TransactionStatus.loaded, transactions: local));
-    } catch (e) {
-      final local = await _loadLocal();
-      emit(state.copyWith(status: TransactionStatus.loaded, transactions: local));
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString(_localKey);
+      if (json == null) return [];
+      final list = jsonDecode(json) as List;
+      return list
+          .map((e) => TransactionModel.fromMap(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
     }
   }
 
-  Future<void> _onDelete(DeleteTransaction event, Emitter<TransactionState> emit) async {
-    final updated = state.transactions.where((t) => t.id != event.transactionId).toList();
+  Future<void> _saveLocal(List<TransactionModel> transactions) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _localKey,
+        jsonEncode(transactions.map((t) => t.toMap()).toList()),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _onLoad(
+      LoadTransactions event, Emitter<TransactionState> emit) async {
+    // 1. Show local data immediately — no loading spinner wait
+    final local = await _loadLocal();
+    emit(state.copyWith(
+      status: TransactionStatus.loaded,
+      transactions: local,
+    ));
+
+    // 2. Try backend in background (won't block UI)
+    final isLoggedIn = AuthApiService.instance.isLoggedIn;
+    if (!isLoggedIn) return;
+
+    try {
+      final result = await _service.getMyTransactions();
+      if (result.isSuccess && result.transactions.isNotEmpty) {
+        final transactions = result.transactions.map(_convertCore).toList();
+        await _saveLocal(transactions);
+        emit(state.copyWith(
+          status: TransactionStatus.loaded,
+          transactions: transactions,
+        ));
+      }
+    } catch (_) {
+      // Backend unavailable — local data already shown, nothing to do
+    }
+  }
+
+  Future<void> _onDelete(
+      DeleteTransaction event, Emitter<TransactionState> emit) async {
+    final updated =
+        state.transactions.where((t) => t.id != event.transactionId).toList();
     await _saveLocal(updated);
-    emit(state.copyWith(status: TransactionStatus.loaded, transactions: updated));
-    // Also delete from API if logged in
+    emit(state.copyWith(
+        status: TransactionStatus.loaded, transactions: updated));
+
     if (AuthApiService.instance.isLoggedIn) {
-      try { await _service.deleteTransaction(event.transactionId); } catch (_) {}
+      try {
+        await _service.deleteTransaction(event.transactionId);
+      } catch (_) {}
     }
   }
 
@@ -92,10 +113,14 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     );
     final updated = [newT, ...state.transactions];
     await _saveLocal(updated);
-    emit(state.copyWith(status: TransactionStatus.loaded, transactions: updated));
-    // Also save to API if logged in
+    emit(state.copyWith(
+        status: TransactionStatus.loaded, transactions: updated));
+
     if (AuthApiService.instance.isLoggedIn) {
-      try { await _service.createWithText(text: event.title, price: event.amount); } catch (_) {}
+      try {
+        await _service.createWithText(
+            text: event.title, price: event.amount);
+      } catch (_) {}
     }
   }
 }

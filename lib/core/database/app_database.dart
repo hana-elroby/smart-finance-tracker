@@ -38,7 +38,17 @@ class SyncQueue extends Table {
 
 @DriftDatabase(tables: [Expenses, SyncQueue])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  // Singleton instance
+  static AppDatabase? _instance;
+  static AppDatabase get instance {
+    _instance ??= AppDatabase._internal();
+    return _instance!;
+  }
+
+  AppDatabase._internal() : super(_openConnection());
+
+  // Keep default constructor for backward compatibility — returns singleton
+  factory AppDatabase() => instance;
 
   @override
   int get schemaVersion => 1;

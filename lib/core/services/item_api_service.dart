@@ -21,7 +21,7 @@ class ItemApiService {
       if (categoryId != null) 'category': categoryId,
     };
 
-    final response = await _api.get('/item', queryParams: queryParams);
+    final response = await _api.get('/items', queryParams: queryParams);
 
     if (response.isSuccess) {
       final dataList = response.getData<List>('data') ?? [];
@@ -49,9 +49,9 @@ class ItemApiService {
     double? price,
     String? description,
   }) async {
-    final response = await _api.post('/item', body: {
+    final response = await _api.post('/items', body: {
       'name': name,
-      'category': categoryId,
+      if (categoryId != null) 'categoryId': categoryId,
       if (price != null) 'price': price,
       if (description != null) 'description': description,
     });
@@ -82,7 +82,7 @@ class ItemApiService {
     if (price != null) body['price'] = price;
     if (description != null) body['description'] = description;
 
-    final response = await _api.put('/item/$id', body: body);
+    final response = await _api.put('/items/$id', body: body);
 
     if (response.isSuccess) {
       final data = response.getData<Map<String, dynamic>>('data');
@@ -98,7 +98,7 @@ class ItemApiService {
   }
 
   Future<ItemApiResult> deleteItem(String id) async {
-    final response = await _api.delete('/item/$id');
+    final response = await _api.delete('/items/$id');
 
     if (response.isSuccess) {
       return ItemApiResult.success(message: 'Item deleted');
@@ -108,7 +108,7 @@ class ItemApiService {
   }
 
   Future<ItemApiResult> getItem(String id) async {
-    final response = await _api.get('/item/$id');
+    final response = await _api.get('/items/$id');
 
     if (response.isSuccess) {
       final data = response.getData<Map<String, dynamic>>('data') ?? response.data;

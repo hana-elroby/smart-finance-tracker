@@ -17,12 +17,22 @@ class TransactionApiService {
     required String text,
     required double price,
     List<String>? itemIds,
+    String? categoryId,
   }) async {
-    final response = await _api.post('/transactions/createWithText', body: {
+    final body = <String, dynamic>{
       'text': text,
       'price': price,
-      'items': itemIds?.map((id) => {'_id': id}).toList() ?? [],
-    });
+    };
+    // Send categoryId directly — backend uses it as priority 1
+    if (categoryId != null && categoryId.isNotEmpty) {
+      body['categoryId'] = categoryId;
+    }
+    // Send items as plain string IDs: ["id1", "id2"]
+    if (itemIds != null && itemIds.isNotEmpty) {
+      body['items'] = itemIds;
+    }
+
+    final response = await _api.post('/transactions/createWithText', body: body);
 
     if (response.isSuccess) {
       final data = response.getData<Map<String, dynamic>>('data');

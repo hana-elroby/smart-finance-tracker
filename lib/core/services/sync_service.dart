@@ -12,7 +12,7 @@ class SyncService {
   factory SyncService() => _instance;
   SyncService._internal();
 
-  final AppDatabase _database = AppDatabase();
+  final AppDatabase _database = AppDatabase.instance;
   final DioClient _dioClient = DioClient();
   final TransactionApiService _transactionApi = TransactionApiService.instance;
   
