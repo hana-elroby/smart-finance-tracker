@@ -114,13 +114,21 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
       try {
         final result = await _api.getCategories();
         if (result.isSuccess && result.categories.isNotEmpty) {
-          // Map backend categories to local format
-          final categories = result.categories.map((c) => {
-                'name': c.name,
-                'icon': _iconForName(c.name),
-                'isDefault': false,
-                'backendId': c.id,
-              }).toList();
+          // Default category names to exclude from custom list
+          const defaultNames = {
+            'food & drink', 'shopping', 'bills', 'health',
+          };
+
+          // Map backend categories, skip ones that duplicate defaults
+          final categories = result.categories
+              .where((c) => !defaultNames.contains(c.name.toLowerCase()))
+              .map((c) => {
+                    'name': c.name,
+                    'icon': _iconForName(c.name),
+                    'isDefault': false,
+                    'backendId': c.id,
+                  })
+              .toList();
 
           emit(state.copyWith(customCategories: categories));
           await _saveLocal(categories);

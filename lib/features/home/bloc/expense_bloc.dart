@@ -149,15 +149,11 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
       final itemId = itemResult.item!.id;
       print('✅ Item created: ${event.expense.title} (id: $itemId)');
 
-      final body = {
-        'text': event.expense.title,
-        'price': event.expense.amount,
-        'categoryId': categoryId,   // direct category reference
-        'items': [itemId],          // plain string IDs
-      };
-
-      print('🚀 Sending transaction body: ${jsonEncode(body)}');
-      final result = await _api.post('/transactions/createWithText', body: body);
+      // Build body as raw JSON string to avoid Dio array serialization issues
+      final bodyJson = '{"text":${jsonEncode(event.expense.title)},"price":${event.expense.amount},"categoryId":${jsonEncode(categoryId)},"items":["${itemId}"]}';
+      
+      print('🚀 Sending transaction body: $bodyJson');
+      final result = await _api.postRaw('/transactions/createWithText', bodyJson);
       if (result.isSuccess) {
         print('✅ Transaction synced to backend: ${event.expense.title}');
         // Refresh from backend so UI shows the saved data

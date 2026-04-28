@@ -3,10 +3,11 @@ import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import 'local_storage_service.dart';
 
+/// Central HTTP client — singleton, shared across all API services.
 class ApiService {
-  // Singleton — all services share one instance and one token
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
+
   ApiService._internal() {
     _dio = Dio(BaseOptions(
       baseUrl: ApiConfig.baseUrl,
@@ -14,6 +15,7 @@ class ApiService {
       receiveTimeout: ApiConfig.receiveTimeout,
       headers: {'Content-Type': 'application/json'},
     ));
+    print('🌐 [ApiService] baseUrl = ${ApiConfig.baseUrl}');
   }
 
   late Dio _dio;
@@ -34,7 +36,7 @@ class ApiService {
     print('🔑 [ApiService] Token cleared');
   }
 
-  /// Always load token from storage before each request
+  /// Load token from storage before each request if not already in memory.
   Future<void> _ensureToken() async {
     if (_token != null) return;
     final saved = await _localStorage.getToken();
@@ -43,30 +45,56 @@ class ApiService {
       _dio.options.headers['token'] = saved;
       print('🔑 [ApiService] Token loaded from storage');
     } else {
-      print('⚠️ [ApiService] No token found in storage');
+      print('! [ApiService] No token found in storage');
     }
   }
 
-  Future<ApiResponse> get(String path, {Map<String, String>? queryParams}) async {
+  // ── GET ─────────────────────────────────────────────────────────────────────
+  Future<ApiResponse> get(String path,
+      {Map<String, String>? queryParams}) async {
     await _ensureToken();
     try {
       final response = await _dio.get(path, queryParameters: queryParams);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
-      return ApiResponse.error(e.response?.data?['message'] ?? 'Network error');
+      final msg = _extractError(e);
+      print('❌ [GET $path] $msg');
+      return ApiResponse.error(msg);
     }
   }
 
-  Future<ApiResponse> post(String path, {Map<String, dynamic>? body}) async {
+  // ── POST (raw JSON string — avoids Dio array serialization issues) ──────────
+  Future<ApiResponse> postRaw(String path, String jsonBody) async {
+    await _ensureToken();
+    try {
+      final response = await _dio.post(
+        path,
+        data: jsonBody,
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      return ApiResponse.success(response.data, response.statusMessage);
+    } on DioException catch (e) {
+      final msg = _extractError(e);
+      print('❌ [POST raw $path] $msg');
+      return ApiResponse.error(msg);
+    }
+  }
+
+  // ── POST ────────────────────────────────────────────────────────────────────
+  Future<ApiResponse> post(String path,
+      {Map<String, dynamic>? body}) async {
     await _ensureToken();
     try {
       final response = await _dio.post(path, data: body);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
-      return ApiResponse.error(e.response?.data?['message'] ?? 'Network error');
+      final msg = _extractError(e);
+      print('❌ [POST $path] $msg');
+      return ApiResponse.error(msg);
     }
   }
 
+  // ── POST MULTIPART ──────────────────────────────────────────────────────────
   Future<ApiResponse> postMultipart(
     String path, {
     Map<String, File>? files,
@@ -76,7 +104,7 @@ class ApiService {
     try {
       final formData = FormData();
       if (files != null) {
-        for (var entry in files.entries) {
+        for (final entry in files.entries) {
           formData.files.add(MapEntry(
             entry.key,
             await MultipartFile.fromFile(
@@ -87,38 +115,50 @@ class ApiService {
         }
       }
       if (fields != null) {
-        for (var entry in fields.entries) {
+        for (final entry in fields.entries) {
           formData.fields.add(MapEntry(entry.key, entry.value));
         }
       }
       final response = await _dio.post(path, data: formData);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
-      return ApiResponse.error(e.response?.data?['message'] ?? 'Network error');
+      final msg = _extractError(e);
+      print('❌ [POST multipart $path] $msg');
+      return ApiResponse.error(msg);
     }
   }
 
-  Future<ApiResponse> put(String path, {Map<String, dynamic>? body}) async {
+  // ── PUT ─────────────────────────────────────────────────────────────────────
+  Future<ApiResponse> put(String path,
+      {Map<String, dynamic>? body}) async {
     await _ensureToken();
     try {
       final response = await _dio.put(path, data: body);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
-      return ApiResponse.error(e.response?.data?['message'] ?? 'Network error');
+      final msg = _extractError(e);
+      print('❌ [PUT $path] $msg');
+      return ApiResponse.error(msg);
     }
   }
 
-  Future<ApiResponse> delete(String path, {Map<String, dynamic>? body}) async {
+  // ── DELETE ──────────────────────────────────────────────────────────────────
+  Future<ApiResponse> delete(String path,
+      {Map<String, dynamic>? body}) async {
     await _ensureToken();
     try {
       final response = await _dio.delete(path, data: body);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
-      return ApiResponse.error(e.response?.data?['message'] ?? 'Network error');
+      final msg = _extractError(e);
+      print('❌ [DELETE $path] $msg');
+      return ApiResponse.error(msg);
     }
   }
 
-  Future<FileApiResponse> getFile(String path, {Map<String, String>? queryParams}) async {
+  // ── FILE DOWNLOAD ───────────────────────────────────────────────────────────
+  Future<FileApiResponse> getFile(String path,
+      {Map<String, String>? queryParams}) async {
     await _ensureToken();
     try {
       final response = await _dio.get(
@@ -128,10 +168,37 @@ class ApiService {
       );
       return FileApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
-      return FileApiResponse.error(e.response?.data?['message'] ?? 'Network error');
+      return FileApiResponse.error(_extractError(e));
     }
   }
+
+  // ── Error helper ────────────────────────────────────────────────────────────
+  String _extractError(DioException e) {
+    // Server returned a response
+    if (e.response != null) {
+      final data = e.response!.data;
+      if (data is Map) {
+        return data['message'] as String? ??
+            data['error'] as String? ??
+            'Server error ${e.response?.statusCode}';
+      }
+      if (data is String && data.isNotEmpty) return data;
+      return 'Server error ${e.response?.statusCode}';
+    }
+    // No response — connection issue
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return 'Request timed out — is the backend running at ${ApiConfig.baseUrl}?';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'Cannot reach backend at ${ApiConfig.baseUrl} — make sure npm run dev is running';
+    }
+    return e.message ?? 'Network error';
+  }
 }
+
+// ── Response models ──────────────────────────────────────────────────────────
 
 class ApiResponse {
   final bool isSuccess;
@@ -140,18 +207,14 @@ class ApiResponse {
 
   ApiResponse._(this.isSuccess, this.data, this.message);
 
-  factory ApiResponse.success(dynamic data, String? message) {
-    return ApiResponse._(true, data, message);
-  }
+  factory ApiResponse.success(dynamic data, String? message) =>
+      ApiResponse._(true, data, message);
 
-  factory ApiResponse.error(String message) {
-    return ApiResponse._(false, null, message);
-  }
+  factory ApiResponse.error(String message) =>
+      ApiResponse._(false, null, message);
 
   T? getData<T>(String key) {
-    if (data is Map<String, dynamic>) {
-      return data[key] as T?;
-    }
+    if (data is Map<String, dynamic>) return data[key] as T?;
     return null;
   }
 }
@@ -163,11 +226,9 @@ class FileApiResponse {
 
   FileApiResponse._(this.isSuccess, this.fileBytes, this.message);
 
-  factory FileApiResponse.success(List<int> fileBytes, String? message) {
-    return FileApiResponse._(true, fileBytes, message);
-  }
+  factory FileApiResponse.success(List<int> fileBytes, String? message) =>
+      FileApiResponse._(true, fileBytes, message);
 
-  factory FileApiResponse.error(String message) {
-    return FileApiResponse._(false, null, message);
-  }
+  factory FileApiResponse.error(String message) =>
+      FileApiResponse._(false, null, message);
 }

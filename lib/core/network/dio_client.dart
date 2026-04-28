@@ -21,15 +21,16 @@ class DioClient {
 
   Future<void> initialize() async {
     _dio = Dio(BaseOptions(
-      baseUrl: ApiConfig.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-      sendTimeout: const Duration(seconds: 30),
+      baseUrl: ApiConfig.baseUrl,   // dynamic — emulator vs real device
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 10),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
     ));
+    print('🌐 [DioClient] baseUrl = ${ApiConfig.baseUrl}');
 
     // Add interceptors in order
     _dio.interceptors.addAll([

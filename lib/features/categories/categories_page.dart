@@ -48,21 +48,52 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   }
 
   void _setDefaultDates() {
-    final now = DateTime.now();
+    // Start with no filter — show all data by default
     setState(() {
-      _fromDate = DateTime(
-        now.year,
-        now.month,
-        1,
-      ); // First day of current month
-      _toDate = now; // Today
+      _fromDate = null;
+      _toDate = null;
     });
   }
 
+  bool get _isDateFiltered => _fromDate != null || _toDate != null;
+
+  void _clearDateFilter() {
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
+    });
+  }
+
+  /// Filter expenses by the selected date range
+  List<dynamic> _filterByDate(List<dynamic> expenses) {
+    if (!_isDateFiltered) return expenses;
+    return expenses.where((e) {
+      final date = e.date as DateTime;
+      if (_fromDate != null) {
+        final from = DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day);
+        if (date.isBefore(from)) return false;
+      }
+      if (_toDate != null) {
+        final to = DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59);
+        if (date.isAfter(to)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
   List<Map<String, dynamic>> _getAllCategories(List<Map<String, dynamic>> customCategories) {
+    // Remove custom categories that duplicate default names (case-insensitive)
+    final defaultNames = _defaultCategories
+        .map((c) => (c['name'] as String).toLowerCase())
+        .toSet();
+
+    final uniqueCustom = customCategories
+        .where((c) => !defaultNames.contains((c['name'] as String).toLowerCase()))
+        .toList();
+
     return [
       ..._defaultCategories,
-      ...customCategories,
+      ...uniqueCustom,
     ];
   }
 
@@ -112,25 +143,61 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
   }
 
   Widget _buildDateSelectors() {
-    return Row(
+    return Column(
       children: [
-        SizedBox(
-          width: 160,
-          child: _buildSimpleDateField(
-            label: 'From',
-            date: _fromDate,
-            onTap: () => _selectFromDate(),
-          ),
+        Row(
+          children: [
+            SizedBox(
+              width: 150,
+              child: _buildSimpleDateField(
+                label: 'From',
+                date: _fromDate,
+                onTap: () => _selectFromDate(),
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: 150,
+              child: _buildSimpleDateField(
+                label: 'To',
+                date: _toDate,
+                onTap: () => _selectToDate(),
+              ),
+            ),
+          ],
         ),
-        const Spacer(),
-        SizedBox(
-          width: 160,
-          child: _buildSimpleDateField(
-            label: 'To',
-            date: _toDate,
-            onTap: () => _selectToDate(),
+        if (_isDateFiltered) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _clearDateFilter,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.close_rounded, size: 16, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Clear filter — show all',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFEF4444),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -140,16 +207,17 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
     required DateTime? date,
     required VoidCallback onTap,
   }) {
+    final isActive = date != null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isActive ? const Color(0xFF1478E0).withValues(alpha: 0.08) : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
-            width: 1.5,
+            color: isActive ? const Color(0xFF1478E0) : const Color(0xFF1478E0).withValues(alpha: 0.3),
+            width: isActive ? 2 : 1.5,
           ),
           boxShadow: [
             BoxShadow(
@@ -163,17 +231,17 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.calendar_today_outlined,
+              isActive ? Icons.event_available_rounded : Icons.calendar_today_outlined,
               color: const Color(0xFF1478E0),
               size: 16,
             ),
             const SizedBox(width: 8),
             Text(
-              '$label: ${date != null ? '${date.day}/${date.month}' : 'Select'}',
+              isActive ? '$label: ${date.day}/${date.month}' : '$label: Any',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF374151),
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                color: isActive ? const Color(0xFF1478E0) : const Color(0xFF374151),
               ),
             ),
           ],
@@ -205,19 +273,21 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
             double totalAmount = 0;
 
             if (state is ExpenseLoaded && state.hasData) {
-              // Calculate totals for ALL categories (default + custom)
+              // Apply date filter first
+              final filtered = _filterByDate(state.expenses);
+
+              // Calculate totals per category from filtered expenses
               for (var cat in allCategories) {
                 final name = cat['name'] as String;
-                final total = state.getCategoryTotal(name);
+                final total = filtered
+                    .where((e) => e.category == name)
+                    .fold<double>(0, (sum, e) => sum + e.amount);
                 if (total > 0) {
                   categoryTotals[name] = total;
                 }
               }
 
-              totalAmount = categoryTotals.values.fold(
-                0,
-                (sum, amount) => sum + amount,
-              );
+              totalAmount = categoryTotals.values.fold(0, (sum, a) => sum + a);
             }
 
             // If still no data after calculation, show placeholder
@@ -315,16 +385,18 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
 
   // Build items breakdown chart for selected category
   Widget _buildItemsBreakdownChart(ExpenseLoaded state, String categoryName) {
-    // Get unique items with their totals for this category
+    // Apply date filter then filter by category
+    final filtered = _filterByDate(state.expenses)
+        .where((e) => e.category == categoryName)
+        .toList();
+
     final Map<String, double> itemTotals = {};
     final Map<String, int> itemCounts = {};
-    
-    for (final expense in state.expenses) {
-      if (expense.category == categoryName) {
-        final itemName = expense.title;
-        itemTotals[itemName] = (itemTotals[itemName] ?? 0) + expense.amount;
-        itemCounts[itemName] = (itemCounts[itemName] ?? 0) + 1;
-      }
+
+    for (final expense in filtered) {
+      final itemName = expense.title;
+      itemTotals[itemName] = (itemTotals[itemName] ?? 0) + expense.amount;
+      itemCounts[itemName] = (itemCounts[itemName] ?? 0) + 1;
     }
     
     if (itemTotals.isEmpty) {
@@ -517,12 +589,15 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           children: [
             BlocBuilder<ExpenseBloc, ExpenseState>(
               builder: (context, state) {
-                // Get category totals from real data
+                // Get category totals from filtered data
                 Map<String, double> categoryTotals = {};
                 if (state is ExpenseLoaded) {
+                  final filtered = _filterByDate(state.expenses);
                   for (var cat in allCategories) {
                     final name = cat['name'] as String;
-                    categoryTotals[name] = state.getCategoryTotal(name);
+                    categoryTotals[name] = filtered
+                        .where((e) => e.category == name)
+                        .fold<double>(0, (sum, e) => sum + e.amount);
                   }
                 }
 

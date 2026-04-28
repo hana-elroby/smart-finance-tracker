@@ -81,7 +81,7 @@ Future<void> _initializeApp() async {
       );
     }
     debugPrint('❌ App initialization failed: $error');
-    rethrow;
+    // Don't rethrow — let the app start even if initialization partially fails
   }
 }
 

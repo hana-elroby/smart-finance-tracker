@@ -64,14 +64,19 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
   }
 
   void _setDefaultDates() {
-    final now = DateTime.now();
+    // Start with no filter — show all items by default
     setState(() {
-      _fromDate = DateTime(
-        now.year,
-        now.month,
-        1,
-      ); // First day of current month
-      _toDate = now; // Today
+      _fromDate = null;
+      _toDate = null;
+    });
+  }
+
+  bool get _isDateFiltered => _fromDate != null || _toDate != null;
+
+  void _clearDateFilter() {
+    setState(() {
+      _fromDate = null;
+      _toDate = null;
     });
   }
   
@@ -269,25 +274,62 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
   }
 
   Widget _buildDateSelectors() {
-    return Row(
+    return Column(
       children: [
-        SizedBox(
-          width: 160,
-          child: _buildSimpleDateField(
-            label: 'From',
-            date: _fromDate,
-            onTap: () => _selectFromDate(),
-          ),
+        Row(
+          children: [
+            SizedBox(
+              width: 150,
+              child: _buildSimpleDateField(
+                label: 'From',
+                date: _fromDate,
+                onTap: () => _selectFromDate(),
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: 150,
+              child: _buildSimpleDateField(
+                label: 'To',
+                date: _toDate,
+                onTap: () => _selectToDate(),
+              ),
+            ),
+          ],
         ),
-        const Spacer(),
-        SizedBox(
-          width: 160,
-          child: _buildSimpleDateField(
-            label: 'To',
-            date: _toDate,
-            onTap: () => _selectToDate(),
+        // Clear filter button — only shown when a date is selected
+        if (_isDateFiltered) ...[
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: _clearDateFilter,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.close_rounded, size: 16, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Clear date filter — show all',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFFEF4444),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -297,16 +339,19 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
     required DateTime? date,
     required VoidCallback onTap,
   }) {
+    final isActive = date != null;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isActive ? const Color(0xFF1478E0).withValues(alpha: 0.08) : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF1478E0).withValues(alpha: 0.3),
-            width: 1.5,
+            color: isActive
+                ? const Color(0xFF1478E0)
+                : const Color(0xFF1478E0).withValues(alpha: 0.3),
+            width: isActive ? 2 : 1.5,
           ),
           boxShadow: [
             BoxShadow(
@@ -320,17 +365,17 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.calendar_today_outlined,
+              isActive ? Icons.event_available_rounded : Icons.calendar_today_outlined,
               color: const Color(0xFF1478E0),
               size: 16,
             ),
             const SizedBox(width: 8),
             Text(
-              '$label: ${date != null ? '${date.day}/${date.month}' : 'Select'}',
+              isActive ? '$label: ${date.day}/${date.month}' : '$label: Any',
               style: GoogleFonts.inter(
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF374151),
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                color: isActive ? const Color(0xFF1478E0) : const Color(0xFF374151),
               ),
             ),
           ],
@@ -346,6 +391,18 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
         List<Expense> categoryExpenses = [];
         if (state is ExpenseLoaded) {
           categoryExpenses = state.getExpensesByCategory(widget.categoryName);
+          
+          // Apply same date filter as the list
+          if (_fromDate != null) {
+            categoryExpenses = categoryExpenses.where((e) => !e.date.isBefore(
+              DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day),
+            )).toList();
+          }
+          if (_toDate != null) {
+            categoryExpenses = categoryExpenses.where((e) => !e.date.isAfter(
+              DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59),
+            )).toList();
+          }
         }
 
         // Show placeholder when no items in this category
@@ -549,6 +606,18 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
         List<Expense> items = [];
         if (state is ExpenseLoaded) {
           items = state.getExpensesByCategory(widget.categoryName);
+          
+          // Filter by date range
+          if (_fromDate != null) {
+            items = items.where((e) => !e.date.isBefore(
+              DateTime(_fromDate!.year, _fromDate!.month, _fromDate!.day),
+            )).toList();
+          }
+          if (_toDate != null) {
+            items = items.where((e) => !e.date.isAfter(
+              DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59),
+            )).toList();
+          }
           
           // Filter by selected item name if any
           if (_selectedItemName != null) {

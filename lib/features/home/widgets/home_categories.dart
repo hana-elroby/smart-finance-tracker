@@ -34,13 +34,14 @@ class HomeCategories extends StatelessWidget {
             ),
             GestureDetector(
               onTap: () {
+                final categoryBloc = context.read<CategoryBloc>();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => MultiBlocProvider(
                       providers: [
                         BlocProvider.value(value: expenseBloc),
-                        BlocProvider(create: (_) => CategoryBloc()),
+                        BlocProvider.value(value: categoryBloc),
                       ],
                       child: const CategoriesPage(),
                     ),

@@ -742,13 +742,14 @@ class _HomePageContentState extends State<_HomePageContent>
               if (mounted && context.mounted) {
                 try {
                   final expenseBloc = context.read<ExpenseBloc>();
+                  final categoryBloc = context.read<CategoryBloc>();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => MultiBlocProvider(
                         providers: [
                           BlocProvider.value(value: expenseBloc),
-                          BlocProvider(create: (_) => CategoryBloc()),
+                          BlocProvider.value(value: categoryBloc),
                         ],
                         child: const CategoriesPage(),
                       ),
@@ -980,13 +981,14 @@ class _HomePageContentState extends State<_HomePageContent>
               if (mounted && context.mounted) {
                 try {
                   final expenseBloc = context.read<ExpenseBloc>();
+                  final categoryBloc = context.read<CategoryBloc>();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => MultiBlocProvider(
                         providers: [
                           BlocProvider.value(value: expenseBloc),
-                          BlocProvider(create: (_) => CategoryBloc()),
+                          BlocProvider.value(value: categoryBloc),
                         ],
                         child: const CategoriesPage(),
                       ),
