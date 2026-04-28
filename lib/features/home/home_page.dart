@@ -2,6 +2,9 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/config/api_config.dart';
 import '../../core/services/auth_api_service.dart';
 import '../../core/services/performance_service.dart';
 import '../../widgets/skeleton_loader.dart';
@@ -60,6 +63,8 @@ class _HomePageContentState extends State<_HomePageContent>
   DateTime? _toDate;
   bool _isLoading = true;
   String? _errorMessage;
+  List<Map<String, dynamic>> _offers = [];
+  bool _offersLoading = true;
 
   // Animation controllers
   late AnimationController _fabAnimationController;
@@ -86,6 +91,7 @@ class _HomePageContentState extends State<_HomePageContent>
     _initializeAnimations();
     _setDefaultDates();
     _loadInitialData();
+    _loadOffers();
     
     endPerformanceTracking('home_page_init');
   }
@@ -153,6 +159,43 @@ class _HomePageContentState extends State<_HomePageContent>
       _errorMessage = null;
     });
     _loadInitialData();
+  }
+
+  Future<void> _loadOffers() async {
+    try {
+      final userId = AuthApiService.instance.currentUser?.uid;
+      final dio = Dio(BaseOptions(
+        baseUrl: ApiConfig.baseUrl,
+        connectTimeout: const Duration(seconds: 5),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+      final token = await AuthApiService.instance.getToken();
+      if (token != null) dio.options.headers['token'] = token;
+
+      final response = await dio.get('/api/offers',
+          queryParameters: userId != null ? {'userId': userId} : null);
+
+      if (response.data['success'] == true) {
+        final rawProducts =
+            List<Map<String, dynamic>>.from(response.data['products'] ?? []);
+        final products = rawProducts.map((p) {
+          return {
+            'name': p['name'] ?? p['title'] ?? 'Product',
+            'price': p['price']?.toString() ?? 'EGP 0',
+            'oldPrice': p['oldPrice']?.toString() ?? '',
+            'discount': p['discount']?.toString() ?? '',
+            'rating': p['rating']?.toString() ?? '4.0',
+            'reviews': p['reviews']?.toString() ?? '0',
+            'image': p['image'] ?? p['icon'] ?? 'shopping_bag',
+            'imageUrl': p['imageUrl'] ?? p['image_url'] ?? p['thumbnail'] ?? p['image'],
+            'url': p['url'] ?? p['link'] ?? 'https://www.amazon.eg',
+          };
+        }).toList();
+        if (mounted) setState(() { _offers = products; _offersLoading = false; });
+        return;
+      }
+    } catch (_) {}
+    if (mounted) setState(() { _offersLoading = false; });
   }
 
   @override
@@ -459,6 +502,9 @@ class _HomePageContentState extends State<_HomePageContent>
   }
 
   Widget _buildOffersSection() {
+    // Use real offers from API, fallback to dummy if empty
+    final displayOffers = _offers.isNotEmpty ? _offers : _dummyOffers;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -476,7 +522,6 @@ class _HomePageContentState extends State<_HomePageContent>
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
-                // Navigate to Offers tab in MainLayout
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -508,17 +553,123 @@ class _HomePageContentState extends State<_HomePageContent>
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 180, // ارتفاع أطول للإعلانات
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              return _buildNoonStyleOfferCard(index);
-            },
-          ),
+          height: 210,
+          child: _offersLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: displayOffers.length,
+                  itemBuilder: (context, index) {
+                    return _buildOfferCard(displayOffers[index], index, displayOffers.length);
+                  },
+                ),
         ),
       ],
+    );
+  }
+
+  static const List<Map<String, dynamic>> _dummyOffers = [
+    {
+      'name': 'Amazfit Bip 5 Smart Watch',
+      'price': 'EGP 3,499',
+      'oldPrice': 'EGP 6,399',
+      'discount': '-35%',
+      'rating': '4.5',
+      'reviews': '2,489',
+      'imageUrl': null,
+      'url': 'https://www.amazon.eg',
+    },
+    {
+      'name': 'Apple AirPods Pro',
+      'price': 'EGP 6,799',
+      'oldPrice': 'EGP 8,499',
+      'discount': '-30%',
+      'rating': '4.7',
+      'reviews': '18,903',
+      'imageUrl': null,
+      'url': 'https://www.amazon.eg',
+    },
+    {
+      'name': 'Samsung Galaxy Tab A9',
+      'price': 'EGP 8,999',
+      'oldPrice': 'EGP 12,999',
+      'discount': '-31%',
+      'rating': '4.6',
+      'reviews': '5,120',
+      'imageUrl': null,
+      'url': 'https://www.amazon.eg',
+    },
+  ];
+
+  Widget _buildOfferCard(Map<String, dynamic> offer, int index, int total) {
+    final String? imageUrl = offer['imageUrl'] as String?;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        final url = offer['url'] as String? ?? 'https://www.amazon.eg';
+        launchUrl(Uri.parse(url));
+      },
+      child: Container(
+        width: 160,
+        margin: EdgeInsets.only(right: index < total - 1 ? 12 : 0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image area
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Container(
+                height: 110,
+                width: double.infinity,
+                color: Colors.grey.shade100,
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (_, child, progress) =>
+                            progress == null ? child : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        errorBuilder: (_, __, ___) =>
+                            const Center(child: Icon(Icons.shopping_bag, size: 40, color: Colors.grey)))
+                    : const Center(child: Icon(Icons.shopping_bag, size: 40, color: Colors.grey)),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (offer['discount'] != null && offer['discount'].toString().isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(6)),
+                      child: Text(offer['discount'].toString(),
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                    ),
+                  const SizedBox(height: 4),
+                  Text(offer['name'].toString(),
+                      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600),
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(offer['price'].toString(),
+                      style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF0D5DB8))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

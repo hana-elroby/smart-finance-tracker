@@ -28,14 +28,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       setState(() => _isLoading = true);
 
       try {
-        // For now, just show success message since we don't have forgot password API
-        await Future.delayed(const Duration(seconds: 1));
-        
+        final result = await _authService.forgetPassword(_emailController.text.trim());
+
         if (mounted) {
           setState(() {
             _isLoading = false;
-            _emailSent = true;
+            _emailSent = result.isSuccess;
           });
+
+          if (!result.isSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message ?? 'Failed to send reset email'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {

@@ -23,7 +23,7 @@ class WebSocketService {
   bool get isConnected => _isConnected;
 
   String get _wsUrl {
-    final base = Platform.isAndroid ? 'ws://10.0.2.2:3002' : 'ws://localhost:3002';
+    final base = Platform.isAndroid ? 'ws://192.168.1.13:3002' : 'ws://192.168.1.13:3002';
     final userId = AuthApiService.instance.currentUser?.uid ?? '';
     return userId.isNotEmpty ? '$base?userId=$userId' : base;
   }

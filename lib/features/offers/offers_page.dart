@@ -53,7 +53,7 @@ class _OffersPageState extends State<OffersPage> {
             'rating': p['rating']?.toString() ?? '4.0',
             'reviews': p['reviews']?.toString() ?? p['reviewCount']?.toString() ?? '0',
             'image': p['image'] ?? p['icon'] ?? p['category'] ?? 'shopping_bag',
-            'imageUrl': p['imageUrl'] ?? p['image_url'] ?? p['thumbnail'],
+            'imageUrl': p['imageUrl'] ?? p['image_url'] ?? p['thumbnail'] ?? p['image'],
             'url': p['url'] ?? p['link'] ?? p['productUrl'] ?? 'https://www.amazon.eg',
           };
         }).toList();
@@ -350,6 +350,8 @@ class _OffersPageState extends State<OffersPage> {
                           imageUrl,
                           fit: BoxFit.cover,
                           width: double.infinity,
+                          loadingBuilder: (_, child, progress) =>
+                              progress == null ? child : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           errorBuilder: (_, __, ___) =>
                               Center(child: Icon(iconData, size: 56, color: Colors.grey.shade400)),
                         ),
