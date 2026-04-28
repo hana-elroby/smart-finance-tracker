@@ -9,12 +9,14 @@ import 'core/services/auth_gate.dart';
 import 'core/network/dio_client.dart';
 import 'core/services/sync_service.dart';
 import 'core/database/app_database.dart';
+import 'core/services/websocket_service.dart';
 import 'services/notification_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/auth/presentation/pages/auth_page.dart';
 import 'widgets/main_layout.dart';
 import 'features/home/bloc/expense_bloc.dart';
+import 'features/home/bloc/analytics_bloc.dart';
 import 'features/reminders/bloc/reminder_bloc.dart';
 import 'features/profile/bloc/user_bloc.dart';
 import 'features/categories/bloc/category_bloc.dart';
@@ -69,6 +71,10 @@ Future<void> _initializeApp() async {
     await NotificationService().initialize();
     print('✅ Notifications initialized');
 
+    // 6. WebSocket — real-time analytics
+    WebSocketService.instance.connect();
+    print('✅ WebSocket connecting...');
+
   } catch (error, stackTrace) {
     if (kReleaseMode) {
       await Sentry.captureException(
@@ -93,6 +99,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => ExpenseBloc()),
+        BlocProvider(create: (context) => AnalyticsBloc()),
         BlocProvider(create: (context) => ReminderBloc()),
         BlocProvider(create: (context) => UserBloc()),
         BlocProvider(create: (context) => CategoryBloc()),

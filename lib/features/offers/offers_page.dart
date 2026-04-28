@@ -26,7 +26,12 @@ class _OffersPageState extends State<OffersPage> {
   Future<void> _loadOffers() async {
     try {
       final userId = AuthApiService.instance.currentUser?.uid;
-      if (userId == null || userId.isEmpty) { _loadDummy(); return; }
+      if (userId == null || userId.isEmpty) { 
+        print('⚠️ [Offers] No userId — loading dummy');
+        _loadDummy(); 
+        return; 
+      }
+      print('🛍️ [Offers] Loading for userId: $userId');
       final dio = Dio(BaseOptions(
         baseUrl: ApiConfig.baseUrl,
         connectTimeout: const Duration(seconds: 5),
@@ -35,6 +40,7 @@ class _OffersPageState extends State<OffersPage> {
       final token = await AuthApiService.instance.getToken();
       if (token != null) dio.options.headers['token'] = token;
       final response = await dio.get('/api/offers', queryParameters: {'userId': userId});
+      print('🛍️ [Offers] Response: ${response.data['success']} products=${response.data['products']?.length}');
       if (response.data['success'] == true) {
         final rawProducts = List<Map<String, dynamic>>.from(response.data['products'] ?? []);
         // Normalize backend products — ensure 'image' field is always present
@@ -54,7 +60,9 @@ class _OffersPageState extends State<OffersPage> {
         setState(() { _products = products; _saved = List.filled(products.length, false); _isLoading = false; });
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      print('❌ [Offers] Error: $e');
+    }
     _loadDummy();
   }
 

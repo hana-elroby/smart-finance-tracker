@@ -9,12 +9,15 @@ import '../../widgets/empty_state.dart';
 
 import '../../widgets/modern_action_button.dart';
 import '../../widgets/chart_placeholder.dart';
+import '../../widgets/spending_line_chart.dart';
 import '../../services/notification_service.dart';
 
 import '../../widgets/dialogs/enhanced_voice_dialog.dart';
 import 'dialogs/qr_scanner_bottom_sheet.dart';
 import 'bloc/expense_bloc.dart';
 import 'bloc/expense_state.dart';
+import 'bloc/analytics_bloc.dart';
+import 'bloc/analytics_state.dart';
 import 'package:graduation_project/features/categories/categories_page.dart';
 import 'package:graduation_project/features/categories/bloc/category_bloc.dart';
 import 'package:graduation_project/features/reminders/reminders_page.dart';
@@ -32,8 +35,12 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ExpenseBloc(),
+    // Provide ExpenseBloc locally, but pass AnalyticsBloc from parent context
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => ExpenseBloc()),
+        BlocProvider.value(value: context.read<AnalyticsBloc>()),
+      ],
       child: const _HomePageContent(),
     );
   }
@@ -1600,140 +1607,203 @@ class _HomePageContentState extends State<_HomePageContent>
   }
 
   Widget _buildChartSection() {
-    return BlocBuilder<ExpenseBloc, ExpenseState>(
-      builder: (context, state) {
-        // Show placeholder when no data exists
-        if (state is ExpenseLoaded && state.isEmpty) {
-          return const ChartPlaceholder(
-            title: 'Your Spending Overview',
-            height: 160,
-            type: ChartPlaceholderType.bar,
-          );
-        }
-        
-        // Also show placeholder for non-loaded states
-        if (state is! ExpenseLoaded) {
-          return const ChartPlaceholder(
-            title: 'Your Spending Overview',
-            height: 160,
-            type: ChartPlaceholderType.bar,
-          );
-        }
+    return BlocBuilder<AnalyticsBloc, AnalyticsState>(
+      builder: (context, analyticsState) {
+        return BlocBuilder<ExpenseBloc, ExpenseState>(
+          builder: (context, expenseState) {
+            // Use analytics data if available, fallback to local expenses
+            final hasAnalytics = analyticsState.hasData &&
+                analyticsState.analysisOverTime.isNotEmpty;
+            final hasLocalData = expenseState is ExpenseLoaded &&
+                expenseState.expenses.isNotEmpty;
 
-        // Get real expense data
-        final expenses = state.expenses;
-        
-        // If no expenses, show placeholder
-        if (expenses.isEmpty) {
-          return const ChartPlaceholder(
-            title: 'Your Spending Overview',
-            height: 160,
-            type: ChartPlaceholderType.bar,
-          );
-        }
+            if (!hasAnalytics && !hasLocalData) {
+              return const ChartPlaceholder(
+                title: 'Your Spending Overview',
+                height: 160,
+                type: ChartPlaceholderType.bar,
+              );
+            }
 
-        // Show real chart when data exists
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Colors.white, Color(0xFFF8FAFF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with better title
-              Text(
-                'Your Spending Overview',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF374151),
+            final expenses = expenseState is ExpenseLoaded
+                ? expenseState.expenses
+                : <dynamic>[];
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.white, Color(0xFFF8FAFF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 16),
-
-              // Date Range Filter - From left, To right
-              Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _buildSimpleDateField(
-                      label: 'From',
-                      date: _fromDate,
-                      onTap: () => _selectFromDate(context),
+                  // Header + total
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Spending Overview',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF374151),
+                        ),
+                      ),
+                      if (analyticsState.totalAmount > 0)
+                        Text(
+                          '${analyticsState.totalAmount.toStringAsFixed(0)} EGP',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0D5DB8),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Date Range Filter + Clear button
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSimpleDateField(
+                              label: 'From',
+                              date: _fromDate,
+                              onTap: () => _selectFromDate(context),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildSimpleDateField(
+                              label: 'To',
+                              date: _toDate,
+                              onTap: () => _selectToDate(context),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_fromDate != null || _toDate != null) ...[
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _fromDate = null;
+                              _toDate = null;
+                            });
+                            context.read<AnalyticsBloc>().refresh();
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.close_rounded,
+                                    size: 16, color: Color(0xFFEF4444)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Clear filter — show all',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Chart — uses analytics data if available
+                  SizedBox(
+                    height: 240,
+                    child: SpendingLineChart(
+                      analyticsData: hasAnalytics
+                          ? analyticsState.analysisOverTime
+                          : _buildAnalyticsFromExpenses(expenses),
+                      fromDate: _fromDate,
+                      toDate: _toDate,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildSimpleDateField(
-                      label: 'To',
-                      date: _toDate,
-                      onTap: () => _selectToDate(context),
+
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.touch_app_rounded,
+                          size: 16,
+                          color: const Color(0xFF0D5DB8),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'اضغط على العمود لعرض التفاصيل',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: const Color(0xFF0D5DB8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 240,
-                child: CustomPaint(
-                  size: const Size(double.infinity, 240),
-                  painter: ModernExpenseChartPainter(
-                    fromDate: _fromDate,
-                    toDate: _toDate,
-                    expenses: expenses,
-                  ),
-                ),
-              ),
-              
-              // Tap hint - more visible
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D5DB8).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.touch_app_rounded,
-                      size: 16,
-                      color: const Color(0xFF0D5DB8),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'اضغط على العمود لعرض التفاصيل',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: const Color(0xFF0D5DB8),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  /// Fallback: build analytics map from local expenses when WebSocket not available
+  Map<String, double> _buildAnalyticsFromExpenses(List<dynamic> expenses) {
+    final Map<String, double> result = {};
+    for (final e in expenses) {
+      try {
+        final date = e.date as DateTime;
+        final key =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        result[key] = (result[key] ?? 0) + (e.amount as double);
+      } catch (_) {}
+    }
+    return result;
   }
 
   void _animateCardTap(VoidCallback onComplete) {
@@ -1758,8 +1828,8 @@ class _HomePageContentState extends State<_HomePageContent>
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _fromDate ?? DateTime.now(),
-      firstDate: DateTime(1900), // من سنة 1900
-      lastDate: DateTime(2100), // لحد سنة 2100
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -1777,11 +1847,14 @@ class _HomePageContentState extends State<_HomePageContent>
     if (picked != null && picked != _fromDate) {
       setState(() {
         _fromDate = picked;
-        // If to date is before from date, reset it
         if (_toDate != null && _toDate!.isBefore(picked)) {
           _toDate = null;
         }
       });
+      // Refresh analytics with new date range
+      if (mounted) {
+        context.read<AnalyticsBloc>().refresh(from: picked, to: _toDate);
+      }
     }
   }
 
@@ -1789,8 +1862,8 @@ class _HomePageContentState extends State<_HomePageContent>
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _toDate ?? _fromDate ?? DateTime.now(),
-      firstDate: _fromDate ?? DateTime(1900), // من سنة 1900
-      lastDate: DateTime(2100), // لحد سنة 2100
+      firstDate: _fromDate ?? DateTime(1900),
+      lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -1809,6 +1882,10 @@ class _HomePageContentState extends State<_HomePageContent>
       setState(() {
         _toDate = picked;
       });
+      // Refresh analytics with new date range
+      if (mounted) {
+        context.read<AnalyticsBloc>().refresh(from: _fromDate, to: picked);
+      }
     }
   }
 
@@ -2145,8 +2222,15 @@ class ModernExpenseChartPainter extends CustomPainter {
   final DateTime? fromDate;
   final DateTime? toDate;
   final List<dynamic> expenses;
+  /// Real-time analytics data from backend: date string → amount
+  final Map<String, double>? analyticsData;
 
-  ModernExpenseChartPainter({this.fromDate, this.toDate, this.expenses = const []});
+  ModernExpenseChartPainter({
+    this.fromDate,
+    this.toDate,
+    this.expenses = const [],
+    this.analyticsData,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -2154,6 +2238,7 @@ class ModernExpenseChartPainter extends CustomPainter {
     var chartResult = _generateChartData();
     var chartData = chartResult['amounts'] as List<double>;
     var chartCounts = chartResult['counts'] as List<int>;
+    final chartLabels = chartResult['labels'] as List<String>;
     
     // If no data, don't draw anything
     if (chartData.isEmpty) return;
@@ -2287,7 +2372,9 @@ class ModernExpenseChartPainter extends CustomPainter {
       );
     }
 
-    final xLabels = _generateXAxisLabels(chartData.length);
+    final xLabels = chartLabels.isNotEmpty
+        ? chartLabels
+        : _generateXAxisLabels(chartData.length);
     for (int i = 0; i < xLabels.length && i < points.length; i++) {
       textPainter.text = TextSpan(
         text: xLabels[i],
@@ -2311,7 +2398,24 @@ class ModernExpenseChartPainter extends CustomPainter {
   // Generate chart data from real expenses grouped by time
   // Returns both amounts and counts
   Map<String, dynamic> _generateChartData() {
-    if (expenses.isEmpty) return {'amounts': <double>[], 'counts': <int>[]};
+    // Priority 1: use backend analytics data (X=date, Y=amount)
+    if (analyticsData != null && analyticsData!.isNotEmpty) {
+      final sorted = analyticsData!.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      return {
+        'amounts': sorted.map((e) => e.value).toList(),
+        'counts': sorted.map((_) => 1).toList(),
+        'labels': sorted.map((e) {
+          // Format date label: "2026-04-28" → "28/4"
+          final parts = e.key.split('-');
+          if (parts.length == 3) return '${int.parse(parts[2])}/${int.parse(parts[1])}';
+          return e.key;
+        }).toList(),
+      };
+    }
+
+    // Fallback: use local expenses
+    if (expenses.isEmpty) return {'amounts': <double>[], 'counts': <int>[], 'labels': <String>[]};
     
     // Filter expenses by date range
     final filteredExpenses = expenses.where((e) {
@@ -2321,13 +2425,12 @@ class ModernExpenseChartPainter extends CustomPainter {
       return true;
     }).toList();
     
-    if (filteredExpenses.isEmpty) return {'amounts': <double>[], 'counts': <int>[]};
+    if (filteredExpenses.isEmpty) return {'amounts': <double>[], 'counts': <int>[], 'labels': <String>[]};
     
     // Calculate date range
     final daysDiff = (toDate ?? DateTime.now()).difference(fromDate ?? DateTime(2024, 1, 1)).inDays;
     
     if (daysDiff <= 7) {
-      // Group by day for week view
       final Map<int, double> dailyTotals = {};
       final Map<int, int> dailyCounts = {};
       for (var expense in filteredExpenses) {
@@ -2335,14 +2438,13 @@ class ModernExpenseChartPainter extends CustomPainter {
         dailyTotals[day] = (dailyTotals[day] ?? 0) + (expense.amount as double);
         dailyCounts[day] = (dailyCounts[day] ?? 0) + 1;
       }
-      // Sort by day and return values
       final sortedKeys = dailyTotals.keys.toList()..sort();
       return {
         'amounts': sortedKeys.map((k) => dailyTotals[k]!).toList(),
         'counts': sortedKeys.map((k) => dailyCounts[k]!).toList(),
+        'labels': sortedKeys.map((k) => '$k').toList(),
       };
     } else if (daysDiff <= 31) {
-      // Group by week for month view
       final Map<int, double> weeklyTotals = {};
       final Map<int, int> weeklyCounts = {};
       for (var expense in filteredExpenses) {
@@ -2354,9 +2456,10 @@ class ModernExpenseChartPainter extends CustomPainter {
       return {
         'amounts': sortedKeys.map((k) => weeklyTotals[k]!).toList(),
         'counts': sortedKeys.map((k) => weeklyCounts[k]!).toList(),
+        'labels': sortedKeys.map((k) => 'W$k').toList(),
       };
     } else {
-      // Group by month for longer periods
+      final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       final Map<int, double> monthlyTotals = {};
       final Map<int, int> monthlyCounts = {};
       for (var expense in filteredExpenses) {
@@ -2368,6 +2471,7 @@ class ModernExpenseChartPainter extends CustomPainter {
       return {
         'amounts': sortedKeys.map((k) => monthlyTotals[k]!).toList(),
         'counts': sortedKeys.map((k) => monthlyCounts[k]!).toList(),
+        'labels': sortedKeys.map((k) => months[k - 1]).toList(),
       };
     }
   }
@@ -2475,9 +2579,10 @@ class ModernExpenseChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
     if (oldDelegate is! ModernExpenseChartPainter) return true;
-    return oldDelegate.fromDate != fromDate || 
-           oldDelegate.toDate != toDate ||
-           oldDelegate.expenses.length != expenses.length;
+    return oldDelegate.fromDate != fromDate ||
+        oldDelegate.toDate != toDate ||
+        oldDelegate.expenses.length != expenses.length ||
+        oldDelegate.analyticsData?.length != analyticsData?.length;
   }
 }
 

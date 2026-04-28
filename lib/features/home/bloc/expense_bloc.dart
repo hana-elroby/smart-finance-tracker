@@ -1,4 +1,5 @@
-﻿import 'dart:convert';
+﻿import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/expense.dart';
@@ -7,6 +8,7 @@ import '../../../core/services/item_api_service.dart';
 import '../../../core/services/category_api_service.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_api_service.dart';
+import '../../../core/services/websocket_service.dart';
 import '../../../core/storage/simple_storage.dart';
 import 'expense_event.dart';
 import 'expense_state.dart';
@@ -16,6 +18,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
   final SimpleStorage _storage = SimpleStorage();
   final TransactionApiService _transactionApi = TransactionApiService.instance;
   final ApiService _api = ApiService();
+  StreamSubscription<Map<String, dynamic>>? _wsSubscription;
 
   ExpenseBloc() : super(const ExpenseLoaded([])) {
     on<AddExpense>(_onAddExpense);
@@ -26,6 +29,25 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
     // Auto-load on creation
     add(const LoadExpenses());
+
+    // Connect to WebSocket for real-time analytics updates
+    _connectWebSocket();
+  }
+
+  void _connectWebSocket() {
+    final ws = WebSocketService.instance;
+    ws.connect();
+    _wsSubscription = ws.analyticsStream.listen((payload) {
+      // Backend sent analytics_update — refresh expenses from backend
+      print('📊 [ExpenseBloc] Real-time update received, refreshing...');
+      add(const LoadExpenses());
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _wsSubscription?.cancel();
+    return super.close();
   }
 
   // ─── Persistence helpers ───────────────────────────────────────────────────
