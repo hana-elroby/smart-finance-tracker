@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -65,6 +66,11 @@ class _HomePageContentState extends State<_HomePageContent>
   String? _errorMessage;
   List<Map<String, dynamic>> _offers = [];
   bool _offersLoading = true;
+
+  // Offers carousel auto-scroll
+  final PageController _offersPageController = PageController();
+  Timer? _offersTimer;
+  int _currentOfferPage = 0;
 
   // Animation controllers
   late AnimationController _fabAnimationController;
@@ -175,31 +181,70 @@ class _HomePageContentState extends State<_HomePageContent>
       final response = await dio.get('/api/offers',
           queryParameters: userId != null ? {'userId': userId} : null);
 
-      if (response.data['success'] == true) {
-        final rawProducts =
-            List<Map<String, dynamic>>.from(response.data['products'] ?? []);
-        final products = rawProducts.map((p) {
-          return {
-            'name': p['name'] ?? p['title'] ?? 'Product',
-            'price': p['price']?.toString() ?? 'EGP 0',
-            'oldPrice': p['oldPrice']?.toString() ?? '',
-            'discount': p['discount']?.toString() ?? '',
-            'rating': p['rating']?.toString() ?? '4.0',
-            'reviews': p['reviews']?.toString() ?? '0',
-            'image': p['image'] ?? p['icon'] ?? 'shopping_bag',
-            'imageUrl': p['imageUrl'] ?? p['image_url'] ?? p['thumbnail'] ?? p['image'],
-            'url': p['url'] ?? p['link'] ?? 'https://www.amazon.eg',
-          };
-        }).toList();
-        if (mounted) setState(() { _offers = products; _offersLoading = false; });
-        return;
-      }
+        if (response.data['success'] == true) {
+          final rawProducts =
+              List<Map<String, dynamic>>.from(response.data['products'] ?? []);
+
+          // Dedup by name, normalize price & URL
+          final seen = <String>{};
+          final products = rawProducts
+              .where((p) {
+                final name = (p['title'] ?? p['name'] ?? '').toString().trim();
+                if (name.isEmpty || seen.contains(name)) return false;
+                seen.add(name);
+                return true;
+              })
+              .take(6)
+              .map((p) {
+                String formatPrice(dynamic val) {
+                  if (val == null) return '';
+                  final s = val.toString().trim();
+                  if (s.isEmpty || s == 'null') return '';
+                  if (s.toUpperCase().contains('EGP')) return s;
+                  return s.replaceAll(RegExp(r'^\$'), 'EGP ').replaceAll('USD', 'EGP');
+                }
+                String fixUrl(dynamic val) {
+                  if (val == null || val.toString().isEmpty) return 'https://www.amazon.eg';
+                  return val.toString().replaceAll('amazon.com', 'amazon.eg');
+                }
+                return {
+                  'name': p['title'] ?? p['name'] ?? 'Product',
+                  'price': formatPrice(p['price']),
+                  'oldPrice': formatPrice(p['original_price'] ?? p['oldPrice']),
+                  'discount': p['discount']?.toString() ?? '',
+                  'rating': p['rating']?.toString() ?? '4.0',
+                  'reviews': p['reviews']?.toString() ?? p['num_ratings']?.toString() ?? '0',
+                  'imageUrl': p['image']?.toString(),
+                  'url': fixUrl(p['url']),
+                };
+              })
+              .toList();
+          if (mounted) setState(() { _offers = products; _offersLoading = false; });
+          _startOffersTimer();
+          return;
+        }
     } catch (_) {}
     if (mounted) setState(() { _offersLoading = false; });
   }
 
+  void _startOffersTimer() {
+    _offersTimer?.cancel();
+    _offersTimer = Timer.periodic(const Duration(seconds: 120), (_) {
+      if (!mounted || _offers.isEmpty) return;
+      final next = (_currentOfferPage + 1) % _offers.length;
+      _offersPageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+      setState(() => _currentOfferPage = next);
+    });
+  }
+
   @override
   void dispose() {
+    _offersTimer?.cancel();
+    _offersPageController.dispose();
     _fabAnimationController.dispose();
     _cardAnimationController.dispose();
     super.dispose();
@@ -556,14 +601,16 @@ class _HomePageContentState extends State<_HomePageContent>
           height: 210,
           child: _offersLoading
               ? const Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: displayOffers.length,
-                  itemBuilder: (context, index) {
-                    return _buildOfferCard(displayOffers[index], index, displayOffers.length);
-                  },
-                ),
+              : displayOffers.isEmpty
+                  ? const SizedBox()
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: displayOffers.length,
+                      itemBuilder: (context, index) {
+                        return _buildOfferCard(displayOffers[index], index, displayOffers.length);
+                      },
+                    ),
         ),
       ],
     );

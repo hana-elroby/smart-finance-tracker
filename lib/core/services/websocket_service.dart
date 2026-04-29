@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../config/api_config.dart';
 import '../services/auth_api_service.dart';
 
 /// WebSocket service — connects to the backend analytics WebSocket.
@@ -23,8 +24,13 @@ class WebSocketService {
   bool get isConnected => _isConnected;
 
   String get _wsUrl {
-    final base = Platform.isAndroid ? 'ws://192.168.1.13:3002' : 'ws://192.168.1.13:3002';
+    // Derive WebSocket host from ApiConfig.baseUrl (same host, port 3002)
+    final httpUrl = ApiConfig.baseUrl;
+    final host = httpUrl
+        .replaceFirst(RegExp(r'https?://'), '')
+        .split(':')[0];
     final userId = AuthApiService.instance.currentUser?.uid ?? '';
+    final base = 'ws://$host:3002';
     return userId.isNotEmpty ? '$base?userId=$userId' : base;
   }
 

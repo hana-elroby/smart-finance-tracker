@@ -7,7 +7,12 @@ class ApiConfig {
   // localhost  = iOS simulator   → host machine localhost
   // Change to your LAN IP (e.g. 192.168.1.x) for real device on same WiFi
   static String get baseUrl {
-    return 'http://192.168.1.13:3001'; // Real device on WiFi
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3001';   // Android emulator
+    } else if (Platform.isIOS) {
+      return 'http://localhost:3001';   // iOS simulator
+    }
+    return 'http://10.0.2.2:3001';
   }
 
   // ── Voice Analysis Server ───────────────────────────────────────────────────

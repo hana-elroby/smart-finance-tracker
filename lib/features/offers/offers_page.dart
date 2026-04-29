@@ -43,18 +43,44 @@ class _OffersPageState extends State<OffersPage> {
       print('🛍️ [Offers] Response: ${response.data['success']} products=${response.data['products']?.length}');
       if (response.data['success'] == true) {
         final rawProducts = List<Map<String, dynamic>>.from(response.data['products'] ?? []);
-        // Normalize backend products — ensure 'image' field is always present
-        final products = rawProducts.map((p) {
+
+        // Helper: format price to EGP
+        String formatPrice(dynamic val) {
+          if (val == null) return '';
+          final s = val.toString().trim();
+          if (s.isEmpty || s == 'null') return '';
+          if (s.toUpperCase().contains('EGP') || s.contains('ج.م')) return s;
+          return s.replaceAll(RegExp(r'^\$'), 'EGP ').replaceAll('USD', 'EGP');
+        }
+
+        // Helper: fix URL to amazon.eg
+        String fixUrl(dynamic val) {
+          if (val == null || val.toString().isEmpty) return 'https://www.amazon.eg';
+          return val.toString()
+              .replaceAll('amazon.com', 'amazon.eg')
+              .replaceAll('amazon.co.uk', 'amazon.eg');
+        }
+
+        // Dedup by name
+        final seen = <String>{};
+        final products = rawProducts
+            .where((p) {
+              final name = (p['title'] ?? p['name'] ?? '').toString().trim();
+              if (name.isEmpty || seen.contains(name)) return false;
+              seen.add(name);
+              return true;
+            })
+            .map((p) {
           return {
-            'name': p['name'] ?? p['title'] ?? 'Product',
-            'price': p['price']?.toString() ?? 'EGP 0',
-            'oldPrice': p['oldPrice']?.toString() ?? p['originalPrice']?.toString() ?? '',
+            'name': p['title'] ?? p['name'] ?? 'Product',
+            'price': formatPrice(p['price']),
+            'oldPrice': formatPrice(p['original_price'] ?? p['oldPrice'] ?? p['originalPrice']),
             'discount': p['discount']?.toString() ?? '',
             'rating': p['rating']?.toString() ?? '4.0',
-            'reviews': p['reviews']?.toString() ?? p['reviewCount']?.toString() ?? '0',
-            'image': p['image'] ?? p['icon'] ?? p['category'] ?? 'shopping_bag',
-            'imageUrl': p['imageUrl'] ?? p['image_url'] ?? p['thumbnail'] ?? p['image'],
-            'url': p['url'] ?? p['link'] ?? p['productUrl'] ?? 'https://www.amazon.eg',
+            'reviews': p['reviews']?.toString() ?? p['num_ratings']?.toString() ?? '0',
+            'image': 'shopping_bag',
+            'imageUrl': p['image']?.toString(),
+            'url': fixUrl(p['url']),
           };
         }).toList();
         setState(() { _products = products; _saved = List.filled(products.length, false); _isLoading = false; });

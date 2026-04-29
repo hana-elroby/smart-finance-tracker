@@ -10,12 +10,17 @@ class ApiService {
 
   ApiService._internal() {
     _dio = Dio(BaseOptions(
-      baseUrl: ApiConfig.baseUrl,
       connectTimeout: ApiConfig.connectionTimeout,
       receiveTimeout: ApiConfig.receiveTimeout,
       headers: {'Content-Type': 'application/json'},
     ));
-    print('🌐 [ApiService] baseUrl = ${ApiConfig.baseUrl}');
+    print('🌐 [ApiService] will use baseUrl = ${ApiConfig.baseUrl}');
+  }
+
+  /// Reset baseUrl — call after changing ApiConfig
+  void resetBaseUrl() {
+    _dio.options.baseUrl = '';
+    print('🌐 [ApiService] baseUrl reset to ${ApiConfig.baseUrl}');
   }
 
   late Dio _dio;
@@ -49,12 +54,14 @@ class ApiService {
     }
   }
 
-  // ── GET ─────────────────────────────────────────────────────────────────────
   Future<ApiResponse> get(String path,
       {Map<String, String>? queryParams}) async {
     await _ensureToken();
     try {
-      final response = await _dio.get(path, queryParameters: queryParams);
+      final response = await _dio.get(
+        '${ApiConfig.baseUrl}$path',
+        queryParameters: queryParams,
+      );
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
       final msg = _extractError(e);
@@ -63,12 +70,24 @@ class ApiService {
     }
   }
 
-  // ── POST (raw JSON string — avoids Dio array serialization issues) ──────────
+  Future<ApiResponse> post(String path,
+      {Map<String, dynamic>? body}) async {
+    await _ensureToken();
+    try {
+      final response = await _dio.post('${ApiConfig.baseUrl}$path', data: body);
+      return ApiResponse.success(response.data, response.statusMessage);
+    } on DioException catch (e) {
+      final msg = _extractError(e);
+      print('❌ [POST $path] $msg');
+      return ApiResponse.error(msg);
+    }
+  }
+
   Future<ApiResponse> postRaw(String path, String jsonBody) async {
     await _ensureToken();
     try {
       final response = await _dio.post(
-        path,
+        '${ApiConfig.baseUrl}$path',
         data: jsonBody,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
@@ -80,17 +99,44 @@ class ApiService {
     }
   }
 
-  // ── POST ────────────────────────────────────────────────────────────────────
-  Future<ApiResponse> post(String path,
+  Future<ApiResponse> put(String path,
       {Map<String, dynamic>? body}) async {
     await _ensureToken();
     try {
-      final response = await _dio.post(path, data: body);
+      final response = await _dio.put('${ApiConfig.baseUrl}$path', data: body);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
       final msg = _extractError(e);
-      print('❌ [POST $path] $msg');
+      print('❌ [PUT $path] $msg');
       return ApiResponse.error(msg);
+    }
+  }
+
+  Future<ApiResponse> delete(String path,
+      {Map<String, dynamic>? body}) async {
+    await _ensureToken();
+    try {
+      final response = await _dio.delete('${ApiConfig.baseUrl}$path', data: body);
+      return ApiResponse.success(response.data, response.statusMessage);
+    } on DioException catch (e) {
+      final msg = _extractError(e);
+      print('❌ [DELETE $path] $msg');
+      return ApiResponse.error(msg);
+    }
+  }
+
+  Future<FileApiResponse> getFile(String path,
+      {Map<String, String>? queryParams}) async {
+    await _ensureToken();
+    try {
+      final response = await _dio.get(
+        '${ApiConfig.baseUrl}$path',
+        queryParameters: queryParams,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return FileApiResponse.success(response.data, response.statusMessage);
+    } on DioException catch (e) {
+      return FileApiResponse.error(_extractError(e));
     }
   }
 
@@ -119,7 +165,7 @@ class ApiService {
           formData.fields.add(MapEntry(entry.key, entry.value));
         }
       }
-      final response = await _dio.post(path, data: formData);
+      final response = await _dio.post('${ApiConfig.baseUrl}$path', data: formData);
       return ApiResponse.success(response.data, response.statusMessage);
     } on DioException catch (e) {
       final msg = _extractError(e);
@@ -127,52 +173,6 @@ class ApiService {
       return ApiResponse.error(msg);
     }
   }
-
-  // ── PUT ─────────────────────────────────────────────────────────────────────
-  Future<ApiResponse> put(String path,
-      {Map<String, dynamic>? body}) async {
-    await _ensureToken();
-    try {
-      final response = await _dio.put(path, data: body);
-      return ApiResponse.success(response.data, response.statusMessage);
-    } on DioException catch (e) {
-      final msg = _extractError(e);
-      print('❌ [PUT $path] $msg');
-      return ApiResponse.error(msg);
-    }
-  }
-
-  // ── DELETE ──────────────────────────────────────────────────────────────────
-  Future<ApiResponse> delete(String path,
-      {Map<String, dynamic>? body}) async {
-    await _ensureToken();
-    try {
-      final response = await _dio.delete(path, data: body);
-      return ApiResponse.success(response.data, response.statusMessage);
-    } on DioException catch (e) {
-      final msg = _extractError(e);
-      print('❌ [DELETE $path] $msg');
-      return ApiResponse.error(msg);
-    }
-  }
-
-  // ── FILE DOWNLOAD ───────────────────────────────────────────────────────────
-  Future<FileApiResponse> getFile(String path,
-      {Map<String, String>? queryParams}) async {
-    await _ensureToken();
-    try {
-      final response = await _dio.get(
-        path,
-        queryParameters: queryParams,
-        options: Options(responseType: ResponseType.bytes),
-      );
-      return FileApiResponse.success(response.data, response.statusMessage);
-    } on DioException catch (e) {
-      return FileApiResponse.error(_extractError(e));
-    }
-  }
-
-  // ── Error helper ────────────────────────────────────────────────────────────
   String _extractError(DioException e) {
     // Server returned a response
     if (e.response != null) {
