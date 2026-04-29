@@ -415,11 +415,11 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
       );
     }
     
-    // Sort by COUNT (most purchased first) - not by amount!
+    // Sort by AMOUNT (highest spending first)
     final sortedItems = itemTotals.entries.toList()
-      ..sort((a, b) => (itemCounts[b.key] ?? 0).compareTo(itemCounts[a.key] ?? 0));
+      ..sort((a, b) => b.value.compareTo(a.value));
     
-    final totalCount = itemCounts.values.fold(0, (sum, v) => sum + v);
+    final totalAmount = itemTotals.values.fold(0.0, (sum, v) => sum + v);
     
     return Column(
       children: [
@@ -435,7 +435,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
           ),
         ),
         Text(
-          'Most purchased items',
+          'Spending breakdown',
           style: GoogleFonts.inter(
             fontSize: 12,
             color: const Color(0xFF6B7280),
@@ -443,7 +443,7 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
         ),
         const SizedBox(height: 16),
         
-        // Items pie chart (based on count)
+        // Items pie chart (based on amount)
         SizedBox(
           width: 200,
           height: 200,
@@ -451,17 +451,16 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
             painter: ItemsPieChartPainter(
               items: sortedItems,
               itemCounts: itemCounts,
-              totalCount: totalCount,
+              totalCount: totalAmount.toInt(),
             ),
           ),
         ),
         
         const SizedBox(height: 20),
         
-        // Items legend - sorted by count
+        // Items legend - sorted by amount (EGP percentage)
         ...sortedItems.take(5).map((entry) {
-          final count = itemCounts[entry.key] ?? 0;
-          final percentage = ((count / totalCount) * 100).round();
+          final percentage = totalAmount > 0 ? ((entry.value / totalAmount) * 100).round() : 0;
           final colorIndex = sortedItems.indexOf(entry);
           
           return Padding(
@@ -498,21 +497,12 @@ class _CategoriesPageContentState extends State<_CategoriesPageContent> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '$count×',
+                    '$percentage%',
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$percentage%',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -990,7 +980,7 @@ class PieChartPainter extends CustomPainter {
 
 
 
-// Pie chart painter for items breakdown (based on count)
+// Pie chart painter for items breakdown (based on amount)
 class ItemsPieChartPainter extends CustomPainter {
   final List<MapEntry<String, double>> items;
   final Map<String, int> itemCounts;
@@ -1015,12 +1005,15 @@ class ItemsPieChartPainter extends CustomPainter {
       const Color(0xFFBBDEFB),
     ];
 
+    // Use amounts for pie slices
+    final totalAmount = items.fold(0.0, (sum, e) => sum + e.value);
+    if (totalAmount == 0) return;
+
     double startAngle = -math.pi / 2;
 
     for (int i = 0; i < items.length && i < 5; i++) {
       final item = items[i];
-      final count = itemCounts[item.key] ?? 0;
-      final sweepAngle = (count / totalCount) * 2 * math.pi;
+      final sweepAngle = (item.value / totalAmount) * 2 * math.pi;
 
       final paint = Paint()
         ..color = colors[i % colors.length]
@@ -1034,8 +1027,8 @@ class ItemsPieChartPainter extends CustomPainter {
         paint,
       );
 
-      // Draw count text for large segments
-      final percentage = ((count / totalCount) * 100).round();
+      // Draw percentage text for large segments
+      final percentage = ((item.value / totalAmount) * 100).round();
       if (percentage >= 15) {
         final textAngle = startAngle + sweepAngle / 2;
         final textRadius = radius * 0.65;
@@ -1044,7 +1037,7 @@ class ItemsPieChartPainter extends CustomPainter {
 
         final textPainter = TextPainter(
           text: TextSpan(
-            text: '$count×',
+            text: '$percentage%',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,

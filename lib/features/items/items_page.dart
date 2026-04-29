@@ -477,14 +477,13 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
           itemQuantities[name] = (itemQuantities[name] ?? 0) + expense.quantity; // Sum actual quantities
         }
 
-        // Convert to chart data format with total quantities
+        // Convert to chart data, sort by quantity, take top 7
         final chartData = itemQuantities.entries
-            .take(7) // Top 7 items
-            .map((e) => {'item': e.key, 'quantity': e.value.toDouble()}) // Use total quantity
-            .toList();
-
-        // Sort by total quantity (highest first)
-        chartData.sort((a, b) => (b['quantity'] as double).compareTo(a['quantity'] as double));
+            .map((e) => {'item': e.key, 'quantity': e.value.toDouble()})
+            .toList()
+          ..sort((a, b) => (b['quantity'] as double).compareTo(a['quantity'] as double));
+        
+        final topChartData = chartData.take(7).toList();
 
         return Container(
           height: 250,
@@ -546,26 +545,21 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
               Expanded(
                 child: GestureDetector(
                   onTapUp: (details) {
-                    // Calculate which bar was tapped
-                    final tapX = details.localPosition.dx - 20; // Adjust for padding
+                    final tapX = details.localPosition.dx - 20;
                     final chartWidth = MediaQuery.of(context).size.width - 80;
-                    final barWidth = (chartWidth - 60) / (chartData.length * 3.5);
+                    final barWidth = (chartWidth - 60) / (topChartData.length * 3.5);
                     final spacing = barWidth * 1.5;
                     
-                    for (int i = 0; i < chartData.length; i++) {
+                    for (int i = 0; i < topChartData.length; i++) {
                       final barStart = 30 + i * (barWidth + spacing);
                       final barEnd = barStart + barWidth;
                       
                       if (tapX >= barStart && tapX <= barEnd) {
-                        _onBarTap(chartData[i]['item'] as String);
-                        
-                        // Show a brief feedback about the quantity
-                        final quantity = (chartData[i]['quantity'] as double).toInt();
+                        _onBarTap(topChartData[i]['item'] as String);
+                        final quantity = (topChartData[i]['quantity'] as double).toInt();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(
-                              '${chartData[i]['item']}: total quantity $quantity',
-                            ),
+                            content: Text('${topChartData[i]['item']}: $quantity'),
                             duration: const Duration(seconds: 1),
                             behavior: SnackBarBehavior.floating,
                             margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
@@ -577,7 +571,7 @@ class _ItemsPageContentState extends State<_ItemsPageContent> {
                   },
                   child: CustomPaint(
                     size: const Size(double.infinity, 180),
-                    painter: BarChartPainter(chartData, selectedItem: _selectedItemName),
+                    painter: BarChartPainter(topChartData, selectedItem: _selectedItemName),
                   ),
                 ),
               ),
@@ -980,29 +974,45 @@ class BarChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final maxQuantity =
         data.map((e) => e['quantity'] as double).reduce(math.max);
-    // Make bars thinner
     final barWidth = (size.width - 60) / (data.length * 3.5);
     final spacing = barWidth * 1.5;
 
-    // Draw Y-axis label
-    final yAxisPainter = TextPainter(
-      text: const TextSpan(
-        text: 'Count',
-        style: TextStyle(
-          color: Color(0xFF64748B),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+    // ── Y-axis grid lines + labels ────────────────────────────────────────────
+    final gridPaint = Paint()
+      ..color = const Color(0xFFE5E7EB)
+      ..strokeWidth = 1;
+
+    // Use integer steps based on maxQuantity
+    final maxInt = maxQuantity.ceil();
+    final ySteps = maxInt.clamp(1, 5); // max 5 grid lines
+    final seen = <int>{};
+
+    for (int step = 0; step <= ySteps; step++) {
+      final val = (maxInt * step / ySteps).round();
+      if (seen.contains(val)) continue;
+      seen.add(val);
+
+      final y = (size.height - 30) - (val / maxInt) * (size.height - 50);
+      // Grid line
+      canvas.drawLine(Offset(28, y), Offset(size.width, y), gridPaint);
+      // Y-axis number
+      final tp = TextPainter(
+        text: TextSpan(
+          text: '$val',
+          style: const TextStyle(
+            color: Color(0xFF64748B),
+            fontSize: 10,
+          ),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    yAxisPainter.layout();
-    yAxisPainter.paint(canvas, const Offset(0, 0));
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(0, y - tp.height / 2));
+    }
 
     for (int i = 0; i < data.length; i++) {
       final itemName = data[i]['item'] as String;
       final quantity = data[i]['quantity'] as double;
-      final barHeight = (quantity / maxQuantity) * (size.height - 50);
+      final barHeight = (quantity / maxInt) * (size.height - 50);
       final isSelected = selectedItem == itemName;
 
       final x = 30 + i * (barWidth + spacing);
@@ -1026,24 +1036,6 @@ class BarChartPainter extends CustomPainter {
           const Radius.circular(6),
         ),
         paint,
-      );
-
-      // Draw quantity on top of bar (show count)
-      final qtyPainter = TextPainter(
-        text: TextSpan(
-          text: '${quantity.toInt()}x', // Add 'x' to show it's a count
-          style: TextStyle(
-            color: isSelected ? const Color(0xFF059669) : const Color(0xFF2563EB),
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      qtyPainter.layout();
-      qtyPainter.paint(
-        canvas,
-        Offset(x + barWidth / 2 - qtyPainter.width / 2, y - 18),
       );
 
       // Draw item name label (X-axis) - Vertical text close to bar

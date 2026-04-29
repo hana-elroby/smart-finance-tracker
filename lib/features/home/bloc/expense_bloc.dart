@@ -172,7 +172,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
       print('✅ Item created: ${event.expense.title} (id: $itemId)');
 
       // Build body as raw JSON string to avoid Dio array serialization issues
-      final bodyJson = '{"text":${jsonEncode(event.expense.title)},"price":${event.expense.amount},"categoryId":${jsonEncode(categoryId)},"items":["${itemId}"]}';
+      final bodyJson = '{"text":${jsonEncode(event.expense.title)},"price":${event.expense.amount},"categoryId":${jsonEncode(categoryId)},"items":["${itemId}"],"quantity":${event.expense.quantity}}';
       
       print('🚀 Sending transaction body: $bodyJson');
       final result = await _api.postRaw('/transactions/createWithText', bodyJson);
@@ -243,8 +243,13 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
           final result = await _transactionApi.getMyTransactions(limit: 100);
           print('📡 Backend response: success=${result.isSuccess}, count=${result.transactions.length}, msg=${result.message}');
           if (result.isSuccess && result.transactions.isNotEmpty) {
-            // Convert backend TransactionModel → local Expense
+            // Load local data to preserve quantities (not stored in backend)
+            final localExpenses = await _loadLocal();
+            final localMap = {for (final e in localExpenses) e.id: e};
+
+            // Convert backend TransactionModel → local Expense, preserving local quantity
             final expenses = result.transactions.map((t) {
+              final local = localMap[t.id];
               return Expense(
                 id: t.id,
                 title: t.displayText,
@@ -252,6 +257,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
                 category: t.categoryName ?? 'Other',
                 date: t.createdAt,
                 isVoiceInput: t.type.name == 'voice',
+                quantity: t.quantity,
               );
             }).toList();
 

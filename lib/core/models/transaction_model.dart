@@ -9,6 +9,7 @@ class TransactionModel extends Equatable {
   final String? voicePath;
   final String? ocrPath;
   final double price;
+  final int quantity;
   final String? categoryId;
   final String? categoryName;
   final String userId;
@@ -22,6 +23,7 @@ class TransactionModel extends Equatable {
     this.voicePath,
     this.ocrPath,
     required this.price,
+    this.quantity = 1,
     this.categoryId,
     this.categoryName,
     required this.userId,
@@ -67,6 +69,7 @@ class TransactionModel extends Equatable {
       voicePath: map['voice_path'],
       ocrPath: map['OCR_path'],
       price: (map['price'] as num?)?.toDouble() ?? 0,
+      quantity: (map['quantity'] as num?)?.toInt() ?? 1,
       categoryId: map['category'] is Map ? map['category']['_id'] : map['category'],
       categoryName: map['category'] is Map ? map['category']['name'] : null,
       userId: map['user'] is Map ? map['user']['_id'] : (map['user'] ?? ''),

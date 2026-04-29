@@ -130,10 +130,10 @@ class _HomePageContentState extends State<_HomePageContent>
   }
 
   void _setDefaultDates() {
-    // Set default dates: from = app first use, to = current date
+    // Start with no filter — show all data (full zigzag)
     setState(() {
-      _fromDate = DateTime(2024, 1, 1); // Default start date
-      _toDate = DateTime.now();
+      _fromDate = null;
+      _toDate = null;
     });
   }
 

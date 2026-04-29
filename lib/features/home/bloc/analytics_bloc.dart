@@ -68,11 +68,10 @@ class AnalyticsBloc extends Cubit<AnalyticsState> {
         }
         return;
       }
-      // Fetch all-time analytics with smart period grouping
+      // Always fetch daily data for zigzag chart
       final now = DateTime.now();
       final start = DateTime(2020, 1, 1);
-      final daysDiff = now.difference(start).inDays;
-      final period = daysDiff <= 31 ? 'daily' : daysDiff <= 365 ? 'monthly' : 'yearly';
+      final period = 'daily';
 
       final response = await _api.get('/analytics/by-date', queryParams: {
         'period': period,
@@ -134,8 +133,7 @@ class AnalyticsBloc extends Cubit<AnalyticsState> {
       final now = DateTime.now();
       final start = from ?? DateTime(2020, 1, 1);
       final end = to ?? now;
-      final daysDiff = end.difference(start).inDays;
-      final period = daysDiff <= 31 ? 'daily' : daysDiff <= 365 ? 'monthly' : 'yearly';
+      final period = 'daily'; // Always daily for zigzag
 
       final response = await _api.get('/analytics/by-date', queryParams: {
         'period': period,
