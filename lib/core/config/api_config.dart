@@ -16,8 +16,7 @@ class ApiConfig {
   }
 
   // ── Voice Analysis Server ───────────────────────────────────────────────────
-  static const String voiceApiBaseUrl =
-      'https://gradution-project-u39v.onrender.com';
+  static const String voiceApiBaseUrl = 'http://10.0.2.2:8000';
   static const String voiceAnalyzeText  = '/analyze';
   static const String voiceAnalyzeAudio = '/voice';
 

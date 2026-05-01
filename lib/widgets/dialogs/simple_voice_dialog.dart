@@ -70,7 +70,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
       final status = await Permission.microphone.request();
       if (status != PermissionStatus.granted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يرجى السماح بإذن الميكروفون')),
+          const SnackBar(content: Text('Please allow microphone permission')),
         );
         return;
       }
@@ -87,12 +87,12 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
       
       setState(() {
         _isRecording = true;
-        _recognizedText = 'جاري التسجيل...';
+        _recognizedText = 'Recording...';
       });
     } catch (e) {
       print('Error starting recording: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ في بدء التسجيل: $e')),
+        SnackBar(content: Text('Error starting recording: $e')),
       );
     }
   }
@@ -104,7 +104,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
       setState(() {
         _isRecording = false;
         _isProcessing = true;
-        _recognizedText = 'جاري التحليل...';
+        _recognizedText = 'Analyzing...';
       });
       
       if (path != null && path.isNotEmpty) {
@@ -147,17 +147,36 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
         if (transactionsList != null && transactionsList.isNotEmpty) {
           _transactions = transactionsList.map((t) {
             final amount = (t['amount'] as num?)?.toDouble() ?? 0.0;
-            // Keep category as-is from server (don't translate)
-            final category = t['category'] as String? ?? 'Other';
-            final item = t['item'] as String? ?? '';
-            final merchant = t['merchant'] as String? ?? '';
-            final description = item.isNotEmpty ? item : merchant;
+            final rawCategory = t['category'] as String? ?? 'Other';
+            final category = _mapServerCategoryToApp(rawCategory);
             
-            print('  💰 Transaction: $description - $amount EGP - $category');
+            // Try multiple fields for description
+            final item = (t['item'] as String? ?? '').trim();
+            final merchant = (t['merchant'] as String? ?? '').trim();
+            final description2 = (t['description'] as String? ?? '').trim();
+            final name = (t['name'] as String? ?? '').trim();
+            
+            // Pick best description — prefer item name, then merchant, then description
+            String description = '';
+            if (item.isNotEmpty && item.toLowerCase() != rawCategory.toLowerCase()) {
+              description = item;
+            } else if (merchant.isNotEmpty) {
+              description = merchant;
+            } else if (description2.isNotEmpty) {
+              description = description2;
+            } else if (name.isNotEmpty) {
+              description = name;
+            } else {
+              // Fallback: use category as description
+              description = category;
+            }
+            
+            print('  💰 Transaction: "$description" - $amount EGP - $rawCategory → $category');
+            print('     raw fields: item="$item" merchant="$merchant" desc="$description2"');
             
             return {
               'amount': amount,
-              'category': category, // Keep original from server
+              'category': category,
               'description': description,
               'original': t,
             };
@@ -169,58 +188,82 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
           });
         } else {
           setState(() {
-            _recognizedText = text.isNotEmpty ? text : 'لم يتم التعرف على معاملات';
+            _recognizedText = text.isNotEmpty ? text : 'No transactions detected';
           });
         }
       } else {
         print('❌ Server returned error');
         setState(() {
-          _recognizedText = 'فشل التحليل: ${result.message ?? "خطأ غير معروف"}';
+          _recognizedText = 'Analysis failed: ${result.message ?? "Unknown error"}';
         });
       }
     } catch (e) {
       setState(() {
         _isProcessing = false;
-        _recognizedText = 'خطأ في التحليل: $e';
+        _recognizedText = 'Error: $e';
       });
       print('❌ Error analyzing audio: $e');
     }
   }
 
+  /// Trust the server category as-is.
+  /// Only fix obvious mistakes where the server returned an item name instead of a category.
+  String _mapServerCategoryToApp(String serverCategory) {
+    final c = serverCategory.toLowerCase().trim();
+
+    // If server returned something that looks like a food item name (not a category)
+    // map it to Food & Drink
+    const foodItems = [
+      'chocolate', 'pizza', 'burger', 'sandwich', 'salad', 'coffee', 'tea',
+      'juice', 'cake', 'bread', 'rice', 'pasta', 'sushi', 'shawarma',
+      'شوكولاتة', 'بيتزا', 'برجر', 'سندوتش', 'سلطة', 'قهوة', 'شاي',
+      'عصير', 'كيكة', 'خبز', 'أرز', 'مكرونة',
+    ];
+    for (final item in foodItems) {
+      if (c == item) return 'Food & Drink'; // exact match = it's an item name, not category
+    }
+
+    // Server returned a proper category — use it as-is
+    // Just normalize common variations to match our default categories
+    if (c == 'food' || c == 'food & drink' || c == 'food and drink' ||
+        c == 'طعام' || c == 'أكل') return 'Food & Drink';
+    if (c == 'transport' || c == 'transportation' ||
+        c == 'مواصلات') return 'Transport';
+    if (c == 'shopping' || c == 'تسوق') return 'Shopping';
+    if (c == 'health' || c == 'صحة') return 'Health';
+    if (c == 'bills' || c == 'bill' || c == 'فواتير') return 'Bills';
+    if (c == 'entertainment' || c == 'ترفيه') return 'Entertainment';
+    if (c == 'education' || c == 'تعليم') return 'Education';
+
+    // Unknown category → return as-is, will be created as custom category
+    return serverCategory;
+  }
+
   String _mapCategoryToArabic(String category) {
     final map = {
-      'food': 'طعام',
-      'transport': 'مواصلات',
-      'transportation': 'مواصلات',
-      'shopping': 'تسوق',
-      'health': 'صحة',
-      'education': 'تعليم',
-      'entertainment': 'ترفيه',
-      'bills': 'فواتير',
-      'other': 'أخرى',
+      'food': 'Food & Drink',
+      'transport': 'Transport',
+      'transportation': 'Transport',
+      'shopping': 'Shopping',
+      'health': 'Health',
+      'education': 'Education',
+      'entertainment': 'Entertainment',
+      'bills': 'Bills',
+      'other': 'Shopping',
     };
-    return map[category.toLowerCase()] ?? 'أخرى';
+    return map[category.toLowerCase()] ?? _mapServerCategoryToApp(category);
   }
 
   IconData _getCategoryIconData(String category) {
-    switch (category) {
-      case 'طعام':
-        return Icons.restaurant;
-      case 'مواصلات':
-        return Icons.directions_car;
-      case 'تسوق':
-        return Icons.shopping_bag;
-      case 'صحة':
-        return Icons.medical_services;
-      case 'تعليم':
-        return Icons.school;
-      case 'ترفيه':
-        return Icons.movie;
-      case 'فواتير':
-        return Icons.receipt;
-      default:
-        return Icons.category;
-    }
+    final c = category.toLowerCase();
+    if (c.contains('food') || c.contains('drink')) return Icons.restaurant;
+    if (c.contains('transport')) return Icons.directions_car;
+    if (c.contains('shop')) return Icons.shopping_bag;
+    if (c.contains('health')) return Icons.medical_services;
+    if (c.contains('education')) return Icons.school;
+    if (c.contains('entertain')) return Icons.movie;
+    if (c.contains('bill')) return Icons.receipt;
+    return Icons.category;
   }
 
   String _normalizeCategoryName(String categoryName) {
@@ -232,27 +275,30 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
   }
 
   String? _findMatchingCategory(String serverCategory) {
-    final dataStore = CategoryDataStore();
-    final normalizedServer = _normalizeCategoryName(serverCategory);
+    // First use our smart mapper
+    final mapped = _mapServerCategoryToApp(serverCategory);
     
-    // Check exact match first
+    final dataStore = CategoryDataStore();
+    final normalizedMapped = _normalizeCategoryName(mapped);
+    
+    // Check exact match with mapped category
     for (var cat in dataStore.allCategories) {
-      if (_normalizeCategoryName(cat.name) == normalizedServer) {
+      if (_normalizeCategoryName(cat.name) == normalizedMapped) {
         return cat.name;
       }
     }
     
-    // Check if server category contains existing category name
+    // Check partial match
     for (var cat in dataStore.allCategories) {
       final normalizedExisting = _normalizeCategoryName(cat.name);
-      if (normalizedServer.contains(normalizedExisting) || 
-          normalizedExisting.contains(normalizedServer)) {
-        return cat.name; // Use existing category
+      if (normalizedMapped.contains(normalizedExisting) || 
+          normalizedExisting.contains(normalizedMapped)) {
+        return cat.name;
       }
     }
     
-    // No match found, return original
-    return null;
+    // Return the mapped name directly (it's already one of our standard categories)
+    return mapped;
   }
 
   Future<void> _ensureCategoryExists(String categoryName) async {
@@ -291,7 +337,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
   void _saveAllTransactions() async {
     if (_transactions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لا توجد معاملات للحفظ')),
+        const SnackBar(content: Text('No transactions to save')),
       );
       return;
     }
@@ -354,7 +400,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
     Navigator.of(context).pop();
     
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('تم إضافة ${_transactions.length} معاملة')),
+      SnackBar(content: Text('Added ${_transactions.length} transaction${_transactions.length > 1 ? 's' : ''}')),
     );
   }
 
@@ -374,8 +420,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                 const Icon(Icons.mic, color: Color(0xFF667eea), size: 24),
                 const SizedBox(width: 12),
                 Text(
-                  'تسجيل صوتي',
-                  style: GoogleFonts.cairo(
+                  'Voice Recording',
+                  style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
@@ -457,8 +503,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'النص المسجل:',
-                      style: GoogleFonts.cairo(
+                      'Recorded text:',
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.blue[900],
@@ -468,7 +514,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                     TextField(
                       controller: TextEditingController(text: _recognizedText),
                       maxLines: 3,
-                      style: GoogleFonts.cairo(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         color: Colors.black87,
                       ),
@@ -488,8 +534,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                           borderSide: BorderSide(color: Colors.blue[600]!, width: 2),
                         ),
                         contentPadding: const EdgeInsets.all(12),
-                        hintText: 'عدّل النص هنا...',
-                        hintStyle: GoogleFonts.cairo(
+                        hintText: 'Edit text here...',
+                        hintStyle: GoogleFonts.inter(
                           fontSize: 14,
                           color: Colors.grey[400],
                         ),
@@ -507,8 +553,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
               
               // Transactions List
               Text(
-                'المعاملات المكتشفة:',
-                style: GoogleFonts.cairo(
+                'Detected transactions:',
+                style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -557,7 +603,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                                     text: transaction['category'] as String,
                                   ),
                                   maxLines: 1,
-                                  style: GoogleFonts.cairo(
+                                  style: GoogleFonts.inter(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xFF667eea),
@@ -584,8 +630,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                                       horizontal: 10,
                                       vertical: 8,
                                     ),
-                                    hintText: 'الفئة...',
-                                    hintStyle: GoogleFonts.cairo(
+                                    hintText: 'Category...',
+                                    hintStyle: GoogleFonts.inter(
                                       fontSize: 14,
                                       color: Colors.grey[400],
                                     ),
@@ -603,8 +649,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                               
                               // Amount
                               Text(
-                                '${transaction['amount']} جنيه',
-                                style: GoogleFonts.cairo(
+                                '${transaction['amount']} EGP',
+                                style: GoogleFonts.inter(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: const Color(0xFFFF6B6B),
@@ -619,7 +665,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                             controller: TextEditingController(
                               text: transaction['description'] as String,
                             ),
-                            style: GoogleFonts.cairo(
+                            style: GoogleFonts.inter(
                               fontSize: 14,
                               color: Colors.black87,
                             ),
@@ -645,8 +691,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                                 horizontal: 12,
                                 vertical: 10,
                               ),
-                              hintText: 'وصف المعاملة...',
-                              hintStyle: GoogleFonts.cairo(
+                              hintText: 'Transaction description...',
+                              hintStyle: GoogleFonts.inter(
                                 fontSize: 14,
                                 color: Colors.grey[400],
                               ),
@@ -683,7 +729,7 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                           _recognizedText = '';
                         });
                       },
-                      child: Text('تسجيل مرة أخرى', style: GoogleFonts.cairo()),
+                      child: Text('Record again', style: GoogleFonts.inter()),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -698,8 +744,8 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
                         ),
                       ),
                       child: Text(
-                        'حفظ الكل',
-                        style: GoogleFonts.cairo(
+                        'Save All',
+                        style: GoogleFonts.inter(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                         ),
@@ -716,25 +762,14 @@ class _SimpleVoiceDialogState extends State<SimpleVoiceDialog> {
   }
 
   IconData _getCategoryIcon(String category) {
-    final lowerCategory = category.toLowerCase();
-    
-    // Support both English and Arabic
-    if (lowerCategory.contains('food') || lowerCategory.contains('طعام')) {
-      return Icons.restaurant;
-    } else if (lowerCategory.contains('transport') || lowerCategory.contains('مواصلات')) {
-      return Icons.directions_car;
-    } else if (lowerCategory.contains('shopping') || lowerCategory.contains('تسوق')) {
-      return Icons.shopping_bag;
-    } else if (lowerCategory.contains('health') || lowerCategory.contains('صحة')) {
-      return Icons.medical_services;
-    } else if (lowerCategory.contains('education') || lowerCategory.contains('تعليم')) {
-      return Icons.school;
-    } else if (lowerCategory.contains('entertainment') || lowerCategory.contains('ترفيه')) {
-      return Icons.movie;
-    } else if (lowerCategory.contains('bill') || lowerCategory.contains('فواتير')) {
-      return Icons.receipt;
-    } else {
-      return Icons.category;
-    }
+    final c = category.toLowerCase();
+    if (c.contains('food') || c.contains('drink')) return Icons.restaurant;
+    if (c.contains('transport')) return Icons.directions_car;
+    if (c.contains('shop')) return Icons.shopping_bag;
+    if (c.contains('health')) return Icons.medical_services;
+    if (c.contains('education')) return Icons.school;
+    if (c.contains('entertain')) return Icons.movie;
+    if (c.contains('bill')) return Icons.receipt;
+    return Icons.category;
   }
 }

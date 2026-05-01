@@ -1,6 +1,6 @@
 // Voice API Service - New Render API Integration
 // Service for Voice & Text Finance Analyzer API
-// API: https://gradution-project-u39v.onrender.com
+// API: http://10.0.2.2:8000
 
 import 'dart:async';
 import 'dart:convert';
@@ -30,7 +30,7 @@ class VoiceApiService {
       print('📤 Sending request: $requestBody');
       
       final response = await http.post(
-        Uri.parse('https://gradution-project-u39v.onrender.com/analyze'),
+        Uri.parse('http://10.0.2.2:8000/analyze'),
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
           'Accept': 'application/json',
@@ -102,7 +102,7 @@ class VoiceApiService {
       
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://gradution-project-u39v.onrender.com/voice'),
+        Uri.parse('http://10.0.2.2:8000/voice'),
       );
 
       // Add headers
@@ -153,7 +153,7 @@ class VoiceApiService {
       
       // Try the main endpoint
       final response = await http.get(
-        Uri.parse('https://gradution-project-u39v.onrender.com/'),
+        Uri.parse('http://10.0.2.2:8000/'),
         headers: {
           'Accept': 'text/html,application/json',
         },
@@ -162,7 +162,7 @@ class VoiceApiService {
       print('📊 Testing main endpoint: ${response.statusCode}');
       
       if (response.statusCode == 200) {
-        print('✅ Voice API available at: https://gradution-project-u39v.onrender.com/');
+        print('✅ Voice API available at: http://10.0.2.2:8000/');
         return true;
       }
       
