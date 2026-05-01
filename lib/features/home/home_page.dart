@@ -1971,7 +1971,7 @@ class _HomePageContentState extends State<_HomePageContent>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'اضغط على العمود لعرض التفاصيل',
+                          'Tap a point to see details',
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: const Color(0xFF0D5DB8),

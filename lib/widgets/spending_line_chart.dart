@@ -38,9 +38,8 @@ class _SpendingLineChartState extends State<SpendingLineChart> {
     // Apply date filter
     final filtered = entries.where((e) {
       try {
-        // Parse key — could be "2026-04-17", "2026-04", or "2026"
-        DateTime date;
         final parts = e.key.split('-');
+        DateTime date;
         if (parts.length == 3) {
           date = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
         } else if (parts.length == 2) {
@@ -62,6 +61,62 @@ class _SpendingLineChartState extends State<SpendingLineChart> {
         return true;
       }
     }).toList();
+
+    // If BOTH dates are set and range is ≤ 60 days → fill missing days with 0
+    // Also fill gaps when no filter but data is daily and range ≤ 60 days
+    final DateTime? effectiveFrom = widget.fromDate;
+    final DateTime? effectiveTo = widget.toDate;
+
+    // Determine if we should fill gaps
+    bool shouldFillGaps = false;
+    DateTime? fillFrom;
+    DateTime? fillTo;
+
+    if (effectiveFrom != null && effectiveTo != null &&
+        effectiveTo.difference(effectiveFrom).inDays <= 60) {
+      // User set a filter ≤ 60 days
+      shouldFillGaps = true;
+      fillFrom = DateTime(effectiveFrom.year, effectiveFrom.month, effectiveFrom.day);
+      fillTo = DateTime(effectiveTo.year, effectiveTo.month, effectiveTo.day);
+    } else if (effectiveFrom == null && effectiveTo == null && filtered.isNotEmpty) {
+      // No filter — fill gaps between first and last data point if ≤ 60 days
+      final isDaily = filtered.first.key.split('-').length == 3;
+      if (isDaily) {
+        try {
+          final firstParts = filtered.first.key.split('-');
+          final lastParts = filtered.last.key.split('-');
+          final firstDate = DateTime(int.parse(firstParts[0]), int.parse(firstParts[1]), int.parse(firstParts[2]));
+          final lastDate = DateTime(int.parse(lastParts[0]), int.parse(lastParts[1]), int.parse(lastParts[2]));
+          if (lastDate.difference(firstDate).inDays <= 60) {
+            shouldFillGaps = true;
+            fillFrom = firstDate;
+            fillTo = lastDate;
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (shouldFillGaps && fillFrom != null && fillTo != null) {
+      final isDaily = filtered.isNotEmpty
+          ? filtered.first.key.split('-').length == 3
+          : true;
+      if (isDaily) {
+        final dataMap = {for (final e in filtered) e.key: e.value};
+        final allDays = <MapEntry<String, double>>[];
+        for (var d = fillFrom; !d.isAfter(fillTo); d = d.add(const Duration(days: 1))) {
+          final key =
+              '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+          allDays.add(MapEntry(key, dataMap[key] ?? 0.0));
+        }
+        return allDays
+            .map((e) => _ChartPoint(
+                  dateKey: e.key,
+                  label: _formatLabel(e.key),
+                  amount: e.value,
+                ))
+            .toList();
+      }
+    }
 
     return filtered.map((e) {
       final label = _formatLabel(e.key);
@@ -92,7 +147,12 @@ class _SpendingLineChartState extends State<SpendingLineChart> {
   Widget build(BuildContext context) {
     final points = _buildPoints();
 
-    if (points.isEmpty) {
+    // Need at least 2 points to draw a line
+    if (points.isEmpty || points.length < 2) {
+      // If only 1 point, show it as a single dot with label
+      if (points.length == 1) {
+        return _buildSinglePoint(points.first);
+      }
       return _buildEmpty();
     }
 
@@ -158,6 +218,45 @@ class _SpendingLineChartState extends State<SpendingLineChart> {
         ],
       ),
     );
+  }
+
+  Widget _buildSinglePoint(_ChartPoint point) {
+    return Container(
+      height: 220,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Color(0xFF1478E0),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            point.label,
+            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF6B7280)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${_formatAmt(point.amount)} EGP',
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1478E0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAmt(double amount) {
+    if (amount >= 1000) return '${(amount / 1000).toStringAsFixed(1)}k';
+    return amount.toInt().toString();
   }
 }
 
@@ -302,8 +401,17 @@ class _LinePainter extends CustomPainter {
           isSelected ? 5 : 3,
           Paint()..color = const Color(0xFF1478E0));
 
-      // X-axis label — show every label if ≤7 points, else every other
-      final showLabel = points.length <= 7 || i % 2 == 0;
+      // X-axis label — smart spacing to avoid crowding
+      final bool showLabel;
+      if (points.length <= 5) {
+        showLabel = true; // show all if few points
+      } else if (points.length <= 10) {
+        showLabel = i == 0 || i == points.length - 1 || i % 2 == 0;
+      } else {
+        // show first, last, and evenly spaced labels (max ~5 labels)
+        final step2 = (points.length / 4).ceil();
+        showLabel = i == 0 || i == points.length - 1 || i % step2 == 0;
+      }
       if (showLabel) {
         _drawText(
           canvas,

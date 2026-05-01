@@ -12,7 +12,12 @@ class AnalyticsBloc extends Cubit<AnalyticsState> {
   final LocalStorageService _storage = LocalStorageService();
   StreamSubscription<Map<String, dynamic>>? _wsSub;
 
+  // Static instance for global access
+  static AnalyticsBloc? _instance;
+  static AnalyticsBloc? get instance => _instance;
+
   AnalyticsBloc() : super(const AnalyticsState()) {
+    _instance = this;
     _subscribeToWebSocket();
     // Delay initial fetch to ensure auth token is loaded
     Future.delayed(const Duration(seconds: 2), _fetchInitial);

@@ -1,5 +1,6 @@
 ﻿import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/models/expense.dart';
@@ -10,6 +11,8 @@ import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_api_service.dart';
 import '../../../core/services/websocket_service.dart';
 import '../../../core/storage/simple_storage.dart';
+import '../../categories/category_data_store.dart';
+import 'analytics_bloc.dart';
 import 'expense_event.dart';
 import 'expense_state.dart';
 
@@ -172,7 +175,7 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
       print('✅ Item created: ${event.expense.title} (id: $itemId)');
 
       // Build body as raw JSON string to avoid Dio array serialization issues
-      final bodyJson = '{"text":${jsonEncode(event.expense.title)},"price":${event.expense.amount},"categoryId":${jsonEncode(categoryId)},"items":["${itemId}"],"quantity":${event.expense.quantity}}';
+      final bodyJson = '{"text":${jsonEncode(event.expense.title)},"price":${event.expense.amount},"categoryId":${jsonEncode(categoryId)},"items":["${itemId}"],"quantity":${event.expense.quantity},"transactionDate":"${event.expense.date.toIso8601String()}"}';
       
       print('🚀 Sending transaction body: $bodyJson');
       final result = await _api.postRaw('/transactions/createWithText', bodyJson);
@@ -180,6 +183,10 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
         print('✅ Transaction synced to backend: ${event.expense.title}');
         // Refresh from backend so UI shows the saved data
         add(const LoadExpenses());
+        // Trigger analytics refresh immediately
+        Future.delayed(const Duration(milliseconds: 500), () {
+          AnalyticsBloc.instance?.refresh();
+        });
       } else {
         print('⚠️ Transaction sync failed: ${result.message}');
       }
@@ -263,6 +270,8 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
             emit(ExpenseLoaded(expenses));
             await _saveLocal(expenses);
+            // Populate CategoryDataStore from backend expenses
+            _populateCategoryDataStore(expenses);
             print('✅ Loaded ${expenses.length} expenses from backend');
             return;
           }
@@ -288,4 +297,40 @@ class ExpenseBloc extends Bloc<ExpenseEvent, ExpenseState> {
 
   void refreshExpenses() => add(const LoadExpenses());
   void clearAllExpenses() => add(ClearAllExpenses());
+
+  /// Rebuild CategoryDataStore from a list of expenses (called after backend load)
+  void _populateCategoryDataStore(List<Expense> expenses) {
+    try {
+      final dataStore = CategoryDataStore();
+      // Clear existing items from all categories first
+      for (final cat in dataStore.allCategories) {
+        cat.items.clear();
+        cat.totalAmount = 0;
+      }
+      // Re-add all expenses as items
+      for (final expense in expenses) {
+        final item = CategoryItem(
+          name: expense.title,
+          quantity: expense.quantity,
+          unitPrice: expense.amount,
+          date: expense.date,
+          source: expense.isVoiceInput ? 'voice' : 'manual',
+        );
+        // Find or create category
+        var cat = dataStore.findCategory(expense.category);
+        if (cat == null) {
+          cat = CategoryData(
+            name: expense.category,
+            icon: Icons.category,
+            isMain: false,
+          );
+          dataStore.addCustomCategory(cat);
+        }
+        cat.addItem(item);
+      }
+      print('✅ CategoryDataStore populated with ${expenses.length} expenses');
+    } catch (e) {
+      print('⚠️ CategoryDataStore population failed: $e');
+    }
+  }
 }
